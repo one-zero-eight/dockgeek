@@ -12,6 +12,7 @@ declare module 'vue' {
     Appearance: typeof import('./src/components/settings/Appearance.vue')['default']
     Confirm: typeof import('./src/components/Confirm.vue')['default']
     Container: typeof import('./src/components/Container.vue')['default']
+    ContainerError: typeof import('./src/components/ContainerError.vue')['default']
     DockerStat: typeof import('./src/components/DockerStat.vue')['default']
     FileLogViewer: typeof import('./src/components/FileLogViewer.vue')['default']
     FileTextEditor: typeof import('./src/components/FileTextEditor.vue')['default']

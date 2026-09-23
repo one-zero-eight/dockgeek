@@ -85,7 +85,7 @@
 <script>
 import Confirm from "../components/Confirm.vue";
 import StackListItem from "../components/StackListItem.vue";
-import { CREATED_FILE, CREATED_STACK, EXITED, RUNNING, UNKNOWN } from "../../../common/util-common";
+import { CREATED_FILE, CREATED_STACK, EXITED, RUNNING, STOPPED, UNKNOWN } from "../../../common/util-common";
 
 export default {
     components: {
@@ -165,9 +165,9 @@ export default {
                         return 1;
                     } else if (m1.status === RUNNING) {
                         return -1;
-                    } else if (m2.status === EXITED) {
+                    } else if (m2.status === EXITED || m2.status === STOPPED) {
                         return 1;
-                    } else if (m1.status === EXITED) {
+                    } else if (m1.status === EXITED || m1.status === STOPPED) {
                         return -1;
                     } else if (m2.status === CREATED_STACK) {
                         return 1;

@@ -33,14 +33,25 @@
                         <font-awesome-icon icon="chevron-down" :class="{ collapsed: collapsedServices.has(service.name) }" />
                     </button>
                     <router-link :to="{ path: url, hash: '#service-' + encodeURIComponent(service.name) }" class="tree-link">
-                        <font-awesome-icon icon="cubes" class="node-icon" :class="service.instances.some(instance => instance.state === 'running') ? 'text-primary' : 'text-secondary'" />
+                        <font-awesome-icon icon="cubes" class="node-icon" :class="serviceStatusClass(service)" />
                         <span class="node-name" :title="service.name">{{ service.name }}</span>
                     </router-link>
                 </div>
                 <ul v-if="!collapsedServices.has(service.name) && service.instances.length" class="tree-children">
                     <li v-for="instance in service.instances" :key="instance.name">
                         <router-link :to="containerRoute(instance)" class="tree-link container-link">
-                            <font-awesome-icon icon="cube" class="node-icon" :class="instance.health === 'unhealthy' ? 'text-danger' : instance.state === 'running' ? 'text-primary' : 'text-secondary'" :title="instance.status" />
+                            <FloatingTooltip placement="right">
+                                <template #trigger="{ triggerAttrs }">
+                                    <span
+                                        v-bind="triggerAttrs"
+                                        class="node-icon-tooltip"
+                                        :class="instanceStatusClass(instance)"
+                                    >
+                                        <font-awesome-icon icon="cube" class="node-icon" />
+                                    </span>
+                                </template>
+                                <span class="floating-tooltip-detail">{{ instanceTitle(instance) }}</span>
+                            </FloatingTooltip>
                             <span class="node-name" :title="instance.name">{{ instance.name }}</span>
                         </router-link>
                     </li>
@@ -52,7 +63,7 @@
 
 <script>
 import { parse } from "yaml";
-import { statusColor, stackStatusDetail, stackStatusTitle } from "../../../common/util-common";
+import { statusColor, stackStatusDetail, stackStatusTitle, containerStatusTone, formatContainerError } from "../../../common/util-common";
 import { FloatingTooltip } from "./floating";
 
 export default {
@@ -156,6 +167,26 @@ export default {
             }
             const detail = stackStatusDetail(stack);
             return this.$te(detail) ? this.$t(detail) : detail;
+        },
+        instanceStatusClass(instance) {
+            return `text-${containerStatusTone(instance)}`;
+        },
+        serviceStatusClass(service) {
+            if (service.instances.some((instance) => formatContainerError(instance))) {
+                return "text-danger";
+            }
+            if (service.instances.some((instance) => instance.state === "running")) {
+                return "text-primary";
+            }
+            return "text-secondary";
+        },
+        instanceTitle(instance) {
+            const parts = [ instance.statusDetail || instance.status ];
+            const error = formatContainerError(instance);
+            if (error) {
+                parts.push(error);
+            }
+            return parts.join(", ");
         },
         changeCollapsed() {
             if (!this.stack.isManagedByDockge) {

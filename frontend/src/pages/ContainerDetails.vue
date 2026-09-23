@@ -17,7 +17,17 @@
                 <div>
                     <div class="d-flex flex-wrap align-items-center gap-2">
                         <h1 class="mb-0">{{ containerName }}</h1>
-                        <span v-if="container" class="badge" :class="statusClass">{{ container.status }}</span>
+                        <FloatingTooltip v-if="container && statusDetail" placement="top">
+                            <template #trigger="{ triggerAttrs }">
+                                <span v-bind="triggerAttrs" class="badge" :class="statusClass">{{ container.status }}</span>
+                            </template>
+                            <span class="floating-tooltip-detail">{{ statusDetail }}</span>
+                        </FloatingTooltip>
+                        <span v-else-if="container" class="badge" :class="statusClass">{{ container.status }}</span>
+                        <span v-if="exitLabel" class="badge" :class="exitBadgeClass">{{ exitLabel }}</span>
+                    </div>
+                    <div v-if="errorLabel" class="mt-2">
+                        <ContainerError :message="errorLabel" />
                     </div>
                     <div v-if="serviceName" class="service-name mt-1">{{ $t("service") }}: {{ serviceName }}</div>
                 </div>
@@ -180,11 +190,21 @@
 
 <script>
 import {
+    containerExitTone,
+    containerStatusTone,
+    formatContainerExitLabel,
+    formatContainerError,
     getContainerInstanceExecTerminalName,
     getContainerLogTerminalName
 } from "../../../common/util-common";
+import ContainerError from "../components/ContainerError.vue";
+import { FloatingTooltip } from "../components/floating";
 
 export default {
+    components: {
+        ContainerError,
+        FloatingTooltip,
+    },
     data() {
         return {
             activeTab: "overview",
@@ -230,10 +250,20 @@ export default {
             return this.container?.state === "running";
         },
         statusClass() {
-            if (this.container?.health === "unhealthy") {
-                return "bg-danger";
-            }
-            return this.isRunning ? "bg-primary" : "bg-secondary";
+            return `bg-${containerStatusTone(this.container)}`;
+        },
+        statusDetail() {
+            return this.container?.statusDetail || this.container?.status;
+        },
+        exitLabel() {
+            return formatContainerExitLabel(this.container);
+        },
+        exitBadgeClass() {
+            const tone = containerExitTone(this.container);
+            return tone ? `bg-${tone}` : "bg-secondary";
+        },
+        errorLabel() {
+            return formatContainerError(this.container);
         },
         stackRoute() {
             return this.endpoint ? `/compose/${this.stackName}/${this.endpoint}` : `/compose/${this.stackName}`;
