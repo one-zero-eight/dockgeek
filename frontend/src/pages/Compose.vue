@@ -139,6 +139,17 @@
                                 <font-awesome-icon icon="pen" />
                                 {{ $t("editStack") }}
                             </button>
+                            <button
+                                v-if="isFullPageEditor"
+                                type="button"
+                                class="editor-close"
+                                :disabled="processing"
+                                :title="isAdd ? $t('close') : $t('discardStack')"
+                                :aria-label="isAdd ? $t('close') : $t('discardStack')"
+                                @click="closeEditor"
+                            >
+                                <font-awesome-icon icon="times" />
+                            </button>
                         </div>
 
                         <code-mirror
@@ -156,30 +167,48 @@
 
                         <!-- Editor actions -->
                         <div v-if="isFullPageEditor" class="editor-actions">
-                            <button class="btn btn-primary" :disabled="processing || !canSaveStack" @click="deployStack">
-                                <font-awesome-icon icon="rocket" class="me-1" />
-                                {{ $t("deployStack") }}
-                            </button>
-                            <button class="btn btn-normal" :disabled="processing || !canSaveStack" @click="saveStack">
-                                <font-awesome-icon icon="save" class="me-1" />
-                                {{ $t("saveStackDraft") }}
-                            </button>
-                            <button v-if="!isAdd" class="btn btn-normal" :disabled="processing" @click="discardStack">
-                                {{ $t("discardStack") }}
-                            </button>
-                            <button
-                                class="btn btn-normal editor-format-btn"
-                                :disabled="processing || formattingYaml"
-                                :title="$t('formatYaml')"
-                                @click="formatYaml"
-                            >
-                                <font-awesome-icon icon="align-left" class="me-1" />
-                                {{ $t("formatYaml") }}
-                            </button>
+                            <div class="action-group" role="group">
+                                <button
+                                    type="button"
+                                    class="btn action-group-btn btn-primary"
+                                    :disabled="processing || !canSaveStack"
+                                    @click="requestDeployStack"
+                                >
+                                    <font-awesome-icon icon="rocket" />
+                                    <span class="action-group-text">{{ $t("deployStack") }}</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    class="btn action-group-btn btn-normal"
+                                    :disabled="processing || !canSaveStack"
+                                    @click="saveStack"
+                                >
+                                    <font-awesome-icon icon="save" />
+                                    <span class="action-group-text">{{ $t("saveStackDraft") }}</span>
+                                </button>
+                                <button
+                                    v-if="!isAdd"
+                                    type="button"
+                                    class="btn action-group-btn btn-normal"
+                                    :disabled="processing"
+                                    @click="discardStack"
+                                >
+                                    <span class="action-group-text">{{ $t("discardStack") }}</span>
+                                </button>
+                            </div>
+                            <div class="action-group editor-format-btn" role="group">
+                                <button
+                                    type="button"
+                                    class="btn action-group-btn btn-normal"
+                                    :disabled="processing || formattingYaml"
+                                    :title="$t('formatYaml')"
+                                    @click="formatYaml"
+                                >
+                                    <font-awesome-icon icon="align-left" />
+                                    <span class="action-group-text">{{ $t("formatYaml") }}</span>
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                    <div v-if="isEditMode && yamlError" v-show="isFullPageEditor || !$root.isCompact || compactTab === 'compose'" class="mb-3">
-                        {{ yamlError }}
                     </div>
                 </div>
             </div>
@@ -287,8 +316,7 @@ import ActionGroup from "../components/ActionGroup.vue";
 import dotenv from "dotenv";
 import { ref } from "vue";
 
-const template = `
-services:
+const template = `services:
   nginx:
     image: nginx:latest
     restart: unless-stopped
@@ -303,6 +331,13 @@ const envDefault = "# VARIABLE=value #comment";
  * `commands` are the docker / compose invocations that will run.
  */
 const PROJECT_ACTIONS = {
+    deployStack: {
+        title: "deployProjectConfirmTitle",
+        message: "deployProjectConfirmMsg",
+        ok: "deployStack",
+        variant: "btn-primary",
+        commands: [ "docker compose up -d --remove-orphans" ],
+    },
     startStack: {
         title: "startProjectConfirmTitle",
         message: "startProjectConfirmMsg",
@@ -350,8 +385,6 @@ const PROJECT_ACTIONS = {
     },
 };
 
-let yamlErrorTimeout = null;
-
 let serviceStatusTimeout = null;
 let dockerStatsTimeout = null;
 let progressCloseTimer = null;
@@ -394,7 +427,6 @@ export default {
         return {
             jsonConfig: {},
             envsubstJSONConfig: {},
-            yamlError: "",
             processing: true,
             stack: {
 
@@ -915,35 +947,6 @@ export default {
         },
 
         deployStack() {
-            if (!this.canSaveStack) {
-                return;
-            }
-
-            if (!this.jsonConfig.services) {
-                this.$root.toastError("No services found in compose.yaml");
-                return;
-            }
-
-            // Check if services is object
-            if (typeof this.jsonConfig.services !== "object") {
-                this.$root.toastError("Services must be an object");
-                return;
-            }
-
-            let serviceNameList = Object.keys(this.jsonConfig.services);
-
-            // Set the stack name if empty, use the first container name
-            if (!this.stack.name && serviceNameList.length > 0) {
-                let serviceName = serviceNameList[0];
-                let service = this.jsonConfig.services[serviceName];
-
-                if (service && service.container_name) {
-                    this.stack.name = service.container_name;
-                } else {
-                    this.stack.name = serviceName;
-                }
-            }
-
             this.runWithProgress("deployStack", () => {
                 this.$root.emitAgent(this.stack.endpoint, "deployStack", this.stack.name, this.composeEditorContent(), this.stack.composeENV, this.isAdd, (res) => {
                     this.finishProgress(res);
@@ -957,6 +960,43 @@ export default {
                     }
                 });
             }, [ "docker compose up -d --remove-orphans" ]);
+        },
+
+        /**
+         * Validate the compose file, then open the deploy confirmation dialog.
+         * Deploy saves compose.yaml / .env and runs `docker compose up -d --remove-orphans`.
+         * @returns {void}
+         */
+        requestDeployStack() {
+            if (!this.canSaveStack || this.processing) {
+                return;
+            }
+
+            if (!this.jsonConfig.services) {
+                this.$root.toastError("No services found in compose.yaml");
+                return;
+            }
+
+            if (typeof this.jsonConfig.services !== "object") {
+                this.$root.toastError("Services must be an object");
+                return;
+            }
+
+            const serviceNameList = Object.keys(this.jsonConfig.services);
+
+            // Set the stack name if empty, use the first container name
+            if (!this.stack.name && serviceNameList.length > 0) {
+                const serviceName = serviceNameList[0];
+                const service = this.jsonConfig.services[serviceName];
+
+                if (service && service.container_name) {
+                    this.stack.name = service.container_name;
+                } else {
+                    this.stack.name = serviceName;
+                }
+            }
+
+            this.requestProjectAction("deployStack");
         },
 
         /** Return the editor document verbatim, including comments and trailing newline. */
@@ -1067,6 +1107,19 @@ export default {
             this.isEditMode = false;
         },
 
+        /**
+         * Toolbar × — discard edits and leave the full-page editor.
+         * New projects navigate home (route guard asks if needed).
+         * @returns {void}
+         */
+        closeEditor() {
+            if (this.isAdd) {
+                this.$router.push("/");
+                return;
+            }
+            this.discardStack();
+        },
+
         async formatYaml() {
             const view = this.$refs.editor?.view;
             if (!view || this.formattingYaml) {
@@ -1078,7 +1131,7 @@ export default {
                 this.stack.composeYAML = view.state.doc.toString();
                 this.yamlCodeChange();
             } catch (e) {
-                this.yamlError = e instanceof Error ? e.message : String(e);
+                this.$root.toastError(e instanceof Error ? e.message : String(e));
             } finally {
                 this.formattingYaml = false;
             }
@@ -1101,24 +1154,13 @@ export default {
         yamlCodeChange() {
             try {
                 // Parsed data drives previews only; never serialize it into the editor.
+                // Schema/syntax issues are shown as editor underlines — no duplicate text banner.
                 this.jsonConfig = this.yamlToJSON(this.stack.composeYAML);
 
                 const env = dotenv.parse(this.stack.composeENV);
                 this.envsubstJSONConfig = envsubstYAML(this.stack.composeYAML, env);
-
-                clearTimeout(yamlErrorTimeout);
-                this.yamlError = "";
-            } catch (e) {
-                clearTimeout(yamlErrorTimeout);
-
-                if (this.yamlError) {
-                    this.yamlError = e.message;
-
-                } else {
-                    yamlErrorTimeout = setTimeout(() => {
-                        this.yamlError = e.message;
-                    }, 3000);
-                }
+            } catch {
+                // Keep the last good preview state while the document is incomplete.
             }
         },
 
@@ -1372,21 +1414,67 @@ export default {
     }
 }
 
+.editor-close {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: inherit;
+    line-height: 1;
+    opacity: 0.65;
+    transition: background-color 0.15s ease, opacity 0.15s ease;
+
+    svg {
+        display: block;
+        width: 0.9em;
+        height: 0.9em;
+    }
+
+    &:hover:not(:disabled) {
+        background: rgba(0, 0, 0, 0.06);
+        opacity: 1;
+    }
+
+    &:focus-visible {
+        outline: 2px solid $primary;
+        outline-offset: 1px;
+        opacity: 1;
+    }
+
+    &:disabled {
+        cursor: not-allowed;
+        opacity: 0.4;
+    }
+
+    .dark & {
+        &:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.08);
+        }
+    }
+}
+
 .editor-actions {
     display: flex;
     flex: 0 0 auto;
     flex-wrap: wrap;
+    align-items: center;
     gap: 0.5rem;
     margin: 0;
     padding: 0.6rem 0.75rem;
     border-top: 1px solid rgba(0, 0, 0, 0.12);
+    // Break out of `.editor-box` monospace so buttons match ActionGroup.
+    font-family: var(--bs-body-font-family);
+    font-size: 1rem;
+    font-weight: 400;
 
     .dark & {
         border-top-color: $dark-border-color;
-    }
-
-    .btn {
-        white-space: nowrap;
     }
 
     .editor-format-btn {
