@@ -190,7 +190,7 @@ export function statusColor(status : number) : string {
 export const isDev = process.env.NODE_ENV === "development";
 export const TERMINAL_COLS = 105;
 export const TERMINAL_ROWS = 10;
-export const PROGRESS_TERMINAL_ROWS = 8;
+export const PROGRESS_TERMINAL_ROWS = 16;
 
 export const COMBINED_TERMINAL_COLS = 58;
 export const COMBINED_TERMINAL_ROWS = 20;

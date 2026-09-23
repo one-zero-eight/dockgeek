@@ -1231,7 +1231,7 @@ export default {
 @import "../styles/vars.scss";
 
 .progress-terminal {
-    height: 144px;
+    height: 288px;
 }
 
 .stack-folder-picker {
@@ -1800,8 +1800,8 @@ export default {
     .progress-terminal.terminal-shell,
     .progress-terminal {
         flex: 1 1 auto;
-        // 8 rows × ~18px cell height — keep in sync with PROGRESS_TERMINAL_ROWS
-        height: 144px;
+        // 16 rows × ~18px cell height — keep in sync with PROGRESS_TERMINAL_ROWS
+        height: 288px;
         margin: 0;
         padding: 0;
         border: 0;
