@@ -238,12 +238,14 @@ export default {
 
         /**
          * Move the initial focus into the dialog once it is rendered.
+         * Prefer an autofocused field, then the primary OK control so Enter confirms.
          * @returns {void}
          */
         function focusDialog() {
             const list = focusables();
             const autofocus = floatingEl.value?.querySelector("[autofocus], .fd-body input, .fd-body textarea, .fd-body select");
-            (autofocus || list[0] || floatingEl.value)?.focus();
+            const primary = floatingEl.value?.querySelector(".fd-footer .btn-primary:not([disabled]), .fd-footer button:last-of-type:not([disabled])");
+            (autofocus || primary || list[0] || floatingEl.value)?.focus();
         }
 
         function lockScroll() {
@@ -296,6 +298,21 @@ export default {
         }
 
         function onDialogKeydown(event) {
+            if (event.key === "Enter" && !event.isComposing && !props.hideFooter) {
+                const active = document.activeElement;
+                const tag = active?.tagName;
+                // Let multiline fields and the focused footer button use native behavior.
+                if (tag === "TEXTAREA") {
+                    return;
+                }
+                if (tag === "BUTTON" || active?.getAttribute("role") === "button") {
+                    return;
+                }
+                event.preventDefault();
+                ok();
+                return;
+            }
+
             if (event.key !== "Tab") {
                 return;
             }
