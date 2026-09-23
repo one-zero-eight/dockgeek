@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
 import { afterEach, describe, test } from "node:test";
 import { Stack } from "./stack";
-import { CREATED_STACK, EXITED, RUNNING, UNKNOWN } from "../common/util-common";
+import { CREATED_STACK, DEAD, EXITED, RUNNING, STOPPED, UNKNOWN } from "../common/util-common";
 
 type ContainerState = {
     Status: string;
     ExitCode?: number;
+    Error?: string;
 };
 
 describe("clean-exit compose status", () => {
@@ -137,7 +138,7 @@ describe("clean-exit compose status", () => {
         }), UNKNOWN);
     });
 
-    test("resolveComposeStatus skips inspect for unmixed statuses", async () => {
+    test("resolveComposeStatus skips inspect for running-only statuses", async () => {
         let called = false;
         Stack.getProjectContainerStates = async () => {
             called = true;
@@ -147,14 +148,29 @@ describe("clean-exit compose status", () => {
             Name: "demo",
             Status: "running(2)",
         }), RUNNING);
+        assert.equal(called, false);
+    });
+
+    test("resolveComposeStatus inspects fully exited stacks", async () => {
+        stubStates(null);
         assert.equal(await Stack.resolveComposeStatus({
             Name: "demo",
             Status: "exited(2)",
         }), EXITED);
-        assert.equal(called, false);
+
+        stubStates([
+            {
+                Status: "exited",
+                ExitCode: 137,
+            },
+        ]);
+        assert.equal(await Stack.resolveComposeStatus({
+            Name: "demo",
+            Status: "exited(1)",
+        }), STOPPED);
     });
 
-    test("all exited containers remain EXITED even when exit codes are 0", async () => {
+    test("all exited containers remain STOPPED when exit codes are 0", async () => {
         stubStates([
             {
                 Status: "exited",
@@ -165,6 +181,86 @@ describe("clean-exit compose status", () => {
                 ExitCode: 0,
             },
         ]);
-        assert.equal(await Stack.resolveMixedRunningAndExited("demo"), EXITED);
+        assert.equal(await Stack.resolveMixedRunningAndExited("demo"), STOPPED);
+    });
+
+    test("State.Error marks mixed stacks DEAD", async () => {
+        stubStates([
+            {
+                Status: "running",
+            },
+            {
+                Status: "created",
+                ExitCode: 128,
+                Error: "Bind for 0.0.0.0:18019 failed: port is already allocated",
+            },
+        ]);
+        assert.equal(await Stack.resolveMixedRunningAndExited("demo"), DEAD);
+    });
+
+    test("created stack with State.Error resolves to DEAD", async () => {
+        stubStates([
+            {
+                Status: "created",
+                ExitCode: 128,
+                Error: "port is already allocated",
+            },
+        ]);
+        assert.equal(await Stack.resolveComposeStatus({
+            Name: "demo",
+            Status: "created(1)",
+        }), DEAD);
+    });
+
+    test("created stack without Error stays CREATED_STACK", async () => {
+        stubStates([
+            {
+                Status: "created",
+                ExitCode: 0,
+            },
+        ]);
+        assert.equal(await Stack.resolveComposeStatus({
+            Name: "demo",
+            Status: "created(1)",
+        }), CREATED_STACK);
+    });
+
+    test("fully exited with 143 resolves to STOPPED", async () => {
+        stubStates([
+            {
+                Status: "exited",
+                ExitCode: 143,
+            },
+        ]);
+        assert.equal(await Stack.resolveComposeStatus({
+            Name: "demo",
+            Status: "exited(1)",
+        }), STOPPED);
+    });
+
+    test("fully exited with crash code stays EXITED", async () => {
+        stubStates([
+            {
+                Status: "exited",
+                ExitCode: 1,
+            },
+        ]);
+        assert.equal(await Stack.resolveComposeStatus({
+            Name: "demo",
+            Status: "exited(1)",
+        }), EXITED);
+    });
+
+    test("mixed running with exited 143 stays RUNNING", async () => {
+        stubStates([
+            {
+                Status: "running",
+            },
+            {
+                Status: "exited",
+                ExitCode: 143,
+            },
+        ]);
+        assert.equal(await Stack.resolveMixedRunningAndExited("demo"), RUNNING);
     });
 });

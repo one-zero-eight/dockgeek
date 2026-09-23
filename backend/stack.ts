@@ -10,11 +10,17 @@ import {
     COMBINED_TERMINAL_ROWS,
     CREATED_FILE,
     composeStatusToStatus,
+    CREATED_STACK,
+    DEAD,
     EXITED,
+    formatContainerStatusLabel,
     getCombinedTerminalName,
     getComposeTerminalName, getContainerExecTerminalName, getContainerInstanceExecTerminalName,
     getContainerLogTerminalName,
+    isCleanOrExternalStopExit,
+    RESTARTING,
     RUNNING, TERMINAL_COLS, TERMINAL_ROWS,
+    STOPPED,
     toComposeProjectName,
     UNKNOWN,
     validateStackFolderName,
@@ -32,6 +38,8 @@ interface ComposeLsEntry {
 interface ContainerStateInfo {
     Status: string;
     ExitCode?: number;
+    Error?: string;
+    Name?: string;
 }
 
 export class Stack {
@@ -471,9 +479,11 @@ export class Stack {
 
         for (const line of lines) {
             let parsed: {
+                Name?: string;
                 State?: {
                     Status?: string;
                     ExitCode?: number;
+                    Error?: string;
                 };
                 Config?: {
                     Labels?: Record<string, string>;
@@ -494,9 +504,12 @@ export class Stack {
                 return null;
             }
 
+            const error = parsed.State?.Error;
             states.push({
                 Status: status.toLowerCase(),
                 ExitCode: parsed.State?.ExitCode,
+                Error: typeof error === "string" && error.length > 0 ? error : undefined,
+                Name: typeof parsed.Name === "string" ? parsed.Name.replace(/^\//, "") : undefined,
             });
         }
 
@@ -505,7 +518,8 @@ export class Stack {
 
     /**
      * Mixed exited+running from `docker compose ls` is RUNNING only when at least one
-     * container is running and every other counted container exited with code 0.
+     * container is running and every other counted container exited cleanly (0) or
+     * via external stop (137/143).
      */
     static async resolveMixedRunningAndExited(composeName: string): Promise<number> {
         const composeStatus = await this.getProjectContainerStates(composeName);
@@ -521,14 +535,17 @@ export class Stack {
         let anyRunning = false;
 
         for (const containerStatus of composeStatus) {
+            if (containerStatus.Error) {
+                return DEAD;
+            }
+
             if (containerStatus.Status === "running") {
                 anyRunning = true;
                 continue;
             }
 
             if (containerStatus.Status === "exited") {
-                const code = containerStatus.ExitCode;
-                if (typeof code !== "number" || !Number.isFinite(code) || code !== 0) {
+                if (!isCleanOrExternalStopExit(containerStatus.ExitCode)) {
                     return EXITED;
                 }
                 continue;
@@ -538,7 +555,41 @@ export class Stack {
             return EXITED;
         }
 
-        return anyRunning ? RUNNING : EXITED;
+        return anyRunning ? RUNNING : STOPPED;
+    }
+
+    /**
+     * Fully stopped stacks: warning (STOPPED) for exit 0 / 137 / 143 only;
+     * danger (EXITED) for other codes; DEAD when State.Error is set.
+     */
+    static async resolveFullyExited(composeName: string): Promise<number> {
+        const composeStatus = await this.getProjectContainerStates(composeName);
+
+        if (composeStatus === null || composeStatus.length === 0) {
+            return EXITED;
+        }
+
+        for (const containerStatus of composeStatus) {
+            if (containerStatus.Error) {
+                return DEAD;
+            }
+
+            if (containerStatus.Status === "running") {
+                // Unexpected for a pure exited compose-ls status; fall back.
+                return EXITED;
+            }
+
+            if (containerStatus.Status === "exited") {
+                if (!isCleanOrExternalStopExit(containerStatus.ExitCode)) {
+                    return EXITED;
+                }
+                continue;
+            }
+
+            return EXITED;
+        }
+
+        return STOPPED;
     }
 
     /**
@@ -558,6 +609,33 @@ export class Stack {
                 return UNKNOWN;
             }
         }
+
+        if (status === EXITED) {
+            try {
+                return await this.resolveFullyExited(composeStack.Name);
+            } catch (e) {
+                if (e instanceof Error) {
+                    log.warn("resolveComposeStatus", `Failed to inspect stack ${composeStack.Name}: ${e.message}`);
+                }
+                return EXITED;
+            }
+        }
+
+        // `docker compose ls` can report "created" while State.Error is set
+        // (e.g. port already allocated). Surface that as dead/red.
+        if (status === CREATED_STACK || status === RESTARTING) {
+            try {
+                const states = await this.getProjectContainerStates(composeStack.Name);
+                if (states?.some((s) => !!s.Error)) {
+                    return DEAD;
+                }
+            } catch (e) {
+                if (e instanceof Error) {
+                    log.warn("resolveComposeStatus", `Failed to inspect stack ${composeStack.Name}: ${e.message}`);
+                }
+            }
+        }
+
         return status;
     }
 
@@ -741,6 +819,8 @@ export class Stack {
                 CreatedAt: string,
                 RunningFor: string,
                 Ports: string,
+                ExitCode?: number,
+                Status?: string,
                 Publishers?: Array<object>
             }) => {
                 if (!statusList.has(obj.Service)) {
@@ -749,9 +829,11 @@ export class Stack {
                 statusList.get(obj.Service)?.push({
                     id: obj.ID,
                     service: obj.Service,
-                    status: obj.Health || obj.State,
+                    status: formatContainerStatusLabel(obj),
+                    statusDetail: obj.Status || undefined,
                     state: obj.State,
                     health: obj.Health,
+                    exitCode: obj.ExitCode,
                     name: obj.Name,
                     image: obj.Image,
                     command: obj.Command,
@@ -771,6 +853,35 @@ export class Stack {
                         addLine(obj);
                     }
                 } catch (e) {
+                }
+            }
+
+            // compose ps omits State.Error and can report ExitCode 0 for
+            // failed "created" containers; merge from docker inspect.
+            const inspectStates = await Stack.getProjectContainerStates(this.name);
+            if (inspectStates?.length) {
+                const byName = new Map(
+                    inspectStates
+                        .filter((s) => s.Name)
+                        .map((s) => [ s.Name as string, s ]),
+                );
+                for (const containers of statusList.values()) {
+                    for (const container of containers as Array<{
+                        name?: string;
+                        exitCode?: number;
+                        error?: string;
+                    }>) {
+                        const info = container.name ? byName.get(container.name) : undefined;
+                        if (!info) {
+                            continue;
+                        }
+                        if (info.Error) {
+                            container.error = info.Error;
+                        }
+                        if (typeof info.ExitCode === "number" && Number.isFinite(info.ExitCode)) {
+                            container.exitCode = info.ExitCode;
+                        }
+                    }
                 }
             }
 

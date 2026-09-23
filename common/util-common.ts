@@ -55,6 +55,8 @@ export const RESTARTING = 5;
 export const PAUSED = 6;
 export const REMOVING = 7;
 export const DEAD = 8;
+/** All containers stopped via SIGKILL/SIGTERM (exit 137/143), or clean exit 0. */
+export const STOPPED = 9;
 
 /** Prefer unhealthy states when Compose reports a mixture of container states. */
 export function composeStatusToStatus(value : string) : number {
@@ -94,6 +96,8 @@ export function statusName(status : number) : string {
             return "running";
         case EXITED:
             return "exited";
+        case STOPPED:
+            return "stopped";
         case RESTARTING:
             return "restarting";
         case PAUSED:
@@ -117,6 +121,8 @@ export function statusNameShort(status : number) : string {
             return "active";
         case EXITED:
             return "exited";
+        case STOPPED:
+            return "stopped";
         case RESTARTING:
             return "restarting";
         case PAUSED:
@@ -130,6 +136,131 @@ export function statusNameShort(status : number) : string {
     }
 }
 
+/**
+ * Human-readable container status for service badges (no exit code).
+ */
+export function formatContainerStatusLabel(container : {
+    State?: string;
+    Status?: string;
+    Health?: string;
+} | null | undefined) : string {
+    if (!container) {
+        return "unknown";
+    }
+
+    const state = (container.State || "").toLowerCase();
+    if (state === "exited") {
+        return "exited";
+    }
+
+    if (container.Health) {
+        return container.Health.toLowerCase();
+    }
+
+    if (container.State) {
+        return state;
+    }
+
+    return (container.Status || "unknown").toLowerCase();
+}
+
+/**
+ * Exit-code badge text. Hidden for missing or zero exit codes.
+ * @returns {string | null}
+ */
+export function formatContainerExitLabel(container : {
+    State?: string;
+    Status?: string;
+    ExitCode?: number;
+    exitCode?: number;
+} | null | undefined) : string | null {
+    if (!container) {
+        return null;
+    }
+
+    let code = container.exitCode ?? container.ExitCode;
+    if (typeof code !== "number" || !Number.isFinite(code)) {
+        const fromStatus = container.Status?.match(/Exited\s*\((\d+)\)/i);
+        if (fromStatus) {
+            code = Number.parseInt(fromStatus[1], 10);
+        }
+    }
+
+    if (typeof code !== "number" || !Number.isFinite(code) || code === 0) {
+        return null;
+    }
+
+    return `exit ${code}`;
+}
+
+/**
+ * Docker State.Error text when present (e.g. port bind failure).
+ * @returns {string | null}
+ */
+export function formatContainerError(container : {
+    error?: string;
+    Error?: string;
+} | null | undefined) : string | null {
+    const error = container?.error ?? container?.Error;
+    if (typeof error !== "string") {
+        return null;
+    }
+    const trimmed = error.trim();
+    return trimmed.length > 0 ? trimmed : null;
+}
+
+/**
+ * Exit codes that usually mean an external stop/kill (SIGKILL / SIGTERM).
+ */
+export const EXTERNAL_STOP_EXIT_CODES = new Set([ 137, 143 ]);
+
+/**
+ * True when exit code is clean (0) or an external stop (137/143).
+ */
+export function isCleanOrExternalStopExit(code : unknown) : boolean {
+    return typeof code === "number" && Number.isFinite(code) && (code === 0 || EXTERNAL_STOP_EXIT_CODES.has(code));
+}
+
+/**
+ * Color for the status badge / tree icon. Running is blue; most others gray.
+ * Unhealthy is red. State.Error does not recolor the status badge.
+ * @returns {"primary" | "danger" | "secondary"}
+ */
+export function containerStatusTone(container : {
+    state?: string;
+    health?: string;
+} | null | undefined) : "primary" | "danger" | "secondary" {
+    if (!container) {
+        return "secondary";
+    }
+    if (container.health === "unhealthy") {
+        return "danger";
+    }
+    if (container.state === "running" || container.health === "healthy") {
+        return "primary";
+    }
+    return "secondary";
+}
+
+/**
+ * Color for the separate exit-code badge.
+ * @returns {"stopped" | "danger" | null}
+ */
+export function containerExitTone(container : {
+    exitCode?: number;
+    ExitCode?: number;
+    Status?: string;
+} | null | undefined) : "stopped" | "danger" | null {
+    if (!formatContainerExitLabel(container)) {
+        return null;
+    }
+    const code = container?.exitCode ?? container?.ExitCode;
+    if (typeof code === "number" && EXTERNAL_STOP_EXIT_CODES.has(code)) {
+        return "stopped";
+    }
+    return "danger";
+}
+
 export function stackStatusTitle(stack : { status?: number; composeStatus?: string } | null | undefined) : string {
     switch (stack?.status ?? UNKNOWN) {
         case CREATED_FILE:
@@ -139,6 +270,7 @@ export function stackStatusTitle(stack : { status?: number; composeStatus?: stri
         case RUNNING:
             return "projectStatusActive";
         case EXITED:
+        case STOPPED:
             return "projectStatusStopped";
         case RESTARTING:
             return "projectStatusRestarting";
@@ -179,6 +311,8 @@ export function statusColor(status : number) : string {
             return "warning";
         case RUNNING:
             return "primary";
+        case STOPPED:
+            return "stopped";
         case EXITED:
         case DEAD:
             return "danger";
@@ -442,6 +576,75 @@ export function parseDockerPort(input : string, hostname : string) {
         url: protocol + "://" + hostname + ":" + portInt,
         display: display,
     };
+}
+
+/**
+ * Host-published ports from `docker compose ps` (Publishers / Ports), not compose.yaml.
+ * @returns {{ url: string, display: string }[]}
+ */
+export function containerPublishedPorts(container : {
+    ports?: string;
+    Ports?: string;
+    publishers?: Array<{
+        URL?: string;
+        PublishedPort?: number;
+        Protocol?: string;
+    }>;
+    Publishers?: Array<{
+        URL?: string;
+        PublishedPort?: number;
+        Protocol?: string;
+    }>;
+} | null | undefined, hostname : string) : Array<{ url: string; display: string }> {
+    if (!container) {
+        return [];
+    }
+
+    const publishers = container.publishers ?? container.Publishers ?? [];
+    if (publishers.length > 0) {
+        const seen = new Set<string>();
+        const result: Array<{ url: string; display: string }> = [];
+        for (const publisher of publishers) {
+            const published = publisher.PublishedPort;
+            if (typeof published !== "number" || !Number.isFinite(published) || published <= 0) {
+                continue;
+            }
+            // Prefer IPv4 mappings; skip duplicate IPv6 (::) entries for the same port.
+            if (publisher.URL === "::") {
+                continue;
+            }
+            const key = `${published}/${publisher.Protocol || "tcp"}`;
+            if (seen.has(key)) {
+                continue;
+            }
+            seen.add(key);
+            result.push(parseDockerPort(`${published}/${publisher.Protocol || "tcp"}`, hostname));
+        }
+        if (result.length > 0) {
+            return result;
+        }
+    }
+
+    const portsText = container.ports ?? container.Ports;
+    if (typeof portsText !== "string" || !portsText.trim()) {
+        return [];
+    }
+
+    const seen = new Set<string>();
+    const result: Array<{ url: string; display: string }> = [];
+    for (const part of portsText.split(",")) {
+        const trimmed = part.trim();
+        if (!trimmed || trimmed.includes("[::]")) {
+            continue;
+        }
+        const parsed = parseDockerPort(trimmed, hostname);
+        if (seen.has(parsed.display)) {
+            continue;
+        }
+        seen.add(parsed.display);
+        result.push(parsed);
+    }
+    return result;
 }
 
 export function envsubst(string : string, variables : LooseObject) : string {
