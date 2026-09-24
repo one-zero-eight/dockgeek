@@ -52,10 +52,10 @@ h1, h2, h3, h4, h5, h6 {
     line-height: var(--line-height-tight);
 }
 
-h3 { font-size: 1.75rem; }
-h4 { font-size: 1.5rem; }
-h5 { font-size: 1.25rem; }
-h6 { font-size: 1rem; }
+h3 { font-size: var(--font-size-subsection-title); }
+h4 { font-size: var(--font-size-card-title); }
+h5 { font-size: var(--font-size-body); }
+h6 { font-size: var(--font-size-body-sm); }
 
 html, body, #app {
     min-width: 320px;
@@ -118,8 +118,8 @@ optgroup {
 }
 
 @media (max-width: 550px) {
-    h1 { font-size: 1.7rem; }
-    h2 { font-size: 1.4rem; }
+    h1 { font-size: var(--font-size-section-title); }
+    h2 { font-size: var(--font-size-card-title); }
 }
 
 .dark mark {

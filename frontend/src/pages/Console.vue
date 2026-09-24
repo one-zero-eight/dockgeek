@@ -4,7 +4,7 @@
             <Terminal v-if="enableConsole" class="terminal" :rows="20" mode="mainTerminal" name="console" :endpoint="endpoint"></Terminal>
 
             <div v-else class="console-notice panel-box p-4 border border-warning rounded-md text-foreground bg-card" role="alert">
-                <h4 class="console-notice-heading mb-2 text-card-title">{{ $t("Console is not enabled") }}</h4>
+                <h4 class="console-notice-heading mb-2">{{ $t("Console is not enabled") }}</h4>
                 <i18n-t keypath="ConsoleNotEnabledMSG1" tag="p">
                     <template #docker><code class="bg-muted text-foreground">{{ $t('dockerCode') }}</code></template>
                     <template #rm><code class="bg-muted text-foreground">{{ $t('rmCode') }}</code></template>

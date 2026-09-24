@@ -1,9 +1,9 @@
 <template>
     <div class="stats-container [container-type:inline-size]">
-        <div class="text-foreground text-body-sm">
+        <div class="text-foreground text-sm">
             {{ stat.Name }}
         </div>
-        <div class="stats mt-[.25rem] flex justify-between gap-2 [container-type:inline-size] text-muted-foreground text-meta-sm">
+        <div class="stats mt-[.25rem] flex justify-between gap-2 [container-type:inline-size] text-muted-foreground text-xs">
             <div class="stat flex flex-col gap-[4px]">
                 <div class="stat-label font-semibold">
                     {{ $t('CPU') }}

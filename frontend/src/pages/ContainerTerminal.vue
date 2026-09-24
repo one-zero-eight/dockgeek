@@ -79,7 +79,7 @@ export default {
 }
 
 @media (max-width: 991.98px) {
-    h1 { overflow-wrap: anywhere; font-size: 1.5rem; }
+    h1 { overflow-wrap: anywhere; }
     .terminal { height: calc(100dvh - 250px); min-height: 340px; }
 }
 </style>

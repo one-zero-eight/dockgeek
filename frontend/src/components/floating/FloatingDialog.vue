@@ -20,7 +20,7 @@
                 >
                     <header v-if="hasHeader" class="fd-header flex shrink-0 items-center justify-between gap-4 px-[1.15rem] pt-[1.15rem]">
                         <slot name="header">
-                            <h5 class="fd-title m-0 overflow-hidden text-ellipsis whitespace-nowrap text-foreground text-[1.05rem] font-medium">{{ title }}</h5>
+                            <h5 class="fd-title m-0 overflow-hidden text-ellipsis whitespace-nowrap text-foreground">{{ title }}</h5>
                         </slot>
                         <button v-if="!hideClose" type="button" class="fd-close flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-inherit opacity-70 hover:bg-hover hover:opacity-100 hover:outline-none focus-visible:bg-hover focus-visible:opacity-100 focus-visible:outline-none" :aria-label="$t('close')" @click="cancel">
                             <font-awesome-icon icon="times" />

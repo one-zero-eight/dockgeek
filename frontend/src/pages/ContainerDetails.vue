@@ -5,7 +5,7 @@
             :class="{ 'logs-active': activeTab === 'logs' }"
             :style="containerDetailsStyle"
         >
-            <nav class="detail-breadcrumb mb-[.5rem] flex flex-wrap gap-2 text-muted-foreground text-body-sm" aria-label="breadcrumb">
+            <nav class="detail-breadcrumb mb-[.5rem] flex flex-wrap gap-2 text-muted-foreground text-sm" aria-label="breadcrumb">
                 <router-link :to="stackRoute">{{ stackName }}</router-link>
                 <span>/</span>
                 <span>{{ serviceName || $tc("container", 1) }}</span>
@@ -93,36 +93,36 @@
 
                 <section v-if="activeTab === 'overview'" class="overview-grid grid gap-4">
                     <article class="detail-card panel-box min-w-0 p-5">
-                        <div class="detail-label mb-[0.4rem] text-muted-foreground text-meta-sm font-semibold uppercase">{{ $t("status") }}</div>
-                        <div class="detail-value text-body font-semibold">{{ container.state || container.status }}</div>
+                        <div class="detail-label mb-[0.4rem] text-muted-foreground text-xs font-semibold uppercase">{{ $t("status") }}</div>
+                        <div class="detail-value text-base font-semibold">{{ container.state || container.status }}</div>
                     </article>
                     <article class="detail-card panel-box min-w-0 p-5">
-                        <div class="detail-label mb-[0.4rem] text-muted-foreground text-meta-sm font-semibold uppercase">{{ $t("health") }}</div>
-                        <div class="detail-value text-body font-semibold">{{ container.health || $t("notAvailableShort") }}</div>
+                        <div class="detail-label mb-[0.4rem] text-muted-foreground text-xs font-semibold uppercase">{{ $t("health") }}</div>
+                        <div class="detail-value text-base font-semibold">{{ container.health || $t("notAvailableShort") }}</div>
                     </article>
                     <article class="detail-card panel-box image-card min-w-0 p-5">
-                        <div class="detail-label mb-[0.4rem] text-muted-foreground text-meta-sm font-semibold uppercase">{{ $t("dockerImage") }}</div>
-                        <div class="detail-value text-body font-semibold break-words">{{ container.image || $t("notAvailableShort") }}</div>
+                        <div class="detail-label mb-[0.4rem] text-muted-foreground text-xs font-semibold uppercase">{{ $t("dockerImage") }}</div>
+                        <div class="detail-value text-base font-semibold break-words">{{ container.image || $t("notAvailableShort") }}</div>
                     </article>
                     <article class="detail-card panel-box min-w-0 p-5">
-                        <div class="detail-label mb-[0.4rem] text-muted-foreground text-meta-sm font-semibold uppercase">{{ $tc("port", 2) }}</div>
-                        <div class="detail-value text-body font-semibold break-words">{{ container.ports || $t("notAvailableShort") }}</div>
+                        <div class="detail-label mb-[0.4rem] text-muted-foreground text-xs font-semibold uppercase">{{ $tc("port", 2) }}</div>
+                        <div class="detail-value text-base font-semibold break-words">{{ container.ports || $t("notAvailableShort") }}</div>
                     </article>
                     <article class="detail-card panel-box min-w-0 p-5">
-                        <div class="detail-label mb-[0.4rem] text-muted-foreground text-meta-sm font-semibold uppercase">{{ $t("createdAt") }}</div>
-                        <div class="detail-value text-body font-semibold">{{ container.createdAt || $t("notAvailableShort") }}</div>
+                        <div class="detail-label mb-[0.4rem] text-muted-foreground text-xs font-semibold uppercase">{{ $t("createdAt") }}</div>
+                        <div class="detail-value text-base font-semibold">{{ container.createdAt || $t("notAvailableShort") }}</div>
                     </article>
                     <article class="detail-card panel-box min-w-0 p-5">
-                        <div class="detail-label mb-[0.4rem] text-muted-foreground text-meta-sm font-semibold uppercase">{{ $t("runningFor") }}</div>
-                        <div class="detail-value text-body font-semibold">{{ container.runningFor || $t("notAvailableShort") }}</div>
+                        <div class="detail-label mb-[0.4rem] text-muted-foreground text-xs font-semibold uppercase">{{ $t("runningFor") }}</div>
+                        <div class="detail-value text-base font-semibold">{{ container.runningFor || $t("notAvailableShort") }}</div>
                     </article>
                     <article class="detail-card panel-box min-w-0 p-5">
-                        <div class="detail-label mb-[0.4rem] text-muted-foreground text-meta-sm font-semibold uppercase">{{ $t("CPU") }}</div>
-                        <div class="detail-value text-body font-semibold">{{ containerStats?.CPUPerc || $t("notAvailableShort") }}</div>
+                        <div class="detail-label mb-[0.4rem] text-muted-foreground text-xs font-semibold uppercase">{{ $t("CPU") }}</div>
+                        <div class="detail-value text-base font-semibold">{{ containerStats?.CPUPerc || $t("notAvailableShort") }}</div>
                     </article>
                     <article class="detail-card panel-box min-w-0 p-5">
-                        <div class="detail-label mb-[0.4rem] text-muted-foreground text-meta-sm font-semibold uppercase">{{ $t("memory") }}</div>
-                        <div class="detail-value text-body font-semibold">{{ containerStats?.MemUsage || $t("notAvailableShort") }}</div>
+                        <div class="detail-label mb-[0.4rem] text-muted-foreground text-xs font-semibold uppercase">{{ $t("memory") }}</div>
+                        <div class="detail-value text-base font-semibold">{{ containerStats?.MemUsage || $t("notAvailableShort") }}</div>
                     </article>
                 </section>
 
@@ -390,7 +390,7 @@ export default {
 <style scoped lang="scss">
 .status-badge {
     display: inline-block; padding: 0.35em 0.65em; border-radius: 0.375rem;
-    font-size: var(--font-size-badge); font-weight: var(--font-weight-medium);
+    font-size: var(--font-size-meta-sm); font-weight: var(--font-weight-medium);
     line-height: 1; letter-spacing: 0.01em; color: var(--foreground);
     background: var(--muted);
 }
@@ -408,7 +408,7 @@ export default {
     &:disabled { opacity: 0.65; cursor: not-allowed; }
     &.detail-button-primary { color: var(--primary-foreground); background: var(--primary); border-color: var(--primary); }
 }
-.detail-button-sm { min-height: 31px; padding: 0.25rem 0.5rem; font-size: var(--font-size-control-sm); }
+.detail-button-sm { min-height: 31px; padding: 0.25rem 0.5rem; font-size: var(--font-size-body-sm); }
 
 .container-details-page.logs-active {
     display: flex;

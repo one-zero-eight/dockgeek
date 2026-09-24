@@ -1,10 +1,10 @@
 <template>
-    <div v-if="message" class="text-foreground text-body-sm leading-[1.4]" :class="{ expanded }">
+    <div v-if="message" class="text-foreground text-sm leading-[1.4]" :class="{ expanded }">
         <span class="[overflow-wrap:anywhere]">{{ expanded ? message : preview }}</span>
         <button
             v-if="canExpand"
             type="button"
-            class="ms-[.35rem] inline cursor-pointer select-none border-0 bg-transparent p-0 text-muted-foreground text-meta-sm leading-inherit underline underline-offset-[.12em] focus-visible:rounded-[.2rem] focus-visible:outline-[2px] focus-visible:outline-current focus-visible:outline-offset-[2px]"
+            class="ms-[.35rem] inline cursor-pointer select-none border-0 bg-transparent p-0 text-muted-foreground text-xs leading-inherit underline underline-offset-[.12em] focus-visible:rounded-[.2rem] focus-visible:outline-[2px] focus-visible:outline-current focus-visible:outline-offset-[2px]"
             :aria-expanded="expanded"
             @click="expanded = !expanded"
         >

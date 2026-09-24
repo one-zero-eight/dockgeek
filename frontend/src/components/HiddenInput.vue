@@ -4,7 +4,7 @@
             ref="input"
             v-model="model"
             :type="visibility"
-            class="field-control min-w-0 min-h-[2.375rem] flex-1 rounded-s-[.375rem] border border-border bg-input-surface px-[.75rem] py-[.375rem] text-secondary-foreground text-control read-only:text-muted-foreground max-[575px]:min-h-[44px]"
+            class="field-control min-w-0 min-h-[2.375rem] flex-1 rounded-s-[.375rem] border border-border bg-input-surface px-[.75rem] py-[.375rem] text-secondary-foreground text-base read-only:text-muted-foreground max-[575px]:min-h-[44px]"
             :placeholder="placeholder"
             :maxlength="maxlength"
             :autocomplete="autocomplete"

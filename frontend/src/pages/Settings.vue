@@ -3,8 +3,8 @@
         <div class="settings-shell grid gap-4 min-h-0 items-start">
             <nav v-if="showSubMenu" class="settings-nav flex flex-col gap-1 p-2 rounded-[0.85rem] bg-card" :aria-label="$t('Settings')">
                 <div v-if="$root.isCompact" class="account-block flex items-center gap-3 mb-[0.35rem] py-[0.65rem] px-3 rounded-[0.65rem] bg-hover">
-                    <div class="profile-pic flex flex-none items-center justify-center w-[34px] h-[34px] rounded-full border-0 bg-primary bg-gradient-primary text-primary-foreground text-[0.85rem] font-bold">{{ $root.usernameFirstChar }}</div>
-                    <div class="account-text min-w-0 text-body-sm">
+                    <div class="profile-pic flex flex-none items-center justify-center w-[34px] h-[34px] rounded-full border-0 bg-primary bg-gradient-primary text-primary-foreground text-sm font-bold">{{ $root.usernameFirstChar }}</div>
+                    <div class="account-text min-w-0 text-sm">
                         <i18n-t v-if="$root.username != null" tag="span" keypath="signedInDisp">
                             <strong>{{ $root.username }}</strong>
                         </i18n-t>
@@ -313,7 +313,7 @@ export default {
     :deep(.form-label) {
         margin-bottom: 0.45rem;
         color: var(--foreground);
-        font-size: var(--font-size-label);
+        font-size: var(--font-size-body-sm);
         font-weight: var(--font-weight-semibold);
     }
 

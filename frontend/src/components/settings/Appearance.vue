@@ -4,7 +4,7 @@
             <label for="language" class="mb-2 inline-block text-foreground">
                 {{ $t("Language") }}
             </label>
-            <select id="language" v-model="$root.language" class="block w-full max-w-xs min-h-[2.375rem] max-[575px]:min-h-[44px] rounded-md border border-border bg-input-surface px-3 py-1.5 text-secondary-foreground text-control focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2">
+            <select id="language" v-model="$root.language" class="block w-full max-w-xs min-h-[2.375rem] max-[575px]:min-h-[44px] rounded-md border border-border bg-input-surface px-3 py-1.5 text-secondary-foreground text-base focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2">
                 <option
                     v-for="(lang, i) in $i18n.availableLocales"
                     :key="`Lang${i}`"

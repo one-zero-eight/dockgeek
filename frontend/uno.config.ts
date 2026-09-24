@@ -23,27 +23,7 @@ export default defineConfig({
         font: {
             "app-ui": "var(--font-ui)",
             "app-mono": "var(--font-mono)",
-            mono: "\"JetBrains Mono\", ui-monospace, monospace",
-        },
-        text: {
-            brand: { fontSize: "var(--font-size-brand)" },
-            "page-title": { fontSize: "var(--font-size-page-title)" },
-            "section-title": { fontSize: "var(--font-size-section-title)" },
-            "card-title": { fontSize: "var(--font-size-card-title)" },
-            body: { fontSize: "var(--font-size-body)" },
-            "body-sm": { fontSize: "var(--font-size-body-sm)" },
-            control: { fontSize: "var(--font-size-control)" },
-            "control-sm": { fontSize: "var(--font-size-control-sm)" },
-            label: { fontSize: "var(--font-size-label)" },
-            meta: { fontSize: "var(--font-size-meta)" },
-            "meta-sm": { fontSize: "var(--font-size-meta-sm)" },
-            badge: { fontSize: "var(--font-size-badge)" },
-        },
-        fontWeight: {
-            regular: "var(--font-weight-regular)",
-            medium: "var(--font-weight-medium)",
-            semibold: "var(--font-weight-semibold)",
-            bold: "var(--font-weight-bold)",
+            mono: "var(--font-mono)",
         },
         leading: {
             body: "var(--line-height-body)",

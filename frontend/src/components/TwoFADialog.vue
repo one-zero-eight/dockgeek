@@ -8,15 +8,15 @@
         <template #header>
             <h5 class="fd-title">
                 {{ $t("Setup 2FA") }}
-                <span v-if="twoFAStatus == true" class="inline-block rounded-[.375rem] bg-primary px-[.65em] py-[.35em] align-baseline text-primary-foreground text-[.75em] font-medium leading-none">{{ $t("Active") }}</span>
-                <span v-if="twoFAStatus == false" class="inline-block rounded-[.375rem] bg-primary px-[.65em] py-[.35em] align-baseline text-primary-foreground text-[.75em] font-medium leading-none">{{ $t("Inactive") }}</span>
+                <span v-if="twoFAStatus == true" class="inline-block rounded-[.375rem] bg-primary px-[.65em] py-[.35em] align-baseline text-primary-foreground text-xs font-medium leading-none">{{ $t("Active") }}</span>
+                <span v-if="twoFAStatus == false" class="inline-block rounded-[.375rem] bg-primary px-[.65em] py-[.35em] align-baseline text-primary-foreground text-xs font-medium leading-none">{{ $t("Inactive") }}</span>
             </h5>
         </template>
 
         <div class="mb-[1rem]">
             <div v-if="uri && twoFAStatus == false" class="mx-auto w-[210px] text-center">
                 <vue-qrcode :key="uri" :value="uri" type="image/png" :quality="1" :color="{ light: '#ffffffff' }" />
-                <button v-show="!showURI" type="button" class="two-fa-button inline-flex min-h-[38px] items-center justify-center rounded-[.375rem] border border-transparent bg-secondary px-[.75rem] py-[.375rem] text-secondary-foreground font-inherit [font-size:inherit] leading-[1.5] cursor-pointer disabled:cursor-not-allowed disabled:opacity-65 focus-visible:outline-[2px] focus-visible:outline-ring focus-visible:outline-offset-[2px] two-fa-outline two-fa-small mt-[0.5rem]" @click="showURI = true">{{ $t("Show URI") }}</button>
+                <button v-show="!showURI" type="button" class="two-fa-button inline-flex min-h-[38px] items-center justify-center rounded-[.375rem] border border-transparent bg-secondary px-[.75rem] py-[.375rem] text-secondary-foreground leading-[1.5] cursor-pointer disabled:cursor-not-allowed disabled:opacity-65 focus-visible:outline-[2px] focus-visible:outline-ring focus-visible:outline-offset-[2px] two-fa-outline two-fa-small mt-[0.5rem]" @click="showURI = true">{{ $t("Show URI") }}</button>
             </div>
             <p v-if="showURI && twoFAStatus == false" class="break-words mt-[0.5rem]">{{ uri }}</p>
 
@@ -28,32 +28,32 @@
                     id="current-password"
                     v-model="currentPassword"
                     type="password"
-                    class="two-fa-input block w-full min-h-[38px] rounded-[.375rem] border border-border bg-input-surface px-[.75rem] py-[.375rem] text-foreground font-inherit [font-size:inherit] leading-[1.5] focus:border-primary focus:outline-[2px] focus:outline-ring focus:outline-offset-[1px]"
+                    class="two-fa-input block w-full min-h-[38px] rounded-[.375rem] border border-border bg-input-surface px-[.75rem] py-[.375rem] text-foreground leading-[1.5] focus:border-primary focus:outline-[2px] focus:outline-ring focus:outline-offset-[1px]"
                     autocomplete="current-password"
                     required
                 />
             </div>
 
-            <button v-if="uri == null && twoFAStatus == false" class="two-fa-button inline-flex min-h-[38px] items-center justify-center rounded-[.375rem] border border-transparent bg-secondary px-[.75rem] py-[.375rem] text-secondary-foreground font-inherit [font-size:inherit] leading-[1.5] cursor-pointer disabled:cursor-not-allowed disabled:opacity-65 focus-visible:outline-[2px] focus-visible:outline-ring focus-visible:outline-offset-[2px] two-fa-primary" type="button" @click="prepare2FA()">
+            <button v-if="uri == null && twoFAStatus == false" class="two-fa-button inline-flex min-h-[38px] items-center justify-center rounded-[.375rem] border border-transparent bg-secondary px-[.75rem] py-[.375rem] text-secondary-foreground leading-[1.5] cursor-pointer disabled:cursor-not-allowed disabled:opacity-65 focus-visible:outline-[2px] focus-visible:outline-ring focus-visible:outline-offset-[2px] two-fa-primary" type="button" @click="prepare2FA()">
                 {{ $t("Enable 2FA") }}
             </button>
 
-            <button v-if="twoFAStatus == true" class="two-fa-button inline-flex min-h-[38px] items-center justify-center rounded-[.375rem] border border-transparent bg-secondary px-[.75rem] py-[.375rem] text-secondary-foreground font-inherit [font-size:inherit] leading-[1.5] cursor-pointer disabled:cursor-not-allowed disabled:opacity-65 focus-visible:outline-[2px] focus-visible:outline-ring focus-visible:outline-offset-[2px] two-fa-danger" type="button" :disabled="processing" @click="confirmDisableTwoFA()">
+            <button v-if="twoFAStatus == true" class="two-fa-button inline-flex min-h-[38px] items-center justify-center rounded-[.375rem] border border-transparent bg-secondary px-[.75rem] py-[.375rem] text-secondary-foreground leading-[1.5] cursor-pointer disabled:cursor-not-allowed disabled:opacity-65 focus-visible:outline-[2px] focus-visible:outline-ring focus-visible:outline-offset-[2px] two-fa-danger" type="button" :disabled="processing" @click="confirmDisableTwoFA()">
                 {{ $t("Disable 2FA") }}
             </button>
 
             <div v-if="uri && twoFAStatus == false" class="mt-[1rem]">
                 <label for="two-fa-token" class="mb-[.5rem] inline-block text-foreground">{{ $t("twoFAVerifyLabel") }}</label>
                 <div class="two-fa-token-group flex w-full">
-                    <input id="two-fa-token" v-model="token" type="text" maxlength="6" class="two-fa-input block w-full min-h-[38px] rounded-[.375rem] border border-border bg-input-surface px-[.75rem] py-[.375rem] text-foreground font-inherit [font-size:inherit] leading-[1.5] focus:border-primary focus:outline-[2px] focus:outline-ring focus:outline-offset-[1px]" autocomplete="one-time-code" required>
-                    <button class="two-fa-button inline-flex min-h-[38px] items-center justify-center rounded-[.375rem] border border-transparent bg-secondary px-[.75rem] py-[.375rem] text-secondary-foreground font-inherit [font-size:inherit] leading-[1.5] cursor-pointer disabled:cursor-not-allowed disabled:opacity-65 focus-visible:outline-[2px] focus-visible:outline-ring focus-visible:outline-offset-[2px] two-fa-outline" type="button" @click="verifyToken()">{{ $t("Verify Token") }}</button>
+                    <input id="two-fa-token" v-model="token" type="text" maxlength="6" class="two-fa-input block w-full min-h-[38px] rounded-[.375rem] border border-border bg-input-surface px-[.75rem] py-[.375rem] text-foreground leading-[1.5] focus:border-primary focus:outline-[2px] focus:outline-ring focus:outline-offset-[1px]" autocomplete="one-time-code" required>
+                    <button class="two-fa-button inline-flex min-h-[38px] items-center justify-center rounded-[.375rem] border border-transparent bg-secondary px-[.75rem] py-[.375rem] text-secondary-foreground leading-[1.5] cursor-pointer disabled:cursor-not-allowed disabled:opacity-65 focus-visible:outline-[2px] focus-visible:outline-ring focus-visible:outline-offset-[2px] two-fa-outline" type="button" @click="verifyToken()">{{ $t("Verify Token") }}</button>
                 </div>
                 <p v-show="tokenValid" class="mt-[0.5rem]" style="color: green;">{{ $t("tokenValidSettingsMsg") }}</p>
             </div>
         </div>
 
         <template #footer>
-            <button type="button" class="two-fa-button inline-flex min-h-[38px] items-center justify-center rounded-[.375rem] border border-transparent bg-secondary px-[.75rem] py-[.375rem] text-secondary-foreground font-inherit [font-size:inherit] leading-[1.5] cursor-pointer disabled:cursor-not-allowed disabled:opacity-65 focus-visible:outline-[2px] focus-visible:outline-ring focus-visible:outline-offset-[2px] two-fa-primary" :disabled="processing || tokenValid == false" @click="confirmEnableTwoFA()">
+            <button type="button" class="two-fa-button inline-flex min-h-[38px] items-center justify-center rounded-[.375rem] border border-transparent bg-secondary px-[.75rem] py-[.375rem] text-secondary-foreground leading-[1.5] cursor-pointer disabled:cursor-not-allowed disabled:opacity-65 focus-visible:outline-[2px] focus-visible:outline-ring focus-visible:outline-offset-[2px] two-fa-primary" :disabled="processing || tokenValid == false" @click="confirmEnableTwoFA()">
                 <div v-if="processing" class="two-fa-spinner me-[0.25rem] inline-block h-[1rem] w-[1rem] rounded-full border-[.2em] border-current border-r-transparent align-[-.125em]"></div>
                 {{ $t("Save") }}
             </button>
@@ -231,7 +231,7 @@ export default {
         min-height: 30px;
         padding: 0.25rem 0.5rem;
         border-radius: 25px;
-        font-size: var(--font-size-control-sm);
+        font-size: var(--font-size-body-sm);
     }
 
 }

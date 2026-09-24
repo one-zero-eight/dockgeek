@@ -4,7 +4,7 @@
             <form @submit.prevent="submit">
                 <div>
                     <img width="64" height="64" src="/icon.svg" alt="" />
-                    <div class="text-[28px] font-bold mt-[5px]">
+                    <div class="text-2xl font-bold mt-[5px]">
                         Dockge
                     </div>
                 </div>
@@ -109,7 +109,7 @@ export default {
         top: 0.35rem;
         left: 1.3rem;
         color: var(--muted-foreground);
-        font-size: var(--font-size-meta);
+        font-size: var(--font-size-body-sm);
         pointer-events: none;
     }
 }
@@ -123,7 +123,7 @@ export default {
     border-radius: 0.375rem;
     background: var(--input-surface);
     color: var(--secondary-foreground);
-    font-size: var(--font-size-control);
+    font-size: var(--font-size-body);
 
     &::placeholder {
         color: transparent;
@@ -146,7 +146,7 @@ export default {
     border-radius: 0.375rem;
     background: var(--primary);
     color: var(--primary-foreground);
-    font-size: var(--font-size-control);
+    font-size: var(--font-size-body);
     cursor: pointer;
 
     &:hover:not(:disabled) {

@@ -6,7 +6,7 @@
                 <label for="timezone" class="mb-2 inline-block text-foreground">
                     {{ $t("Display Timezone") }}
                 </label>
-                <select id="timezone" v-model="$root.userTimezone" class="block w-full min-w-0 min-h-[2.375rem] max-[575px]:min-h-[44px] rounded-md border border-border bg-input-surface px-3 py-1.5 text-secondary-foreground text-control focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2">
+                <select id="timezone" v-model="$root.userTimezone" class="block w-full min-w-0 min-h-[2.375rem] max-[575px]:min-h-[44px] rounded-md border border-border bg-input-surface px-3 py-1.5 text-secondary-foreground text-base focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2">
                     <option value="auto">
                         {{ $t("Auto") }}: {{ guessTimezone }}
                     </option>
@@ -25,7 +25,7 @@
                 <label for="timezone" class="mb-2 inline-block text-foreground">
                     {{ $t("Server Timezone") }}
                 </label>
-                <select id="timezone" v-model="settings.serverTimezone" class="block w-full min-w-0 min-h-[2.375rem] max-[575px]:min-h-[44px] rounded-md border border-border bg-input-surface px-3 py-1.5 text-secondary-foreground text-control focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2">
+                <select id="timezone" v-model="settings.serverTimezone" class="block w-full min-w-0 min-h-[2.375rem] max-[575px]:min-h-[44px] rounded-md border border-border bg-input-surface px-3 py-1.5 text-secondary-foreground text-base focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2">
                     <option value="UTC">UTC</option>
                     <option
                         v-for="(timezone, index) in timezoneList"
@@ -47,7 +47,7 @@
                     <input
                         id="primaryBaseURL"
                         v-model="settings.primaryHostname"
-                        class="min-w-0 min-h-[2.375rem] max-[575px]:min-h-[44px] w-full flex-1 rounded-l-md border border-border bg-input-surface px-3 py-1.5 text-secondary-foreground text-control focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+                        class="min-w-0 min-h-[2.375rem] max-[575px]:min-h-[44px] w-full flex-1 rounded-l-md border border-border bg-input-surface px-3 py-1.5 text-secondary-foreground text-base focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
                         :placeholder="$t(`CurrentHostname`)"
                     />
                     <button class="min-h-[2.375rem] max-[575px]:min-h-[44px] shrink-0 rounded-r-md border border-primary bg-transparent px-5 py-1.5 text-link cursor-pointer hover:bg-primary-hover hover:text-primary-foreground focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2" type="button" @click="autoGetPrimaryHostname">

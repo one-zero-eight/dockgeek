@@ -20,7 +20,7 @@
                         <span class="floating-tooltip-detail">{{ projectStatus.detail }}</span>
                     </FloatingTooltip> <span>{{ stack.name }}</span>
                     <span class="stack-label opacity-50 select-none">{{ $t("project") }}</span>
-                    <span v-if="$root.agentCount > 1 && endpoint !== ''" class="agent-name text-muted-foreground text-meta">
+                    <span v-if="$root.agentCount > 1 && endpoint !== ''" class="agent-name text-muted-foreground text-sm">
                         ({{ endpointDisplay }})
                     </span>
                 </h1>
@@ -39,7 +39,7 @@
             <!-- URLs -->
             <div v-if="urls.length > 0" class="mb-[1rem]">
                 <a v-for="(urlItem, index) in urls" :key="index" target="_blank" :href="urlItem.url">
-                    <span class="url-badge me-[.5rem] inline-block px-[0.65em] py-[0.35em] rounded-md bg-muted text-foreground text-badge font-medium leading-none">{{ urlItem.display }}</span>
+                    <span class="url-badge me-[.5rem] inline-block px-[0.65em] py-[0.35em] rounded-md bg-muted text-foreground text-xs font-medium leading-none">{{ urlItem.display }}</span>
                 </a>
             </div>
 
@@ -104,7 +104,7 @@
                         @blur="finalizeStackFolderName"
                     >
                 </div>
-                <div class="stack-name-help mt-1 text-muted-foreground text-meta">{{ $t("stackFolderHint") }}</div>
+                <div class="stack-name-help mt-1 text-muted-foreground text-sm">{{ $t("stackFolderHint") }}</div>
             </div>
 
             <div v-if="stack.isManagedByDockge" class="stack-content -mx-3 flex flex-wrap">
@@ -229,7 +229,7 @@
             >
                 <p class="mb-[.5rem]">{{ $t(actionConfirm.message, { name: stack.name }) }}</p>
                 <div v-if="actionConfirm.commands?.length" class="mt-3">
-                    <pre class="m-0 overflow-x-auto rounded-[0.35rem] bg-background px-3 py-[0.65rem]"><code v-for="(cmd, i) in actionConfirm.commands" :key="i" class="mt-[0.15rem] first:mt-0 block rounded-none bg-transparent p-0 font-app-mono text-[0.8rem] leading-[1.45] whitespace-pre text-foreground"><span class="text-[#1a7f37] [.dark_&]:text-[#7ee787]">$</span> {{ cmd }}</code></pre>
+                    <pre class="m-0 overflow-x-auto rounded-[0.35rem] bg-background px-3 py-[0.65rem]"><code v-for="(cmd, i) in actionConfirm.commands" :key="i" class="mt-[0.15rem] first:mt-0 block rounded-none bg-transparent p-0 font-app-mono text-sm leading-[1.45] whitespace-pre text-foreground"><span class="text-[#1a7f37] [.dark_&]:text-[#7ee787]">$</span> {{ cmd }}</code></pre>
                 </div>
             </FloatingDialog>
 
@@ -1238,7 +1238,7 @@ export default {
 .stack-name-input {
     display: block; width: 100%; min-height: 38px; padding: 0.375rem 0.75rem;
     border: 1px solid var(--border); border-radius: 0.375rem;
-    color: var(--foreground); background: var(--input-surface); font-size: var(--font-size-control);
+    color: var(--foreground); background: var(--input-surface); font-size: var(--font-size-body);
     &:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
 }
 .project-status-dot.tone-primary { background: var(--primary) !important; }
@@ -1261,7 +1261,7 @@ export default {
         &:hover:not(:disabled) { background: var(--gradient-primary-active); }
     }
 }
-.compose-button-sm { min-height: 31px; padding: 0.25rem 0.5rem; font-size: var(--font-size-control-sm); }
+.compose-button-sm { min-height: 31px; padding: 0.25rem 0.5rem; font-size: var(--font-size-body-sm); }
 
 .progress-terminal {
     height: 288px;
@@ -1283,7 +1283,7 @@ export default {
         background-color: var(--background);
         color: var(--muted-foreground);
         font-family: var(--font-mono);
-        font-size: 0.8rem;
+        font-size: var(--font-size-body-sm);
         line-height: 1.45;
         text-align: start;
         cursor: pointer;
@@ -1377,7 +1377,7 @@ export default {
     margin-right: auto;
     color: var(--muted-foreground);
     font-family: inherit;
-    font-size: var(--font-size-meta);
+    font-size: var(--font-size-body-sm);
     font-weight: var(--font-weight-medium);
     letter-spacing: 0.01em;
     text-overflow: ellipsis;
@@ -1397,7 +1397,7 @@ export default {
     background: transparent;
     color: var(--muted-foreground);
     font-family: inherit;
-    font-size: var(--font-size-meta);
+    font-size: var(--font-size-body-sm);
     font-weight: var(--font-weight-medium);
     line-height: 1;
     white-space: nowrap;
@@ -1476,7 +1476,7 @@ export default {
     border-top: 1px solid var(--border);
     // Break out of `.editor-box` monospace so buttons match ActionGroup.
     font-family: var(--font-ui);
-    font-size: var(--font-size-control);
+    font-size: var(--font-size-body);
     font-weight: var(--font-weight-regular);
 
     .editor-format-btn {
@@ -1704,7 +1704,7 @@ export default {
             border: 1px solid transparent !important;
             border-radius: 4px;
             color: var(--terminal-muted) !important;
-            font-size: 0.7rem;
+            font-size: var(--font-size-meta-sm);
             font-weight: var(--font-weight-medium);
             line-height: 1;
             background: transparent !important;
@@ -1792,7 +1792,7 @@ export default {
         padding: 0.55rem 0.7rem;
         border-radius: 8px;
         font-family: var(--font-mono);
-        font-size: 0.8rem;
+        font-size: var(--font-size-body-sm);
         line-height: 1.35;
         white-space: normal;
         overflow-wrap: anywhere;
@@ -1815,7 +1815,7 @@ export default {
     .stack-path-option-agent {
         color: var(--muted-foreground);
         font-family: inherit;
-        font-size: 0.75rem;
+        font-size: var(--font-size-meta-sm);
     }
 
     .stack-path-option.active {

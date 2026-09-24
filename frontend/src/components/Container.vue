@@ -1,12 +1,12 @@
 <template>
-    <div :id="'service-' + encodeURIComponent(name)" class="panel-box mb-[1rem] service-card w-full px-[.75rem] pt-[.55rem] pb-[1.25rem] text-foreground text-body">
+    <div :id="'service-' + encodeURIComponent(name)" class="panel-box mb-[1rem] service-card w-full px-[.75rem] pt-[.55rem] pb-[1.25rem] text-foreground text-base">
         <div class="flex min-h-[28px] flex-nowrap items-center justify-between gap-[.75rem] mb-[.1rem]">
             <h4 class="title-text m-0 min-w-0 flex-[1_1_auto] leading-tight">
                 <router-link v-if="serviceStatus.length > 0" class="title-link rounded-[.2rem] text-foreground no-underline [overflow-wrap:anywhere] transition-colors duration-150 hover:text-link focus-visible:text-link focus-visible:outline-[2px] focus-visible:outline-current focus-visible:outline-offset-[3px]" :to="containerDetailsRoute(serviceStatus[0])">
                     <span>{{ name }}</span>
                 </router-link>
                 <span v-else>{{ name }}</span>
-                <span class="entity-label ms-[.1rem] select-none text-muted-foreground text-[.75rem] font-regular lowercase">{{ $t("service") }}</span>
+                <span class="entity-label ms-[.1rem] select-none text-muted-foreground text-xs font-normal lowercase">{{ $t("service") }}</span>
             </h4>
             <ActionGroup
                 class="flex-[1_1_140px] min-w-[38px] max-w-[65%] justify-end"
@@ -21,63 +21,63 @@
             <router-link class="title-link rounded-[.2rem] text-foreground no-underline [overflow-wrap:anywhere] transition-colors duration-150 hover:text-link focus-visible:text-link focus-visible:outline-[2px] focus-visible:outline-current focus-visible:outline-offset-[3px]" :to="containerDetailsRoute(singleContainer)">
                 <span>{{ singleContainer.name }}</span>
             </router-link>
-            <span class="entity-label ms-[.1rem] select-none text-muted-foreground text-[.75rem] font-regular lowercase">{{ $tc("container", 1) }}</span>
+            <span class="entity-label ms-[.1rem] select-none text-muted-foreground text-xs font-normal lowercase">{{ $tc("container", 1) }}</span>
         </div>
 
-        <div v-if="imageDisplay" class="mb-[.5rem] flex flex-wrap items-baseline gap-x-[.1rem] gap-y-[.25rem] break-all text-foreground text-body-sm">
+        <div v-if="imageDisplay" class="mb-[.5rem] flex flex-wrap items-baseline gap-x-[.1rem] gap-y-[.25rem] break-all text-foreground text-sm">
             <a v-if="imageUrl" class="tag text-inherit no-underline hover:text-link focus-visible:text-link" :href="imageUrl" :title="imageDisplay" target="_blank" rel="noopener noreferrer">{{ imageDisplay }}</a>
             <span v-else class="tag" :title="imageDisplay">{{ imageDisplay }}</span>
-            <span class="entity-label select-none text-muted-foreground text-[.75rem] font-regular lowercase">{{ $t("image") }}</span>
+            <span class="entity-label select-none text-muted-foreground text-xs font-normal lowercase">{{ $t("image") }}</span>
         </div>
         <div v-if="singleContainer" class="flex flex-wrap items-center gap-x-[.375rem] gap-y-[.35rem]">
             <FloatingTooltip v-if="statusDetail" placement="top">
                 <template #trigger="{ triggerAttrs }">
-                    <span v-bind="triggerAttrs" class="status-badge inline-block rounded-[.375rem] bg-muted px-[.65em] py-[.35em] text-foreground text-badge font-medium leading-none tracking-[.01em]" :class="bgStyle">{{ status }}</span>
+                    <span v-bind="triggerAttrs" class="status-badge inline-block rounded-[.375rem] bg-muted px-[.65em] py-[.35em] text-foreground text-xs font-medium leading-none tracking-[.01em]" :class="bgStyle">{{ status }}</span>
                 </template>
                 <span class="floating-tooltip-detail">{{ statusDetail }}</span>
             </FloatingTooltip>
-            <span v-else class="status-badge inline-block rounded-[.375rem] bg-muted px-[.65em] py-[.35em] text-foreground text-badge font-medium leading-none tracking-[.01em]" :class="bgStyle">{{ status }}</span>
-            <span v-if="exitLabel" class="status-badge inline-block rounded-[.375rem] bg-muted px-[.65em] py-[.35em] text-foreground text-badge font-medium leading-none tracking-[.01em]" :class="exitBadgeClass">{{ exitLabel }}</span>
+            <span v-else class="status-badge inline-block rounded-[.375rem] bg-muted px-[.65em] py-[.35em] text-foreground text-xs font-medium leading-none tracking-[.01em]" :class="bgStyle">{{ status }}</span>
+            <span v-if="exitLabel" class="status-badge inline-block rounded-[.375rem] bg-muted px-[.65em] py-[.35em] text-foreground text-xs font-medium leading-none tracking-[.01em]" :class="exitBadgeClass">{{ exitLabel }}</span>
             <a v-for="port in singleContainerPorts" :key="port.display" class="port-link no-underline" :href="port.url" target="_blank">
-                <span class="status-badge inline-block rounded-[.375rem] bg-muted px-[.65em] py-[.35em] text-foreground text-badge font-medium leading-none tracking-[.01em] tone-secondary">{{ port.display }} {{ $tc("port", 1).toLowerCase() }}</span>
+                <span class="status-badge inline-block rounded-[.375rem] bg-muted px-[.65em] py-[.35em] text-foreground text-xs font-medium leading-none tracking-[.01em] tone-secondary">{{ port.display }} {{ $tc("port", 1).toLowerCase() }}</span>
             </a>
             <template v-if="dockerStats[singleContainer.name]">
-                <span class="text-muted-foreground text-[.8rem]">{{ $t("CPU") }}: {{ dockerStats[singleContainer.name].CPUPerc }}</span>
-                <span class="text-muted-foreground text-[.8rem]">{{ $t("memoryAbbreviated") }}: {{ dockerStats[singleContainer.name].MemUsage }}</span>
+                <span class="text-muted-foreground text-sm">{{ $t("CPU") }}: {{ dockerStats[singleContainer.name].CPUPerc }}</span>
+                <span class="text-muted-foreground text-sm">{{ $t("memoryAbbreviated") }}: {{ dockerStats[singleContainer.name].MemUsage }}</span>
             </template>
         </div>
         <div v-else-if="serviceStatus.length === 0" class="flex flex-wrap items-center gap-x-[.375rem] gap-y-[.35rem]">
-            <span class="status-badge inline-block rounded-[.375rem] bg-muted px-[.65em] py-[.35em] text-foreground text-badge font-medium leading-none tracking-[.01em] tone-secondary">{{ status }}</span>
+            <span class="status-badge inline-block rounded-[.375rem] bg-muted px-[.65em] py-[.35em] text-foreground text-xs font-medium leading-none tracking-[.01em] tone-secondary">{{ status }}</span>
         </div>
         <ContainerError v-if="singleContainer && errorLabel" class="mt-[.5rem]" :message="errorLabel" />
 
         <div v-if="serviceStatus.length > 1" class="mt-[1rem] ps-[1rem]">
             <div v-for="instance in serviceStatus" :key="instance.name" class="instance-row">
                 <div class="flex min-h-[28px] flex-nowrap items-center justify-between gap-[.75rem] mb-[.25rem]">
-                    <div class="instance-name title-text relative m-0 min-w-0 flex-[1_1_auto] leading-tight text-foreground text-body-sm">
+                    <div class="instance-name title-text relative m-0 min-w-0 flex-[1_1_auto] leading-tight text-foreground text-sm">
                         <span class="instance-branch" aria-hidden="true">↳</span>
                         <router-link class="title-link rounded-[.2rem] text-foreground no-underline [overflow-wrap:anywhere] transition-colors duration-150 hover:text-link focus-visible:text-link focus-visible:outline-[2px] focus-visible:outline-current focus-visible:outline-offset-[3px]" :to="containerDetailsRoute(instance)">
                             <span>{{ instance.name }}</span>
                         </router-link>
-                        <span class="entity-label ms-[.1rem] select-none text-muted-foreground text-[.75rem] font-regular lowercase">{{ $tc("container", 1) }}</span>
+                        <span class="entity-label ms-[.1rem] select-none text-muted-foreground text-xs font-normal lowercase">{{ $tc("container", 1) }}</span>
                     </div>
                 </div>
                 <div class="mt-[.25rem] flex flex-wrap items-center gap-x-[.375rem] gap-y-[.35rem]">
                     <FloatingTooltip v-if="instanceStatusDetail(instance)" placement="top">
                         <template #trigger="{ triggerAttrs }">
-                            <span v-bind="triggerAttrs" class="status-badge inline-block rounded-[.375rem] bg-muted px-[.65em] py-[.35em] text-foreground text-badge font-medium leading-none tracking-[.01em]" :class="instanceStatusClass(instance)">{{ instance.status }}</span>
+                            <span v-bind="triggerAttrs" class="status-badge inline-block rounded-[.375rem] bg-muted px-[.65em] py-[.35em] text-foreground text-xs font-medium leading-none tracking-[.01em]" :class="instanceStatusClass(instance)">{{ instance.status }}</span>
                         </template>
                         <span class="floating-tooltip-detail">{{ instanceStatusDetail(instance) }}</span>
                     </FloatingTooltip>
-                    <span v-else class="status-badge inline-block rounded-[.375rem] bg-muted px-[.65em] py-[.35em] text-foreground text-badge font-medium leading-none tracking-[.01em]" :class="instanceStatusClass(instance)">{{ instance.status }}</span>
-                    <span v-if="instanceExitLabel(instance)" class="status-badge inline-block rounded-[.375rem] bg-muted px-[.65em] py-[.35em] text-foreground text-badge font-medium leading-none tracking-[.01em]" :class="instanceExitClass(instance)">{{ instanceExitLabel(instance) }}</span>
+                    <span v-else class="status-badge inline-block rounded-[.375rem] bg-muted px-[.65em] py-[.35em] text-foreground text-xs font-medium leading-none tracking-[.01em]" :class="instanceStatusClass(instance)">{{ instance.status }}</span>
+                    <span v-if="instanceExitLabel(instance)" class="status-badge inline-block rounded-[.375rem] bg-muted px-[.65em] py-[.35em] text-foreground text-xs font-medium leading-none tracking-[.01em]" :class="instanceExitClass(instance)">{{ instanceExitLabel(instance) }}</span>
                     <a v-for="port in instancePorts(instance)" :key="port.display" class="port-link no-underline" :href="port.url" target="_blank">
-                        <span class="status-badge inline-block rounded-[.375rem] bg-muted px-[.65em] py-[.35em] text-foreground text-badge font-medium leading-none tracking-[.01em] tone-secondary">{{ port.display }} {{ $tc("port", 1).toLowerCase() }}</span>
+                        <span class="status-badge inline-block rounded-[.375rem] bg-muted px-[.65em] py-[.35em] text-foreground text-xs font-medium leading-none tracking-[.01em] tone-secondary">{{ port.display }} {{ $tc("port", 1).toLowerCase() }}</span>
                     </a>
-                    <span v-if="dockerStats[instance.name]" class="text-muted-foreground text-[.8rem]">
+                    <span v-if="dockerStats[instance.name]" class="text-muted-foreground text-sm">
                         {{ $t("CPU") }}: {{ dockerStats[instance.name].CPUPerc }}
                     </span>
-                    <span v-if="dockerStats[instance.name]" class="text-muted-foreground text-[.8rem]">
+                    <span v-if="dockerStats[instance.name]" class="text-muted-foreground text-sm">
                         {{ $t("memoryAbbreviated") }}: {{ dockerStats[instance.name].MemUsage }}
                     </span>
                 </div>
@@ -98,7 +98,7 @@
         >
             <p class="mb-[.5rem]">{{ $t(actionConfirm.message, { name }) }}</p>
             <div v-if="actionConfirm.commands?.length" class="mt-3">
-                <pre class="m-0 overflow-x-auto rounded-[0.35rem] bg-background px-3 py-[0.65rem]"><code v-for="(cmd, i) in actionConfirm.commands" :key="i" class="mt-[0.15rem] first:mt-0 block rounded-none bg-transparent p-0 font-app-mono text-[0.8rem] leading-[1.45] whitespace-pre text-foreground"><span class="text-[#1a7f37] [.dark_&]:text-[#7ee787]">$</span> {{ cmd }}</code></pre>
+                <pre class="m-0 overflow-x-auto rounded-[0.35rem] bg-background px-3 py-[0.65rem]"><code v-for="(cmd, i) in actionConfirm.commands" :key="i" class="mt-[0.15rem] first:mt-0 block rounded-none bg-transparent p-0 font-app-mono text-sm leading-[1.45] whitespace-pre text-foreground"><span class="text-[#1a7f37] [.dark_&]:text-[#7ee787]">$</span> {{ cmd }}</code></pre>
             </div>
         </FloatingDialog>
     </div>
@@ -449,10 +449,6 @@ export default defineComponent({
 .tone-stopped { color: var(--primary-foreground); background: var(--warning); }
 .tone-secondary { color: var(--foreground); background: var(--muted); }
 .service-card {
-    h4.title-text {
-        font-size: var(--font-size-card-title);
-    }
-
     .tag {
         opacity: 1;
     }
@@ -468,7 +464,7 @@ export default defineComponent({
     .entity-label { font-family: var(--font-ui); }
 
     h4 .entity-label {
-        font-size: 0.875rem;
+        font-size: var(--font-size-body-sm);
     }
 
     .container-subtitle {
@@ -479,7 +475,7 @@ export default defineComponent({
         font-size: var(--font-size-body-sm);
 
         .entity-label {
-            font-size: 0.75rem;
+            font-size: var(--font-size-meta-sm);
         }
     }
 

@@ -18,7 +18,7 @@
                         <font-awesome-icon icon="times" />
                     </a>
                     <form>
-                        <input v-model="searchText" class="search-input h-[38px] w-full rounded-[10px] border border-border bg-input-surface px-[.75rem] py-[.375rem] ps-[2.25rem] text-foreground font-inherit focus-visible:outline-[2px] focus-visible:outline-ring focus-visible:outline-offset-[1px]" autocomplete="off" />
+                        <input v-model="searchText" class="search-input h-[38px] w-full rounded-[10px] border border-border bg-input-surface px-[.75rem] py-[.375rem] ps-[2.25rem] text-foreground focus-visible:outline-[2px] focus-visible:outline-ring focus-visible:outline-offset-[1px]" autocomplete="off" />
                     </form>
                 </div>
             </div>
@@ -52,7 +52,7 @@
             </div>
             <div v-for="(agent, agentIndex) in agentStackList" :key="agentIndex" class="stack-list-inner">
                 <div
-                    v-if="$root.agentCount > 1" class="agent-select flex cursor-pointer select-none items-center text-muted-foreground text-body-sm font-medium px-[10px] py-[.5rem]"
+                    v-if="$root.agentCount > 1" class="agent-select flex cursor-pointer select-none items-center text-muted-foreground text-sm font-medium px-[10px] py-[.5rem]"
                     @click="closedAgents.set(agent.endpoint, !closedAgents.get(agent.endpoint))"
                 >
                     <span class="me-[.25rem]">
@@ -63,7 +63,7 @@
                     <span v-else>{{ agent.endpoint }}</span>
                 </div>
                 <div v-show="$root.agentCount === 1 || !closedAgents.get(agent.endpoint)">
-                    <div v-if="$root.stacksDirectoryPaths[agent.endpoint]" class="directory-heading flex min-h-[34px] items-center gap-[8px] px-[6px] py-[3px] text-foreground text-body font-regular">
+                    <div v-if="$root.stacksDirectoryPaths[agent.endpoint]" class="directory-heading flex min-h-[34px] items-center gap-[8px] px-[6px] py-[3px] text-foreground text-base font-normal">
                         <font-awesome-icon icon="folder-open" />
                         <span :title="$root.stacksDirectoryPaths[agent.endpoint]"><bdi dir="ltr">{{ $root.stacksDirectoryPaths[agent.endpoint] }}</bdi></span>
                     </div>

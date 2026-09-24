@@ -2,7 +2,7 @@
     <div>
         <div v-if="settingsLoaded" class="my-[1.5rem] first:mt-0">
             <form class="my-[1.5rem] first:mt-0" autocomplete="off" @submit.prevent="saveGeneral">
-                <div class="panel-box editor-box edit-mode mb-4 font-app-mono text-body-sm">
+                <div class="panel-box editor-box edit-mode mb-4 font-app-mono text-sm">
                     <code-mirror
                         ref="editor"
                         v-model="settings.globalENV"

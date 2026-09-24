@@ -9,7 +9,7 @@
                     <button
                         v-if="!settings.disableAuth"
                         id="logout-btn"
-                        class="inline-flex items-center gap-2 rounded-md border-0 bg-transparent px-2 py-1 text-destructive text-control-sm font-medium cursor-pointer hover:bg-hover focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+                        class="inline-flex items-center gap-2 rounded-md border-0 bg-transparent px-2 py-1 text-destructive text-sm font-medium cursor-pointer hover:bg-hover focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
                         type="button"
                         @click="$root.logout"
                     >
@@ -26,7 +26,7 @@
                     aria-controls="change-password-panel"
                     @click="changePasswordOpen = !changePasswordOpen"
                 >
-                    <span class="m-0 text-body font-semibold group-hover:text-link">{{ $t("Change Password") }}</span>
+                    <span class="m-0 text-base font-semibold group-hover:text-link">{{ $t("Change Password") }}</span>
                     <font-awesome-icon icon="chevron-down" class="chevron shrink-0 text-muted-foreground text-[0.7rem] transition-[transform,color] duration-150 group-hover:text-inherit" />
                 </button>
 
@@ -40,7 +40,7 @@
                                 id="current-password"
                                 v-model="password.currentPassword"
                                 type="password"
-                                class="block w-full min-h-[2.375rem] max-[575px]:min-h-[44px] rounded-md border border-border bg-input-surface px-3 py-1.5 text-secondary-foreground text-control focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+                                class="block w-full min-h-[2.375rem] max-[575px]:min-h-[44px] rounded-md border border-border bg-input-surface px-3 py-1.5 text-secondary-foreground text-base focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
                                 autocomplete="current-password"
                                 required
                             />
@@ -54,7 +54,7 @@
                                 id="new-password"
                                 v-model="password.newPassword"
                                 type="password"
-                                class="block w-full min-h-[2.375rem] max-[575px]:min-h-[44px] rounded-md border border-border bg-input-surface px-3 py-1.5 text-secondary-foreground text-control focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+                                class="block w-full min-h-[2.375rem] max-[575px]:min-h-[44px] rounded-md border border-border bg-input-surface px-3 py-1.5 text-secondary-foreground text-base focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
                                 autocomplete="new-password"
                                 required
                             />
@@ -68,14 +68,14 @@
                                 id="repeat-new-password"
                                 v-model="password.repeatNewPassword"
                                 type="password"
-                                class="block w-full min-h-[2.375rem] max-[575px]:min-h-[44px] rounded-md border border-border bg-input-surface px-3 py-1.5 text-secondary-foreground text-control focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+                                class="block w-full min-h-[2.375rem] max-[575px]:min-h-[44px] rounded-md border border-border bg-input-surface px-3 py-1.5 text-secondary-foreground text-base focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
                                 :class="{ '!border-destructive': invalidPassword }"
                                 :aria-invalid="invalidPassword"
                                 aria-describedby="repeat-password-error"
                                 autocomplete="new-password"
                                 required
                             />
-                            <div v-if="invalidPassword" id="repeat-password-error" class="mt-1 text-destructive text-body-sm" role="alert">
+                            <div v-if="invalidPassword" id="repeat-password-error" class="mt-1 text-destructive text-sm" role="alert">
                                 {{ $t("passwordNotMatchMsg") }}
                             </div>
                         </div>
@@ -92,7 +92,7 @@
 
         <!-- TODO: Hidden for now -->
         <div v-if="!settings.disableAuth && false" class="flex flex-col items-start gap-3">
-            <h3 class="settings-subheading m-0 text-body font-semibold">
+            <h3 class="settings-subheading m-0 text-base font-semibold">
                 {{ $t("Two Factor Authentication") }}
             </h3>
             <button
@@ -105,11 +105,11 @@
         </div>
 
         <section class="flex flex-col items-start gap-3">
-            <h3 class="settings-subheading m-0 text-body font-semibold">{{ $t("Advanced") }}</h3>
+            <h3 class="settings-subheading m-0 text-base font-semibold">{{ $t("Advanced") }}</h3>
             <button
                 v-if="settings.disableAuth"
                 id="enableAuth-btn"
-                class="rounded-md border border-primary px-3 py-1 text-control-sm cursor-pointer max-[575px]:min-h-[44px] focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2 bg-transparent text-link hover:bg-primary-hover hover:text-primary-foreground"
+                class="rounded-md border border-primary px-3 py-1 text-sm cursor-pointer max-[575px]:min-h-[44px] focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2 bg-transparent text-link hover:bg-primary-hover hover:text-primary-foreground"
                 type="button"
                 @click="enableAuth"
             >
@@ -118,7 +118,7 @@
             <button
                 v-if="!settings.disableAuth"
                 id="disableAuth-btn"
-                class="rounded-md border border-primary px-3 py-1 text-control-sm cursor-pointer max-[575px]:min-h-[44px] focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2 bg-primary bg-gradient-primary text-primary-foreground hover:bg-gradient-primary-active"
+                class="rounded-md border border-primary px-3 py-1 text-sm cursor-pointer max-[575px]:min-h-[44px] focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2 bg-primary bg-gradient-primary text-primary-foreground hover:bg-gradient-primary-active"
                 type="button"
                 @click="confirmDisableAuth"
             >
@@ -157,7 +157,7 @@
                     id="current-password2"
                     v-model="password.currentPassword"
                     type="password"
-                    class="block w-full min-h-[2.375rem] max-[575px]:min-h-[44px] rounded-md border border-border bg-input-surface px-3 py-1.5 text-secondary-foreground text-control focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+                    class="block w-full min-h-[2.375rem] max-[575px]:min-h-[44px] rounded-md border border-border bg-input-surface px-3 py-1.5 text-secondary-foreground text-base focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
                     required
                 />
             </div>

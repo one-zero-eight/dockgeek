@@ -399,7 +399,7 @@ export default {
     display: block;
     padding: 0.35rem 0.75rem;
     color: var(--muted-foreground);
-    font-size: var(--font-size-meta);
+    font-size: var(--font-size-body-sm);
     opacity: 1;
 }
 

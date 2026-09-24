@@ -12,7 +12,7 @@
                 v-if="isOpen"
                 :id="panelId"
                 ref="floatingEl"
-                class="floating-tooltip-panel floating-shadow fixed z-[1090] flex w-max max-w-[min(320px,calc(100vw-16px))] flex-col gap-[0.15rem] rounded-lg border border-border bg-popover px-[0.65rem] py-[0.45rem] text-popover-foreground text-meta leading-[1.35] pointer-events-none"
+                class="floating-tooltip-panel floating-shadow fixed z-[1090] flex w-max max-w-[min(320px,calc(100vw-16px))] flex-col gap-[0.15rem] rounded-lg border border-border bg-popover px-[0.65rem] py-[0.45rem] text-popover-foreground text-sm leading-[1.35] pointer-events-none"
                 :class="panelClass"
                 :style="panelStyle"
                 role="tooltip"
@@ -185,7 +185,7 @@ export default {
 .floating-tooltip-detail {
     color: var(--muted-foreground);
     font-family: var(--font-mono);
-    font-size: 0.8rem;
+    font-size: var(--font-size-body-sm);
 }
 
 .floating-tooltip-enter-active {

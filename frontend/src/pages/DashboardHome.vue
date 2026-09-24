@@ -13,15 +13,15 @@
                         <div class="-mx-3 flex flex-wrap">
                             <div class="min-w-0 flex-1 px-3">
                                 <h3>{{ $t("active") }}</h3>
-                                <span class="num active block text-[30px] font-bold text-primary">{{ activeNum }}</span>
+                                <span class="num active block text-3xl font-bold text-primary">{{ activeNum }}</span>
                             </div>
                             <div class="min-w-0 flex-1 px-3">
                                 <h3>{{ $t("exited") }}</h3>
-                                <span class="num exited block text-[30px] font-bold text-destructive">{{ exitedNum }}</span>
+                                <span class="num exited block text-3xl font-bold text-destructive">{{ exitedNum }}</span>
                             </div>
                             <div class="min-w-0 flex-1 px-3">
                                 <h3>{{ $t("inactive") }}</h3>
-                                <span class="num inactive block text-[30px] font-bold">{{ inactiveNum }}</span>
+                                <span class="num inactive block text-3xl font-bold">{{ inactiveNum }}</span>
                             </div>
                         </div>
                     </div>
@@ -324,7 +324,7 @@ export default {
     border-radius: 0.375rem;
     background: var(--input-surface);
     color: var(--secondary-foreground);
-    font-size: var(--font-size-control);
+    font-size: var(--font-size-body);
 
     &:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 }
@@ -355,7 +355,7 @@ export default {
     display: inline-block;
     padding: 0.35em 0.65em;
     border-radius: 0.375rem;
-    font-size: var(--font-size-badge);
+    font-size: var(--font-size-meta-sm);
     font-weight: var(--font-weight-medium);
     line-height: 1;
 }

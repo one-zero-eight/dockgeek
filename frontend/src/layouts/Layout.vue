@@ -13,7 +13,7 @@
         <header v-if="!$root.isCompact" class="desktop-header flex flex-none flex-wrap justify-center items-center gap-2 min-h-[52px] mb-0 py-[0.4rem] bg-card border-b">
             <router-link to="/" class="brand flex items-center min-h-8 mb-0 me-auto no-underline text-foreground">
                 <img class="me-2 ms-4" width="32" height="32" src="/icon.svg" alt="" />
-                <span class="title text-[24px] font-bold">Dockge</span>
+                <span class="title text-2xl font-bold">Dockge</span>
             </router-link>
 
             <a v-if="hasNewVersion" target="_blank" href="https://github.com/louislam/dockge/releases" class="update-button me-3">
@@ -49,7 +49,7 @@
                     <FloatingMenu placement="bottom-end" panel-class="profile-menu !bg-card !text-card-foreground">
                         <template #trigger="{ triggerAttrs }">
                             <div v-bind="triggerAttrs" class="nav-link dropdown-profile-pic inline-flex items-center gap-[0.4rem] select-none cursor-pointer rounded-lg bg-transparent text-secondary-foreground" role="button" tabindex="0">
-                                <div class="profile-pic flex items-center justify-center w-6 h-6 rounded-full border border-border bg-primary bg-gradient-primary text-primary-foreground text-[11px] font-bold">{{ $root.usernameFirstChar }}</div>
+                                <div class="profile-pic flex items-center justify-center w-6 h-6 rounded-full border border-border bg-primary bg-gradient-primary text-primary-foreground text-xs font-bold">{{ $root.usernameFirstChar }}</div>
                                 <font-awesome-icon icon="angle-down" />
                             </div>
                         </template>
@@ -182,7 +182,7 @@ export default {
         height: 100%;
         padding: 8px 10px 0;
         color: var(--secondary-foreground);
-        font-size: var(--font-size-control-sm);
+        font-size: var(--font-size-body-sm);
         font-weight: var(--font-weight-medium);
         overflow: hidden;
         text-decoration: none;
@@ -217,7 +217,7 @@ export default {
         border: 0;
         color: var(--secondary-foreground);
         background: transparent;
-        font-size: var(--font-size-control);
+        font-size: var(--font-size-body);
         line-height: var(--line-height-tight);
         transition: color 0.15s ease, background 0.15s ease;
 
@@ -274,7 +274,7 @@ export default {
         height: 24px;
         border-radius: 50%;
         font-weight: var(--font-weight-bold);
-        font-size: 11px;
+        font-size: var(--font-size-meta-sm);
         letter-spacing: 0.02em;
         transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
     }

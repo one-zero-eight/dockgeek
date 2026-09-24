@@ -4,7 +4,7 @@
             <button class="tree-toggle min-h-[34px] w-[30px] flex-[0_0_30px] rounded-[5px] border-0 bg-transparent p-0 text-inherit text-[.8rem]" :class="{ 'unmanaged-toggle': !stack.isManagedByDockge }" :disabled="!stack.isManagedByDockge" :aria-expanded="stack.isManagedByDockge ? !isCollapsed : undefined" :aria-label="stackName" @click="$event.detail <= 1 && changeCollapsed()" @dblclick.stop.prevent>
                 <font-awesome-icon icon="chevron-down" :class="{ collapsed: isCollapsed }" />
             </button>
-            <router-link :to="url" class="stack-link flex min-w-0 min-h-[34px] items-center gap-[8px] px-[4px] py-[3px] text-inherit text-control no-underline">
+            <router-link :to="url" class="stack-link flex min-w-0 min-h-[34px] items-center gap-[8px] px-[4px] py-[3px] text-inherit text-base no-underline">
                 <FloatingTooltip placement="right">
                     <template #trigger="{ triggerAttrs }">
                         <span
@@ -24,22 +24,22 @@
             </router-link>
         </div>
         <ul v-if="stack.isManagedByDockge && !isCollapsed" class="tree-children">
-            <li v-if="loading" class="p-[6px] text-body [overflow-wrap:anywhere]">{{ $t("loading") }}</li>
-            <li v-else-if="error" class="p-[6px] text-body [overflow-wrap:anywhere] stack-tone-danger" role="alert">{{ error }}</li>
-            <li v-else-if="services.length === 0" class="p-[6px] text-body [overflow-wrap:anywhere]">{{ $t("noServices") }}</li>
+            <li v-if="loading" class="p-[6px] text-base [overflow-wrap:anywhere]">{{ $t("loading") }}</li>
+            <li v-else-if="error" class="p-[6px] text-base [overflow-wrap:anywhere] stack-tone-danger" role="alert">{{ error }}</li>
+            <li v-else-if="services.length === 0" class="p-[6px] text-base [overflow-wrap:anywhere]">{{ $t("noServices") }}</li>
             <li v-for="service in services" v-else :key="service.name">
                 <div class="tree-row relative isolate flex min-w-0 min-h-[34px] items-center cursor-pointer" :class="{ selected: $route.path === url && $route.hash === '#service-' + encodeURIComponent(service.name) }" @click.self="$event.detail <= 1 && service.instances.length && toggleService(service.name)" @dblclick.prevent="$event.target !== $event.currentTarget && service.instances.length && toggleService(service.name)">
                     <button class="tree-toggle min-h-[34px] w-[30px] flex-[0_0_30px] rounded-[5px] border-0 bg-transparent p-0 text-inherit text-[.8rem]" :disabled="service.instances.length === 0" :aria-expanded="!collapsedServices.has(service.name)" :aria-label="service.name" @click="$event.detail <= 1 && toggleService(service.name)" @dblclick.stop.prevent>
                         <font-awesome-icon icon="chevron-down" :class="{ collapsed: collapsedServices.has(service.name) }" />
                     </button>
-                    <router-link :to="{ path: url, hash: '#service-' + encodeURIComponent(service.name) }" class="tree-link flex min-w-0 min-h-[34px] items-center gap-[8px] px-[4px] py-[3px] text-inherit text-control no-underline">
+                    <router-link :to="{ path: url, hash: '#service-' + encodeURIComponent(service.name) }" class="tree-link flex min-w-0 min-h-[34px] items-center gap-[8px] px-[4px] py-[3px] text-inherit text-base no-underline">
                         <font-awesome-icon icon="cubes" class="node-icon w-[13px] flex-[0_0_13px]" :class="serviceStatusClass(service)" />
                         <span class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap" :title="service.name">{{ service.name }}</span>
                     </router-link>
                 </div>
                 <ul v-if="!collapsedServices.has(service.name) && service.instances.length" class="tree-children">
                     <li v-for="instance in service.instances" :key="instance.name">
-                        <router-link :to="containerRoute(instance)" class="tree-link container-link flex min-w-0 min-h-[34px] items-center gap-[8px] px-[4px] py-[3px] text-inherit text-control no-underline">
+                        <router-link :to="containerRoute(instance)" class="tree-link container-link flex min-w-0 min-h-[34px] items-center gap-[8px] px-[4px] py-[3px] text-inherit text-base no-underline">
                             <FloatingTooltip placement="right">
                                 <template #trigger="{ triggerAttrs }">
                                     <span

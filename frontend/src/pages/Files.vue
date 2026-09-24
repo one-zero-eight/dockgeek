@@ -2,7 +2,7 @@
     <transition name="slide-fade" appear>
         <div class="files-page">
             <div class="page-header mb-[1rem] flex items-center justify-between gap-[0.65rem]">
-                <div class="text-muted-foreground text-[.875em]">{{ $t("fileManagerRestrictedHint") }}</div>
+                <div class="text-muted-foreground text-sm">{{ $t("fileManagerRestrictedHint") }}</div>
                 <select v-model="selectedEndpoint" class="file-input endpoint-select" @change="switchEndpoint">
                     <option v-for="option in endpointOptions" :key="option.value" :value="option.value" :disabled="option.offline">
                         {{ option.label }}{{ option.offline ? ` (${$t('agentOffline')})` : "" }}
@@ -137,7 +137,7 @@
             <FloatingDialog v-model="showMove" size="sm" :title="$t('move')" :ok-title="$t('move')" :cancel-title="$t('cancel')" @ok="moveEntry">
                 <label class="file-label inline-block mb-2" for="move-destination">{{ $t("destinationDirectory") }}</label>
                 <input id="move-destination" v-model="moveDestination" class="file-input" placeholder="/" />
-                <div class="file-help mt-1 text-muted-foreground text-meta">{{ $t("destinationDirectoryHint") }}</div>
+                <div class="file-help mt-1 text-muted-foreground text-sm">{{ $t("destinationDirectoryHint") }}</div>
             </FloatingDialog>
 
             <FloatingDialog v-model="showDelete" size="sm" :title="$t('confirmDelete')" :ok-title="$t('deleteStack')" ok-variant="danger" :cancel-title="$t('cancel')" @ok="deleteEntry">
@@ -802,7 +802,7 @@ export default {
     display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
     min-height: 38px; padding: 0.375rem 0.75rem; border: 1px solid var(--secondary);
     border-radius: 0.375rem; color: var(--secondary-foreground); background: var(--secondary);
-    font: inherit; font-size: var(--font-size-control); line-height: 1.5; text-decoration: none;
+    font: inherit; font-size: var(--font-size-body); line-height: 1.5; text-decoration: none;
     cursor: pointer;
     &:hover { color: var(--secondary-foreground); background: var(--secondary-hover); }
     &:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
@@ -810,7 +810,7 @@ export default {
     &.active, &.file-button-primary { color: var(--primary-foreground); background: var(--primary); border-color: var(--primary); }
     &.file-button-danger { color: white; background: var(--destructive); border-color: var(--destructive); }
 }
-.file-button-sm { min-height: 31px; padding: 0.25rem 0.5rem; font-size: var(--font-size-control-sm); }
+.file-button-sm { min-height: 31px; padding: 0.25rem 0.5rem; font-size: var(--font-size-body-sm); }
 .file-input {
     display: block; width: 100%; min-height: 38px; padding: 0.375rem 0.75rem;
     border: 1px solid var(--border); border-radius: 0.375rem;
@@ -856,10 +856,10 @@ export default {
     .file-card-actions { display: flex; flex: 0 0 auto; gap: 0.25rem; }
     .pagination-bar { flex-wrap: wrap; }
     .transfer-panel { bottom: calc(70px + env(safe-area-inset-bottom)); }
-    .text-editor { font-size: var(--font-size-control); }
-    .log-viewer-body { font-size: var(--font-size-control); }
+    .text-editor { font-size: var(--font-size-body); }
+    .log-viewer-body { font-size: var(--font-size-body); }
     .log-viewer-toolbar .file-button { min-height: 44px; }
     .file-button, .file-input { min-height: 44px; }
-    .file-input { font-size: 16px; }
+    .file-input { font-size: var(--font-size-body); }
 }
 </style>
