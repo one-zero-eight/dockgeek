@@ -40,6 +40,7 @@ interface ContainerStateInfo {
     ExitCode?: number;
     Error?: string;
     Name?: string;
+    Created?: string;
 }
 
 export class Stack {
@@ -480,6 +481,7 @@ export class Stack {
         for (const line of lines) {
             let parsed: {
                 Name?: string;
+                Created?: string;
                 State?: {
                     Status?: string;
                     ExitCode?: number;
@@ -510,6 +512,7 @@ export class Stack {
                 ExitCode: parsed.State?.ExitCode,
                 Error: typeof error === "string" && error.length > 0 ? error : undefined,
                 Name: typeof parsed.Name === "string" ? parsed.Name.replace(/^\//, "") : undefined,
+                Created: parsed.Created,
             });
         }
 
@@ -817,7 +820,6 @@ export class Stack {
                 Image: string,
                 Command: string,
                 CreatedAt: string,
-                RunningFor: string,
                 Ports: string,
                 ExitCode?: number,
                 Status?: string,
@@ -838,7 +840,6 @@ export class Stack {
                     image: obj.Image,
                     command: obj.Command,
                     createdAt: obj.CreatedAt,
-                    runningFor: obj.RunningFor,
                     ports: obj.Ports,
                     publishers: obj.Publishers || [],
                 });
@@ -870,6 +871,7 @@ export class Stack {
                         name?: string;
                         exitCode?: number;
                         error?: string;
+                        createdAt?: string;
                     }>) {
                         const info = container.name ? byName.get(container.name) : undefined;
                         if (!info) {
@@ -880,6 +882,9 @@ export class Stack {
                         }
                         if (typeof info.ExitCode === "number" && Number.isFinite(info.ExitCode)) {
                             container.exitCode = info.ExitCode;
+                        }
+                        if (info.Created) {
+                            container.createdAt = info.Created;
                         }
                     }
                 }
