@@ -142,7 +142,6 @@
     "status": "状态",
     "health": "健康状态",
     "createdAt": "创建时间",
-    "runningFor": "运行时长",
     "loadingContainer": "正在加载容器详情…",
     "containerNotFound": "未找到容器",
     "containerNotFoundDescription": "此容器已不存在，或已不属于当前堆栈。",

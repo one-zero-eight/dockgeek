@@ -70,6 +70,48 @@ export function setPageLocale() {
 }
 
 /**
+ * Resolve an image reference to its supported registry page.
+ * @param {string} image Docker image reference
+ * @returns {string} Registry page URL, or an empty string for unsupported registries
+ */
+export function imageRegistryUrl(image: string): string {
+    const reference = image.trim().split("@")[0];
+    const lastSlash = reference.lastIndexOf("/");
+    const tagIndex = reference.indexOf(":", lastSlash + 1);
+    const name = tagIndex === -1 ? reference : reference.slice(0, tagIndex);
+    const segments = name.split("/");
+    const registry = segments[0];
+    const hasRegistry = registry.includes(".") || registry.includes(":") || registry === "localhost";
+    const repository = hasRegistry ? segments.slice(1) : segments;
+
+    if (!repository.length || repository.some(segment => !/^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/.test(segment))) {
+        return "";
+    }
+
+    if (!hasRegistry || [ "docker.io", "index.docker.io", "registry-1.docker.io" ].includes(registry)) {
+        const path = repository.length === 1 || repository[0] === "library" ? "_/" + repository.at(-1) : "r/" + repository.join("/");
+        return `https://hub.docker.com/${path}`;
+    }
+
+    if (registry === "ghcr.io" && repository.length >= 2) {
+        const owner = repository[0];
+        const packageName = repository.at(-1);
+        const project = repository.length > 2 ? repository[1] : packageName;
+        return `https://github.com/${owner}/${project}/pkgs/container/${packageName}`;
+    }
+
+    if (registry === "quay.io" && repository.length >= 2) {
+        return `https://quay.io/repository/${repository.join("/")}`;
+    }
+
+    if (registry === "registry.gitlab.com" && repository.length >= 2) {
+        return `https://gitlab.com/${repository.join("/")}/container_registry`;
+    }
+
+    return "";
+}
+
+/**
  * Get the base URL
  * Mainly used for dev, because the backend and the frontend are in different ports.
  * @returns {string} Base URL

@@ -5,45 +5,33 @@
             :class="{ 'logs-active': activeTab === 'logs' }"
             :style="containerDetailsStyle"
         >
-            <nav class="detail-breadcrumb mb-[.5rem] flex flex-wrap gap-2 text-muted-foreground text-sm" aria-label="breadcrumb">
-                <router-link :to="stackRoute">{{ stackName }}</router-link>
-                <span>/</span>
-                <span>{{ serviceName || $tc("container", 1) }}</span>
-                <span>/</span>
-                <span>{{ containerName }}</span>
-            </nav>
-
-            <div class="detail-header mb-[1rem] flex items-center justify-between gap-4">
-                <div>
-                    <div class="flex flex-wrap items-center gap-x-1.5 gap-y-2">
-                        <h1 id="container-details-title" class="mb-0 me-1">{{ containerName }}</h1>
-                        <FloatingTooltip v-if="container && statusDetail" placement="top">
-                            <template #trigger="{ triggerAttrs }">
-                                <span v-bind="triggerAttrs" class="ui-badge" :class="statusClass">{{ container.status }}</span>
-                            </template>
-                            <span class="floating-tooltip-detail">{{ statusDetail }}</span>
-                        </FloatingTooltip>
-                        <span v-else-if="container" class="ui-badge" :class="statusClass">{{ container.status }}</span>
-                        <span v-if="exitLabel" class="ui-badge" :class="exitBadgeClass">{{ exitLabel }}</span>
+            <div class="detail-header mb-0">
+                <div class="detail-heading min-w-0">
+                    <h1 id="container-details-title" class="detail-title mb-0">
+                        <span v-if="container" class="status-dot inline-block w-3 h-3 rounded-full align-[0.12em]" :class="`tone-${containerStatusTone(container)}`" aria-hidden="true" /> <span>{{ containerName }}</span>
+                        <span class="entity-label opacity-50 select-none">{{ $tc("container", 1).toLowerCase() }}</span>
+                    </h1>
+                    <div v-if="container" class="detail-summary flex flex-wrap items-center gap-x-[.375rem] gap-y-[.35rem]">
+                        <router-link :to="stackRoute" class="ui-entity-link text-sm">
+                            {{ stackName }} <span class="select-none opacity-50 text-xs font-normal lowercase">{{ $t("project") }}</span>
+                        </router-link>
+                        <template v-if="serviceName">
+                            <span class="text-muted-foreground text-sm">/</span>
+                            <span class="text-foreground text-sm">{{ serviceName }} <span class="select-none opacity-50 text-xs font-normal lowercase">{{ $t("service") }}</span></span>
+                        </template>
+                        <ContainerError v-if="errorLabel" class="w-full" :message="errorLabel" />
                     </div>
-                    <div v-if="errorLabel" class="mt-[.5rem]">
-                        <ContainerError :message="errorLabel" />
-                    </div>
-                    <div v-if="serviceName" class="service-name mt-[.25rem] text-foreground">{{ $t("service") }}: {{ serviceName }}</div>
                 </div>
-
-                <div v-if="container" class="action-bar flex" role="group">
-                    <button
-                        v-for="action in containerActions"
-                        :key="action.event"
-                        class="ui-btn"
-                        :class="{ 'ui-btn-primary': action.primary }"
-                        :disabled="processing"
-                        @click="performAction(action.event)"
-                    >
-                        <font-awesome-icon :icon="action.icon" class="me-[.25rem]" /> {{ $t(action.label) }}
-                    </button>
-                </div>
+                <ActionGroup
+                    v-if="container"
+                    class="detail-actions"
+                    size="header"
+                    :actions="containerActions"
+                    :disabled="processing"
+                    :max-visible="3"
+                    :aria-label="$tc('container', 1)"
+                    @select="performAction"
+                />
             </div>
 
             <div v-if="!loaded" class="panel-box big-padding">{{ $t("loadingContainer") }}</div>
@@ -55,13 +43,13 @@
 
             <template v-else>
                 <div class="tabs-scroll mb-[1rem] overflow-x-auto">
-                    <ul class="flex flex-nowrap list-none m-0 gap-1 min-w-max p-1 rounded-xl border border-border bg-background" role="tablist" aria-labelledby="container-details-title" @keydown="onTabKeydown">
-                        <li v-for="tab in tabs" :key="tab">
+                    <ul class="detail-tabs flex flex-nowrap list-none m-0 gap-[0.15rem] w-full p-1 rounded-lg bg-card" role="tablist" aria-labelledby="container-details-title" @keydown="onTabKeydown">
+                        <li v-for="tab in tabs" :key="tab" class="min-w-0 flex-1">
                             <button
                                 :id="`container-tab-${tab}`"
                                 :ref="`tab-${tab}`"
-                                class="ui-detail-tab"
-                                :class="{ 'ui-detail-tab-active': activeTab === tab }"
+                                class="detail-tab w-full min-h-[38px] rounded-lg bg-transparent px-3 py-[.35rem] text-secondary-foreground text-sm font-medium cursor-pointer whitespace-nowrap"
+                                :class="{ active: activeTab === tab }"
                                 role="tab"
                                 :aria-selected="activeTab === tab"
                                 :aria-controls="`container-panel-${tab}`"
@@ -74,10 +62,18 @@
                     </ul>
                 </div>
 
-                <section v-if="activeTab === 'overview'" id="container-panel-overview" class="overview-grid grid gap-4" role="tabpanel" aria-labelledby="container-tab-overview" tabindex="0">
-                    <article v-for="item in overviewItems" :key="item.key" class="ui-detail-card" :class="{ 'image-card': item.wide }">
-                        <div class="ui-detail-label">{{ item.label }}</div>
-                        <div class="ui-detail-value" :class="{ 'break-words': item.breakWords }">{{ item.value }}</div>
+                <section v-if="activeTab === 'overview'" id="container-panel-overview" class="overview-grid panel-box grid gap-4 p-3" role="tabpanel" aria-labelledby="container-tab-overview" tabindex="0">
+                    <article v-for="item in overviewItems" :key="item.key" class="min-w-0" :class="{ 'image-card': item.wide }">
+                        <div class="mb-1 text-muted-foreground text-sm">{{ item.label }}</div>
+                        <div v-if="item.key === 'status'" class="flex flex-wrap items-center gap-x-[.375rem] gap-y-[.15rem]">
+                            <span class="ui-badge" :class="statusClass">{{ item.value }}</span>
+                            <span v-if="exitLabel" class="ui-badge" :class="exitBadgeClass">{{ exitLabel }}</span>
+                            <span v-if="item.detail" class="text-foreground text-sm">{{ item.detail }}</span>
+                        </div>
+                        <div v-else-if="item.key === 'image' && imageUrl" class="break-words text-base">
+                            <a class="ui-entity-link" :href="imageUrl" target="_blank" rel="noopener noreferrer">{{ item.value }}</a>
+                        </div>
+                        <div v-else class="text-foreground text-base" :class="{ 'break-words': item.breakWords }">{{ item.value }}</div>
                     </article>
                 </section>
 
@@ -152,13 +148,14 @@ import {
     getContainerInstanceExecTerminalName,
     getContainerLogTerminalName
 } from "../../../common/util-common";
+import ActionGroup from "../components/ActionGroup.vue";
 import ContainerError from "../components/ContainerError.vue";
-import { FloatingTooltip } from "../components/floating";
+import { imageRegistryUrl } from "../util-frontend";
 
 export default {
     components: {
+        ActionGroup,
         ContainerError,
-        FloatingTooltip,
     },
     data() {
         return {
@@ -175,6 +172,7 @@ export default {
             followLogs: true,
             hasLogSelection: false,
             availablePageHeight: 0,
+            containerStatusTone,
         };
     },
     computed: {
@@ -202,30 +200,36 @@ export default {
         containerStats() {
             return this.dockerStats[this.containerName] || null;
         },
+        imageUrl() {
+            return imageRegistryUrl(this.container?.image || "");
+        },
         isRunning() {
             return this.container?.state === "running";
         },
         containerActions() {
             return this.isRunning
                 ? [
-                    { event: "restartContainer",
+                    { key: "restartContainer",
                         icon: "rotate",
-                        label: "restartStack" },
-                    { event: "stopContainer",
+                        i18nKey: "restartStack",
+                        variant: "normal" },
+                    { key: "stopContainer",
                         icon: "stop",
-                        label: "stopStack" },
+                        i18nKey: "stopStack",
+                        variant: "warning" },
                 ]
-                : [{ event: "startContainer",
+                : [{ key: "startContainer",
                     icon: "play",
-                    label: "startStack",
-                    primary: true }];
+                    i18nKey: "startStack",
+                    variant: "primary" }];
         },
         overviewItems() {
             const unavailable = this.$t("notAvailableShort");
             return [
                 { key: "status",
                     label: this.$t("status"),
-                    value: this.container.state || this.container.status },
+                    value: this.container.status || unavailable,
+                    detail: this.container.statusDetail },
                 { key: "health",
                     label: this.$t("health"),
                     value: this.container.health || unavailable },
@@ -240,10 +244,7 @@ export default {
                     breakWords: true },
                 { key: "created",
                     label: this.$t("createdAt"),
-                    value: this.container.createdAt || unavailable },
-                { key: "running",
-                    label: this.$t("runningFor"),
-                    value: this.container.runningFor || unavailable },
+                    value: this.formatCreatedAt(this.container.createdAt) },
                 { key: "cpu",
                     label: this.$t("CPU"),
                     value: this.containerStats?.CPUPerc || unavailable },
@@ -254,9 +255,6 @@ export default {
         },
         statusClass() {
             return this.badgeTone(containerStatusTone(this.container));
-        },
-        statusDetail() {
-            return this.container?.statusDetail || this.container?.status;
         },
         exitLabel() {
             return formatContainerExitLabel(this.container);
@@ -304,6 +302,19 @@ export default {
         this.leaveLogs();
     },
     methods: {
+        formatCreatedAt(value) {
+            const date = new Date(value);
+            if (!value || Number.isNaN(date.getTime())) {
+                return this.$t("notAvailableShort");
+            }
+            const elapsed = Math.max(0, (Date.now() - date.getTime()) / 1000);
+            const units = [[ "year", 31536000 ], [ "month", 2592000 ], [ "day", 86400 ], [ "hour", 3600 ], [ "minute", 60 ], [ "second", 1 ]];
+            const [ unit, seconds ] = units.find(([ , threshold ]) => elapsed >= threshold) || units[units.length - 1];
+            const relative = new Intl.RelativeTimeFormat(this.$i18n.locale, { numeric: "always" }).format(-Math.floor(elapsed / seconds), unit);
+            const formatted = new Intl.DateTimeFormat(this.$i18n.locale, { dateStyle: "medium",
+                timeStyle: "short" }).format(date);
+            return `${formatted} (${relative})`;
+        },
         badgeTone(tone) {
             return {
                 primary: "ui-badge-primary",
@@ -411,6 +422,58 @@ export default {
 </script>
 
 <style scoped lang="scss">
+.status-dot.tone-primary { background: var(--primary); }
+.status-dot.tone-warning,
+.status-dot.tone-stopped { background: var(--warning); }
+.status-dot.tone-danger { background: var(--destructive); }
+.status-dot.tone-secondary { background: var(--muted); }
+
+.detail-header {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem 1rem;
+}
+
+.detail-heading {
+    flex: 0 1 auto;
+}
+
+.detail-title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.detail-summary {
+    margin-top: -0.375rem;
+    margin-bottom: 0.125rem;
+}
+
+.entity-label {
+    margin-inline-start: 0.35rem;
+    font-size: 1.25rem;
+    font-weight: var(--fontWeight-normal);
+}
+
+.detail-actions {
+    flex: 1 0 38px;
+    min-width: 38px;
+    margin-top: 4px;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.detail-tab {
+    transition: color 0.15s ease, background 0.15s ease;
+
+    &:hover:not(.active) { background: var(--hover); }
+    &.active { color: var(--primary); background: var(--selected); }
+    &:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
+}
+
 .container-details-page.logs-active {
     display: flex;
     overflow: hidden;
@@ -419,7 +482,6 @@ export default {
     min-height: 0;
 }
 
-.logs-active > .detail-breadcrumb,
 .logs-active > .detail-header,
 .logs-active > .tabs-scroll {
     flex: 0 0 auto;
@@ -493,18 +555,9 @@ export default {
 }
 
 @media (max-width: 767.98px) {
-    .detail-header {
-        align-items: stretch;
-        flex-direction: column;
-    }
-
-    .action-bar {
-        display: flex;
-        width: 100%;
-    }
-
-    .action-bar .ui-btn {
-        flex: 1;
+    .detail-actions {
+        flex-basis: 32px;
+        min-width: 32px;
     }
 
     .overview-grid {

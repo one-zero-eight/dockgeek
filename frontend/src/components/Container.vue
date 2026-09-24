@@ -6,7 +6,7 @@
                     <span>{{ name }}</span>
                 </router-link>
                 <span v-else>{{ name }}</span>
-                <span class="entity-label ms-[.1rem] select-none opacity-50 text-xs font-normal lowercase">{{ $t("service") }}</span>
+                <span class="entity-label ms-[.35rem] select-none opacity-50 text-xs font-normal lowercase">{{ $t("service") }}</span>
             </h4>
             <ActionGroup
                 class="flex-[1_1_140px] min-w-[32px] max-w-[65%] justify-end"
@@ -21,10 +21,10 @@
             <router-link class="ui-entity-link" :to="containerDetailsRoute(singleContainer)">
                 <span>{{ singleContainer.name }}</span>
             </router-link>
-            <span class="entity-label ms-[.1rem] select-none opacity-50 text-xs font-normal lowercase">{{ $tc("container", 1) }}</span>
+            <span class="entity-label ms-[.35rem] select-none opacity-50 text-xs font-normal lowercase">{{ $tc("container", 1) }}</span>
         </div>
 
-        <div v-if="imageDisplay" class="mb-[.5rem] flex flex-wrap items-baseline gap-x-[.1rem] gap-y-[.25rem] break-all text-foreground text-sm">
+        <div v-if="imageDisplay" class="mb-[.5rem] flex flex-wrap items-baseline gap-x-[.35rem] gap-y-[.25rem] break-all text-foreground text-sm">
             <a v-if="imageUrl" class="tag text-inherit no-underline hover:text-link focus-visible:text-link" :href="imageUrl" :title="imageDisplay" target="_blank" rel="noopener noreferrer">{{ imageDisplay }}</a>
             <span v-else class="tag" :title="imageDisplay">{{ imageDisplay }}</span>
             <span class="entity-label select-none opacity-50 text-xs font-normal lowercase">{{ $t("image") }}</span>
@@ -59,7 +59,7 @@
                         <router-link class="ui-entity-link" :to="containerDetailsRoute(instance)">
                             <span>{{ instance.name }}</span>
                         </router-link>
-                        <span class="entity-label ms-[.1rem] select-none opacity-50 text-xs font-normal lowercase">{{ $tc("container", 1) }}</span>
+                        <span class="entity-label ms-[.35rem] select-none opacity-50 text-xs font-normal lowercase">{{ $tc("container", 1) }}</span>
                     </div>
                 </div>
                 <div class="mt-[.25rem] flex flex-wrap items-center gap-x-[.375rem] gap-y-[.35rem]">
@@ -110,6 +110,7 @@ import ActionGroup from "./ActionGroup.vue";
 import ContainerError from "./ContainerError.vue";
 import { FloatingDialog, FloatingTooltip } from "./floating";
 import { containerPublishedPorts, containerStatusTone, containerExitTone, formatContainerExitLabel, formatContainerError } from "../../../common/util-common";
+import { imageRegistryUrl } from "../util-frontend";
 
 /**
  * Confirmation copy + compose command for each service control.
@@ -291,41 +292,7 @@ export default defineComponent({
             return this.envsubstService.image || this.serviceStatus[0]?.image || "";
         },
         imageUrl() {
-            const image = this.imageDisplay.trim();
-            const reference = image.split("@")[0];
-            const lastSlash = reference.lastIndexOf("/");
-            const tagIndex = reference.indexOf(":", lastSlash + 1);
-            const name = tagIndex === -1 ? reference : reference.slice(0, tagIndex);
-            const segments = name.split("/");
-            const registry = segments[0];
-            const hasRegistry = registry.includes(".") || registry.includes(":") || registry === "localhost";
-            const repository = hasRegistry ? segments.slice(1) : segments;
-
-            if (!repository.length || repository.some(segment => !/^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/.test(segment))) {
-                return "";
-            }
-
-            if (!hasRegistry || [ "docker.io", "index.docker.io", "registry-1.docker.io" ].includes(registry)) {
-                const path = repository.length === 1 || repository[0] === "library" ? "_/" + repository.at(-1) : "r/" + repository.join("/");
-                return `https://hub.docker.com/${path}`;
-            }
-
-            if (registry === "ghcr.io" && repository.length >= 2) {
-                const owner = repository[0];
-                const packageName = repository.at(-1);
-                const project = repository.length > 2 ? repository[1] : packageName;
-                return `https://github.com/${owner}/${project}/pkgs/container/${packageName}`;
-            }
-
-            if (registry === "quay.io" && repository.length >= 2) {
-                return `https://quay.io/repository/${repository.join("/")}`;
-            }
-
-            if (registry === "registry.gitlab.com" && repository.length >= 2) {
-                return `https://gitlab.com/${repository.join("/")}/container_registry`;
-            }
-
-            return "";
+            return imageRegistryUrl(this.imageDisplay);
         },
         singleContainer() {
             return this.serviceStatus.length === 1 ? this.serviceStatus[0] : null;
@@ -455,6 +422,22 @@ export default defineComponent({
 .service-card {
     .tag {
         opacity: 1;
+    }
+
+    .port-link {
+        .ui-badge {
+            transition: color 0.15s ease;
+        }
+
+        &:hover .ui-badge,
+        &:focus-visible .ui-badge {
+            color: var(--link);
+        }
+
+        &:focus-visible .ui-badge {
+            outline: 2px solid var(--ring);
+            outline-offset: 2px;
+        }
     }
 
     .entity-label { font-family: var(--font-ui); }

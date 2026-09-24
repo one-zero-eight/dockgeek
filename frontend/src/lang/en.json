@@ -206,7 +206,6 @@
     "status": "Status",
     "health": "Health",
     "createdAt": "Created",
-    "runningFor": "Running For",
     "loadingContainer": "Loading container details…",
     "containerNotFound": "Container not found",
     "containerNotFoundDescription": "This container no longer exists or does not belong to this project.",
