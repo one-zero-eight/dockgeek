@@ -4,37 +4,9 @@
             {{ stat.Name }}
         </div>
         <div class="stats mt-[.25rem] flex justify-between gap-2 [container-type:inline-size] text-muted-foreground text-xs">
-            <div class="stat flex flex-col gap-[4px]">
-                <div class="stat-label font-semibold">
-                    {{ $t('CPU') }}
-                </div>
-                <div>
-                    {{ stat.CPUPerc }}
-                </div>
-            </div>
-            <div class="stat flex flex-col gap-[4px]">
-                <div class="stat-label font-semibold">
-                    {{ $t('memory') }}
-                </div>
-                <div>
-                    {{ stat.MemUsage }} ({{ stat.MemPerc }})
-                </div>
-            </div>
-            <div class="stat flex flex-col gap-[4px]">
-                <div class="stat-label font-semibold">
-                    {{ $t('networkIO') }}
-                </div>
-                <div>
-                    {{ stat.NetIO }}
-                </div>
-            </div>
-            <div class="stat flex flex-col gap-[4px]">
-                <div class="stat-label font-semibold">
-                    {{ $t('blockIO') }}
-                </div>
-                <div>
-                    {{ stat.BlockIO }}
-                </div>
+            <div v-for="metric in metrics" :key="metric.key" class="stat flex flex-col gap-[4px]">
+                <div class="stat-label font-semibold">{{ $t(metric.key) }}</div>
+                <div>{{ metric.value }}</div>
             </div>
         </div>
     </div>
@@ -47,6 +19,20 @@ export default {
             type: Object,
             required: true
         }
+    },
+    computed: {
+        metrics() {
+            return [
+                { key: "CPU",
+                    value: this.stat.CPUPerc },
+                { key: "memory",
+                    value: `${this.stat.MemUsage} (${this.stat.MemPerc})` },
+                { key: "networkIO",
+                    value: this.stat.NetIO },
+                { key: "blockIO",
+                    value: this.stat.BlockIO },
+            ];
+        },
     },
 };
 </script>

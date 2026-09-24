@@ -393,7 +393,7 @@ export default {
     margin-top: 5px;
 }
 
-.selection-button { padding: 0.35rem 0.65rem; border: 1px solid var(--border); border-radius: 0.375rem; color: var(--secondary-foreground); background: var(--secondary); cursor: pointer; }
+.selection-button { padding: 0.35rem 0.65rem; border-radius: 0.375rem; color: var(--secondary-foreground); background: var(--secondary); cursor: pointer; }
 .selection-button:hover { background: var(--secondary-hover); }
 .select-input { accent-color: var(--primary); }
 .selection-controls {

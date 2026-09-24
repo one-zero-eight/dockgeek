@@ -16,15 +16,15 @@
             <div class="detail-header mb-[1rem] flex items-center justify-between gap-4">
                 <div>
                     <div class="flex flex-wrap items-center gap-x-1.5 gap-y-2">
-                        <h1 class="mb-0 me-1">{{ containerName }}</h1>
+                        <h1 id="container-details-title" class="mb-0 me-1">{{ containerName }}</h1>
                         <FloatingTooltip v-if="container && statusDetail" placement="top">
                             <template #trigger="{ triggerAttrs }">
-                                <span v-bind="triggerAttrs" class="status-badge" :class="statusClass">{{ container.status }}</span>
+                                <span v-bind="triggerAttrs" class="ui-badge" :class="statusClass">{{ container.status }}</span>
                             </template>
                             <span class="floating-tooltip-detail">{{ statusDetail }}</span>
                         </FloatingTooltip>
-                        <span v-else-if="container" class="status-badge" :class="statusClass">{{ container.status }}</span>
-                        <span v-if="exitLabel" class="status-badge" :class="exitBadgeClass">{{ exitLabel }}</span>
+                        <span v-else-if="container" class="ui-badge" :class="statusClass">{{ container.status }}</span>
+                        <span v-if="exitLabel" class="ui-badge" :class="exitBadgeClass">{{ exitLabel }}</span>
                     </div>
                     <div v-if="errorLabel" class="mt-[.5rem]">
                         <ContainerError :message="errorLabel" />
@@ -33,14 +33,15 @@
                 </div>
 
                 <div v-if="container" class="action-bar flex" role="group">
-                    <button v-if="!isRunning" class="detail-button detail-button-primary" :disabled="processing" @click="performAction('startContainer')">
-                        <font-awesome-icon icon="play" class="me-[.25rem]" /> {{ $t("startStack") }}
-                    </button>
-                    <button v-if="isRunning" class="detail-button" :disabled="processing" @click="performAction('restartContainer')">
-                        <font-awesome-icon icon="rotate" class="me-[.25rem]" /> {{ $t("restartStack") }}
-                    </button>
-                    <button v-if="isRunning" class="detail-button" :disabled="processing" @click="performAction('stopContainer')">
-                        <font-awesome-icon icon="stop" class="me-[.25rem]" /> {{ $t("stopStack") }}
+                    <button
+                        v-for="action in containerActions"
+                        :key="action.event"
+                        class="ui-btn"
+                        :class="{ 'ui-btn-primary': action.primary }"
+                        :disabled="processing"
+                        @click="performAction(action.event)"
+                    >
+                        <font-awesome-icon :icon="action.icon" class="me-[.25rem]" /> {{ $t(action.label) }}
                     </button>
                 </div>
             </div>
@@ -49,96 +50,50 @@
             <div v-else-if="!container" class="panel-box big-padding empty-state text-muted-foreground">
                 <h4>{{ $t("containerNotFound") }}</h4>
                 <p class="mb-[1rem]">{{ $t("containerNotFoundDescription") }}</p>
-                <router-link class="detail-button detail-button-primary" :to="stackRoute">{{ $t("backToStack") }}</router-link>
+                <router-link class="ui-btn ui-btn-primary" :to="stackRoute">{{ $t("backToStack") }}</router-link>
             </div>
 
             <template v-else>
                 <div class="tabs-scroll mb-[1rem] overflow-x-auto">
-                    <ul class="detail-tabs flex flex-nowrap list-none m-0 gap-1 min-w-max p-1 rounded-xl border border-border bg-background" role="tablist">
-                        <li class="detail-tab-item">
+                    <ul class="flex flex-nowrap list-none m-0 gap-1 min-w-max p-1 rounded-xl border border-border bg-background" role="tablist" aria-labelledby="container-details-title" @keydown="onTabKeydown">
+                        <li v-for="tab in tabs" :key="tab">
                             <button
-                                class="detail-tab"
-                                :class="{ active: activeTab === 'overview' }"
+                                :id="`container-tab-${tab}`"
+                                :ref="`tab-${tab}`"
+                                class="ui-detail-tab"
+                                :class="{ 'ui-detail-tab-active': activeTab === tab }"
                                 role="tab"
-                                :aria-selected="activeTab === 'overview'"
-                                @click="setTab('overview')"
+                                :aria-selected="activeTab === tab"
+                                :aria-controls="`container-panel-${tab}`"
+                                :tabindex="activeTab === tab ? 0 : -1"
+                                @click="setTab(tab)"
                             >
-                                {{ $t("overview") }}
-                            </button>
-                        </li>
-                        <li class="detail-tab-item">
-                            <button
-                                class="detail-tab"
-                                :class="{ active: activeTab === 'logs' }"
-                                role="tab"
-                                :aria-selected="activeTab === 'logs'"
-                                @click="setTab('logs')"
-                            >
-                                {{ $t("logs") }}
-                            </button>
-                        </li>
-                        <li class="detail-tab-item">
-                            <button
-                                class="detail-tab"
-                                :class="{ active: activeTab === 'terminal' }"
-                                role="tab"
-                                :aria-selected="activeTab === 'terminal'"
-                                @click="setTab('terminal')"
-                            >
-                                {{ $t("terminal") }}
+                                {{ $t(tab) }}
                             </button>
                         </li>
                     </ul>
                 </div>
 
-                <section v-if="activeTab === 'overview'" class="overview-grid grid gap-4">
-                    <article class="detail-card panel-box min-w-0 p-5">
-                        <div class="detail-label mb-[0.4rem] text-muted-foreground text-xs font-semibold uppercase">{{ $t("status") }}</div>
-                        <div class="detail-value text-base font-semibold">{{ container.state || container.status }}</div>
-                    </article>
-                    <article class="detail-card panel-box min-w-0 p-5">
-                        <div class="detail-label mb-[0.4rem] text-muted-foreground text-xs font-semibold uppercase">{{ $t("health") }}</div>
-                        <div class="detail-value text-base font-semibold">{{ container.health || $t("notAvailableShort") }}</div>
-                    </article>
-                    <article class="detail-card panel-box image-card min-w-0 p-5">
-                        <div class="detail-label mb-[0.4rem] text-muted-foreground text-xs font-semibold uppercase">{{ $t("dockerImage") }}</div>
-                        <div class="detail-value text-base font-semibold break-words">{{ container.image || $t("notAvailableShort") }}</div>
-                    </article>
-                    <article class="detail-card panel-box min-w-0 p-5">
-                        <div class="detail-label mb-[0.4rem] text-muted-foreground text-xs font-semibold uppercase">{{ $tc("port", 2) }}</div>
-                        <div class="detail-value text-base font-semibold break-words">{{ container.ports || $t("notAvailableShort") }}</div>
-                    </article>
-                    <article class="detail-card panel-box min-w-0 p-5">
-                        <div class="detail-label mb-[0.4rem] text-muted-foreground text-xs font-semibold uppercase">{{ $t("createdAt") }}</div>
-                        <div class="detail-value text-base font-semibold">{{ container.createdAt || $t("notAvailableShort") }}</div>
-                    </article>
-                    <article class="detail-card panel-box min-w-0 p-5">
-                        <div class="detail-label mb-[0.4rem] text-muted-foreground text-xs font-semibold uppercase">{{ $t("runningFor") }}</div>
-                        <div class="detail-value text-base font-semibold">{{ container.runningFor || $t("notAvailableShort") }}</div>
-                    </article>
-                    <article class="detail-card panel-box min-w-0 p-5">
-                        <div class="detail-label mb-[0.4rem] text-muted-foreground text-xs font-semibold uppercase">{{ $t("CPU") }}</div>
-                        <div class="detail-value text-base font-semibold">{{ containerStats?.CPUPerc || $t("notAvailableShort") }}</div>
-                    </article>
-                    <article class="detail-card panel-box min-w-0 p-5">
-                        <div class="detail-label mb-[0.4rem] text-muted-foreground text-xs font-semibold uppercase">{{ $t("memory") }}</div>
-                        <div class="detail-value text-base font-semibold">{{ containerStats?.MemUsage || $t("notAvailableShort") }}</div>
+                <section v-if="activeTab === 'overview'" id="container-panel-overview" class="overview-grid grid gap-4" role="tabpanel" aria-labelledby="container-tab-overview" tabindex="0">
+                    <article v-for="item in overviewItems" :key="item.key" class="ui-detail-card" :class="{ 'image-card': item.wide }">
+                        <div class="ui-detail-label">{{ item.label }}</div>
+                        <div class="ui-detail-value" :class="{ 'break-words': item.breakWords }">{{ item.value }}</div>
                     </article>
                 </section>
 
-                <section v-if="activeTab === 'logs'" class="log-panel" :class="{ fullscreen: logFullscreen }">
+                <section v-if="activeTab === 'logs'" id="container-panel-logs" class="log-panel" :class="{ fullscreen: logFullscreen }" role="tabpanel" aria-labelledby="container-tab-logs" tabindex="0">
                     <div class="log-toolbar flex flex-none flex-wrap gap-2 p-[0.65rem] bg-terminal-bar">
-                        <button class="detail-button detail-button-sm" :class="{ active: followLogs }" @click="toggleFollow">
+                        <button class="ui-btn ui-btn-sm" :class="{ active: followLogs }" @click="toggleFollow">
                             <font-awesome-icon :icon="followLogs ? 'pause' : 'play'" class="me-[.25rem]" />
                             {{ followLogs ? $t("pauseFollow") : $t("resumeFollow") }}
                         </button>
-                        <button class="detail-button detail-button-sm" @click="clearLogs">
+                        <button class="ui-btn ui-btn-sm" @click="clearLogs">
                             <font-awesome-icon icon="trash" class="me-[.25rem]" /> {{ $t("clearDisplay") }}
                         </button>
-                        <button class="detail-button detail-button-sm" :disabled="!hasLogSelection" @click="copyLogs">
+                        <button class="ui-btn ui-btn-sm" :disabled="!hasLogSelection" @click="copyLogs">
                             <font-awesome-icon icon="copy" class="me-[.25rem]" /> {{ $t("copySelection") }}
                         </button>
-                        <button class="detail-button detail-button-sm ms-auto" @click="toggleFullscreen">
+                        <button class="ui-btn ui-btn-sm ms-auto" @click="toggleFullscreen">
                             <font-awesome-icon :icon="logFullscreen ? 'compress' : 'expand'" class="me-[.25rem]" />
                             {{ logFullscreen ? $t("exitFullscreen") : $t("fullscreen") }}
                         </button>
@@ -158,7 +113,7 @@
                     </div>
                 </section>
 
-                <section v-if="activeTab === 'terminal'">
+                <section v-if="activeTab === 'terminal'" id="container-panel-terminal" role="tabpanel" aria-labelledby="container-tab-terminal" tabindex="0">
                     <div v-if="!isRunning" class="panel-box big-padding empty-state text-muted-foreground">
                         {{ $t("terminalRequiresRunningContainer") }}
                     </div>
@@ -166,8 +121,8 @@
                         <div class="flex items-center gap-2 mb-[1rem]">
                             <span>{{ $t("shell") }}:</span>
                             <div class="flex" role="group">
-                                <button class="detail-button detail-button-sm" :class="{ 'detail-button-primary': shell === 'bash' }" @click="shell = 'bash'">bash</button>
-                                <button class="detail-button detail-button-sm" :class="{ 'detail-button-primary': shell === 'sh' }" @click="shell = 'sh'">sh</button>
+                                <button class="ui-btn ui-btn-sm" :class="{ 'ui-btn-primary': shell === 'bash' }" @click="shell = 'bash'">bash</button>
+                                <button class="ui-btn ui-btn-sm" :class="{ 'ui-btn-primary': shell === 'sh' }" @click="shell = 'sh'">sh</button>
                             </div>
                         </div>
                         <Terminal
@@ -208,6 +163,7 @@ export default {
     data() {
         return {
             activeTab: "overview",
+            tabs: [ "overview", "logs", "terminal" ],
             containerStatusList: {},
             dockerStats: {},
             loaded: false,
@@ -249,8 +205,55 @@ export default {
         isRunning() {
             return this.container?.state === "running";
         },
+        containerActions() {
+            return this.isRunning
+                ? [
+                    { event: "restartContainer",
+                        icon: "rotate",
+                        label: "restartStack" },
+                    { event: "stopContainer",
+                        icon: "stop",
+                        label: "stopStack" },
+                ]
+                : [{ event: "startContainer",
+                    icon: "play",
+                    label: "startStack",
+                    primary: true }];
+        },
+        overviewItems() {
+            const unavailable = this.$t("notAvailableShort");
+            return [
+                { key: "status",
+                    label: this.$t("status"),
+                    value: this.container.state || this.container.status },
+                { key: "health",
+                    label: this.$t("health"),
+                    value: this.container.health || unavailable },
+                { key: "image",
+                    label: this.$t("dockerImage"),
+                    value: this.container.image || unavailable,
+                    wide: true,
+                    breakWords: true },
+                { key: "ports",
+                    label: this.$tc("port", 2),
+                    value: this.container.ports || unavailable,
+                    breakWords: true },
+                { key: "created",
+                    label: this.$t("createdAt"),
+                    value: this.container.createdAt || unavailable },
+                { key: "running",
+                    label: this.$t("runningFor"),
+                    value: this.container.runningFor || unavailable },
+                { key: "cpu",
+                    label: this.$t("CPU"),
+                    value: this.containerStats?.CPUPerc || unavailable },
+                { key: "memory",
+                    label: this.$t("memory"),
+                    value: this.containerStats?.MemUsage || unavailable },
+            ];
+        },
         statusClass() {
-            return `tone-${containerStatusTone(this.container)}`;
+            return this.badgeTone(containerStatusTone(this.container));
         },
         statusDetail() {
             return this.container?.statusDetail || this.container?.status;
@@ -260,7 +263,7 @@ export default {
         },
         exitBadgeClass() {
             const tone = containerExitTone(this.container);
-            return tone ? `tone-${tone}` : "tone-secondary";
+            return this.badgeTone(tone);
         },
         errorLabel() {
             return formatContainerError(this.container);
@@ -301,6 +304,26 @@ export default {
         this.leaveLogs();
     },
     methods: {
+        badgeTone(tone) {
+            return {
+                primary: "ui-badge-primary",
+                danger: "ui-badge-danger",
+                stopped: "ui-badge-warning",
+                secondary: "ui-badge-neutral",
+            }[tone] || "ui-badge-neutral";
+        },
+        onTabKeydown(event) {
+            if (![ "ArrowLeft", "ArrowRight", "Home", "End" ].includes(event.key)) {
+                return;
+            }
+            event.preventDefault();
+            const index = this.tabs.indexOf(this.activeTab);
+            const nextIndex = event.key === "Home" ? 0 : event.key === "End" ? this.tabs.length - 1
+                : (index + (event.key === "ArrowRight" ? 1 : -1) + this.tabs.length) % this.tabs.length;
+            const nextTab = this.tabs[nextIndex];
+            this.setTab(nextTab);
+            this.$nextTick(() => this.$refs[`tab-${nextTab}`]?.[0]?.focus());
+        },
         refresh() {
             this.$root.emitAgent(this.endpoint, "serviceStatusList", this.stackName, (res) => {
                 if (res.ok) {
@@ -388,28 +411,6 @@ export default {
 </script>
 
 <style scoped lang="scss">
-.status-badge {
-    display: inline-block; padding: 0.35em 0.65em; border-radius: 0.375rem;
-    font-size: var(--font-size-meta-sm); font-weight: var(--font-weight-medium);
-    line-height: 1; letter-spacing: 0.01em; color: var(--foreground);
-    background: var(--muted);
-}
-.tone-primary { color: var(--primary-foreground); background: var(--primary); }
-.tone-danger { color: white; background: var(--destructive); }
-.tone-stopped { color: var(--primary-foreground); background: var(--warning); }
-.tone-secondary { color: var(--foreground); background: var(--muted); }
-.detail-button {
-    display: inline-flex; align-items: center; justify-content: center; gap: 0.25rem;
-    min-height: 38px; padding: 0.375rem 0.75rem; border: 1px solid var(--secondary);
-    border-radius: 0.375rem; color: var(--secondary-foreground); background: var(--secondary);
-    font: inherit; line-height: 1.5; text-decoration: none; cursor: pointer;
-    &:hover { color: var(--secondary-foreground); background: var(--secondary-hover); }
-    &:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
-    &:disabled { opacity: 0.65; cursor: not-allowed; }
-    &.detail-button-primary { color: var(--primary-foreground); background: var(--primary); border-color: var(--primary); }
-}
-.detail-button-sm { min-height: 31px; padding: 0.25rem 0.5rem; font-size: var(--font-size-body-sm); }
-
 .container-details-page.logs-active {
     display: flex;
     overflow: hidden;
@@ -422,27 +423,6 @@ export default {
 .logs-active > .detail-header,
 .logs-active > .tabs-scroll {
     flex: 0 0 auto;
-}
-
-.detail-tabs .detail-tab {
-    display: block; cursor: pointer; font: inherit; white-space: nowrap;
-    padding: 0.5rem 0.9rem;
-    border: 0;
-    border-radius: 0.55rem;
-    color: var(--secondary-foreground);
-    background: transparent;
-    transition: color 0.15s ease, background 0.15s ease;
-}
-
-.detail-tabs .detail-tab:hover:not(.active) {
-    color: var(--link);
-    background: var(--hover);
-}
-
-.detail-tabs .detail-tab.active {
-    color: var(--primary-foreground);
-    background: var(--gradient-primary);
-    font-weight: var(--font-weight-semibold);
 }
 
 .overview-grid {
@@ -473,10 +453,9 @@ export default {
 
 // The toolbar is a dark island in both themes, so a disabled control keeps a
 // readable muted label instead of Bootstrap's transparent button.
-.log-toolbar .detail-button:disabled {
+.log-toolbar .ui-btn:disabled {
     color: var(--muted-foreground);
     background-color: var(--secondary);
-    border-color: var(--secondary);
     opacity: 1;
 }
 
@@ -524,7 +503,7 @@ export default {
         width: 100%;
     }
 
-    .action-bar .detail-button {
+    .action-bar .ui-btn {
         flex: 1;
     }
 

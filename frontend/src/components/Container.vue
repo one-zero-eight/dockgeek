@@ -2,7 +2,7 @@
     <div :id="'service-' + encodeURIComponent(name)" class="panel-box mb-[1rem] service-card w-full px-[.75rem] pt-[.55rem] pb-[1.25rem] text-foreground text-base">
         <div class="flex min-h-[28px] flex-nowrap items-center justify-between gap-[.75rem] mb-[.1rem]">
             <h4 class="title-text m-0 min-w-0 flex-[1_1_auto] leading-tight">
-                <router-link v-if="serviceStatus.length > 0" class="title-link rounded-[.2rem] text-foreground no-underline [overflow-wrap:anywhere] transition-colors duration-150 hover:text-link focus-visible:text-link focus-visible:outline-[2px] focus-visible:outline-current focus-visible:outline-offset-[3px]" :to="containerDetailsRoute(serviceStatus[0])">
+                <router-link v-if="serviceStatus.length > 0" class="ui-entity-link" :to="containerDetailsRoute(serviceStatus[0])">
                     <span>{{ name }}</span>
                 </router-link>
                 <span v-else>{{ name }}</span>
@@ -18,7 +18,7 @@
             />
         </div>
         <div v-if="singleContainer" class="container-subtitle">
-            <router-link class="title-link rounded-[.2rem] text-foreground no-underline [overflow-wrap:anywhere] transition-colors duration-150 hover:text-link focus-visible:text-link focus-visible:outline-[2px] focus-visible:outline-current focus-visible:outline-offset-[3px]" :to="containerDetailsRoute(singleContainer)">
+            <router-link class="ui-entity-link" :to="containerDetailsRoute(singleContainer)">
                 <span>{{ singleContainer.name }}</span>
             </router-link>
             <span class="entity-label ms-[.1rem] select-none text-muted-foreground text-xs font-normal lowercase">{{ $tc("container", 1) }}</span>
@@ -32,14 +32,14 @@
         <div v-if="singleContainer" class="flex flex-wrap items-center gap-x-[.375rem] gap-y-[.35rem]">
             <FloatingTooltip v-if="statusDetail" placement="top">
                 <template #trigger="{ triggerAttrs }">
-                    <span v-bind="triggerAttrs" class="status-badge inline-block rounded-[.375rem] bg-muted px-[.65em] py-[.35em] text-foreground text-xs font-medium leading-none tracking-[.01em]" :class="bgStyle">{{ status }}</span>
+                    <span v-bind="triggerAttrs" class="ui-badge" :class="bgStyle">{{ status }}</span>
                 </template>
                 <span class="floating-tooltip-detail">{{ statusDetail }}</span>
             </FloatingTooltip>
-            <span v-else class="status-badge inline-block rounded-[.375rem] bg-muted px-[.65em] py-[.35em] text-foreground text-xs font-medium leading-none tracking-[.01em]" :class="bgStyle">{{ status }}</span>
-            <span v-if="exitLabel" class="status-badge inline-block rounded-[.375rem] bg-muted px-[.65em] py-[.35em] text-foreground text-xs font-medium leading-none tracking-[.01em]" :class="exitBadgeClass">{{ exitLabel }}</span>
+            <span v-else class="ui-badge" :class="bgStyle">{{ status }}</span>
+            <span v-if="exitLabel" class="ui-badge" :class="exitBadgeClass">{{ exitLabel }}</span>
             <a v-for="port in singleContainerPorts" :key="port.display" class="port-link no-underline" :href="port.url" target="_blank">
-                <span class="status-badge inline-block rounded-[.375rem] bg-muted px-[.65em] py-[.35em] text-foreground text-xs font-medium leading-none tracking-[.01em] tone-secondary">{{ port.display }} {{ $tc("port", 1).toLowerCase() }}</span>
+                <span class="ui-badge ui-badge-neutral">{{ port.display }} {{ $tc("port", 1).toLowerCase() }}</span>
             </a>
             <template v-if="dockerStats[singleContainer.name]">
                 <span class="text-muted-foreground text-sm">{{ $t("CPU") }}: {{ dockerStats[singleContainer.name].CPUPerc }}</span>
@@ -47,7 +47,7 @@
             </template>
         </div>
         <div v-else-if="serviceStatus.length === 0" class="flex flex-wrap items-center gap-x-[.375rem] gap-y-[.35rem]">
-            <span class="status-badge inline-block rounded-[.375rem] bg-muted px-[.65em] py-[.35em] text-foreground text-xs font-medium leading-none tracking-[.01em] tone-secondary">{{ status }}</span>
+            <span class="ui-badge ui-badge-neutral">{{ status }}</span>
         </div>
         <ContainerError v-if="singleContainer && errorLabel" class="mt-[.5rem]" :message="errorLabel" />
 
@@ -56,7 +56,7 @@
                 <div class="flex min-h-[28px] flex-nowrap items-center justify-between gap-[.75rem] mb-[.25rem]">
                     <div class="instance-name title-text relative m-0 min-w-0 flex-[1_1_auto] leading-tight text-foreground text-sm">
                         <span class="instance-branch" aria-hidden="true">↳</span>
-                        <router-link class="title-link rounded-[.2rem] text-foreground no-underline [overflow-wrap:anywhere] transition-colors duration-150 hover:text-link focus-visible:text-link focus-visible:outline-[2px] focus-visible:outline-current focus-visible:outline-offset-[3px]" :to="containerDetailsRoute(instance)">
+                        <router-link class="ui-entity-link" :to="containerDetailsRoute(instance)">
                             <span>{{ instance.name }}</span>
                         </router-link>
                         <span class="entity-label ms-[.1rem] select-none text-muted-foreground text-xs font-normal lowercase">{{ $tc("container", 1) }}</span>
@@ -65,14 +65,14 @@
                 <div class="mt-[.25rem] flex flex-wrap items-center gap-x-[.375rem] gap-y-[.35rem]">
                     <FloatingTooltip v-if="instanceStatusDetail(instance)" placement="top">
                         <template #trigger="{ triggerAttrs }">
-                            <span v-bind="triggerAttrs" class="status-badge inline-block rounded-[.375rem] bg-muted px-[.65em] py-[.35em] text-foreground text-xs font-medium leading-none tracking-[.01em]" :class="instanceStatusClass(instance)">{{ instance.status }}</span>
+                            <span v-bind="triggerAttrs" class="ui-badge" :class="instanceStatusClass(instance)">{{ instance.status }}</span>
                         </template>
                         <span class="floating-tooltip-detail">{{ instanceStatusDetail(instance) }}</span>
                     </FloatingTooltip>
-                    <span v-else class="status-badge inline-block rounded-[.375rem] bg-muted px-[.65em] py-[.35em] text-foreground text-xs font-medium leading-none tracking-[.01em]" :class="instanceStatusClass(instance)">{{ instance.status }}</span>
-                    <span v-if="instanceExitLabel(instance)" class="status-badge inline-block rounded-[.375rem] bg-muted px-[.65em] py-[.35em] text-foreground text-xs font-medium leading-none tracking-[.01em]" :class="instanceExitClass(instance)">{{ instanceExitLabel(instance) }}</span>
+                    <span v-else class="ui-badge" :class="instanceStatusClass(instance)">{{ instance.status }}</span>
+                    <span v-if="instanceExitLabel(instance)" class="ui-badge" :class="instanceExitClass(instance)">{{ instanceExitLabel(instance) }}</span>
                     <a v-for="port in instancePorts(instance)" :key="port.display" class="port-link no-underline" :href="port.url" target="_blank">
-                        <span class="status-badge inline-block rounded-[.375rem] bg-muted px-[.65em] py-[.35em] text-foreground text-xs font-medium leading-none tracking-[.01em] tone-secondary">{{ port.display }} {{ $tc("port", 1).toLowerCase() }}</span>
+                        <span class="ui-badge ui-badge-neutral">{{ port.display }} {{ $tc("port", 1).toLowerCase() }}</span>
                     </a>
                     <span v-if="dockerStats[instance.name]" class="text-muted-foreground text-sm">
                         {{ $t("CPU") }}: {{ dockerStats[instance.name].CPUPerc }}
@@ -181,7 +181,7 @@ export default defineComponent({
     computed: {
 
         bgStyle() {
-            return `tone-${containerStatusTone(this.serviceStatus[0])}`;
+            return this.badgeTone(containerStatusTone(this.serviceStatus[0]));
         },
 
         isRunning() {
@@ -347,7 +347,7 @@ export default defineComponent({
         },
         exitBadgeClass() {
             const tone = containerExitTone(this.serviceStatus[0]);
-            return tone ? `tone-${tone}` : "tone-secondary";
+            return this.badgeTone(tone);
         },
         errorLabel() {
             for (const instance of this.serviceStatus) {
@@ -368,6 +368,14 @@ export default defineComponent({
         this.scrollToService();
     },
     methods: {
+        badgeTone(tone) {
+            return {
+                primary: "ui-badge-primary",
+                danger: "ui-badge-danger",
+                stopped: "ui-badge-warning",
+                secondary: "ui-badge-neutral",
+            }[tone] || "ui-badge-neutral";
+        },
         scrollToService() {
             if (this.$route.hash === "#service-" + encodeURIComponent(this.name)) {
                 this.$nextTick(() => this.$el.scrollIntoView({ block: "nearest" }));
@@ -423,7 +431,7 @@ export default defineComponent({
             return route;
         },
         instanceStatusClass(instance) {
-            return `tone-${containerStatusTone(instance)}`;
+            return this.badgeTone(containerStatusTone(instance));
         },
         instanceStatusDetail(instance) {
             return instance.statusDetail || instance.status;
@@ -433,7 +441,7 @@ export default defineComponent({
         },
         instanceExitClass(instance) {
             const tone = containerExitTone(instance);
-            return tone ? `tone-${tone}` : "tone-secondary";
+            return this.badgeTone(tone);
         },
         instanceError(instance) {
             return formatContainerError(instance);
@@ -444,10 +452,6 @@ export default defineComponent({
 </script>
 
 <style scoped lang="scss">
-.tone-primary { color: var(--primary-foreground); background: var(--primary); }
-.tone-danger { color: white; background: var(--destructive); }
-.tone-stopped { color: var(--primary-foreground); background: var(--warning); }
-.tone-secondary { color: var(--foreground); background: var(--muted); }
 .service-card {
     .tag {
         opacity: 1;
@@ -464,7 +468,7 @@ export default defineComponent({
     .entity-label { font-family: var(--font-ui); }
 
     h4 .entity-label {
-        font-size: var(--font-size-body-sm);
+        font-size: var(--text-sm-fontSize);
     }
 
     .container-subtitle {
@@ -472,10 +476,10 @@ export default defineComponent({
         min-width: 0;
         line-height: var(--line-height-tight);
         color: var(--foreground);
-        font-size: var(--font-size-body-sm);
+        font-size: var(--text-sm-fontSize);
 
         .entity-label {
-            font-size: var(--font-size-meta-sm);
+            font-size: var(--text-xs-fontSize);
         }
     }
 

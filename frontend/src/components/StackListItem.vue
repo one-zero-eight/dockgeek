@@ -1,7 +1,7 @@
 <template>
     <div class="stack-tree select-none" :class="{ 'opacity-50': !stack.isManagedByDockge }">
         <div class="stack-row relative isolate flex min-w-0 min-h-[34px] items-center cursor-pointer" :class="{ selected: $route.path === url && !$route.hash }" @click.self="stack.isManagedByDockge && $event.detail <= 1 && changeCollapsed()" @dblclick.prevent="stack.isManagedByDockge && $event.target !== $event.currentTarget && changeCollapsed()">
-            <button class="tree-toggle min-h-[34px] w-[30px] flex-[0_0_30px] rounded-[5px] border-0 bg-transparent p-0 text-inherit text-[.8rem]" :class="{ 'unmanaged-toggle': !stack.isManagedByDockge }" :disabled="!stack.isManagedByDockge" :aria-expanded="stack.isManagedByDockge ? !isCollapsed : undefined" :aria-label="stackName" @click="$event.detail <= 1 && changeCollapsed()" @dblclick.stop.prevent>
+            <button class="tree-toggle min-h-[34px] w-[30px] flex-[0_0_30px] rounded-[5px] bg-transparent p-0 text-inherit text-[.8rem]" :class="{ 'unmanaged-toggle': !stack.isManagedByDockge }" :disabled="!stack.isManagedByDockge" :aria-expanded="stack.isManagedByDockge ? !isCollapsed : undefined" :aria-label="stackName" @click="$event.detail <= 1 && changeCollapsed()" @dblclick.stop.prevent>
                 <font-awesome-icon icon="chevron-down" :class="{ collapsed: isCollapsed }" />
             </button>
             <router-link :to="url" class="stack-link flex min-w-0 min-h-[34px] items-center gap-[8px] px-[4px] py-[3px] text-inherit text-base no-underline">
@@ -29,7 +29,7 @@
             <li v-else-if="services.length === 0" class="p-[6px] text-base [overflow-wrap:anywhere]">{{ $t("noServices") }}</li>
             <li v-for="service in services" v-else :key="service.name">
                 <div class="tree-row relative isolate flex min-w-0 min-h-[34px] items-center cursor-pointer" :class="{ selected: $route.path === url && $route.hash === '#service-' + encodeURIComponent(service.name) }" @click.self="$event.detail <= 1 && service.instances.length && toggleService(service.name)" @dblclick.prevent="$event.target !== $event.currentTarget && service.instances.length && toggleService(service.name)">
-                    <button class="tree-toggle min-h-[34px] w-[30px] flex-[0_0_30px] rounded-[5px] border-0 bg-transparent p-0 text-inherit text-[.8rem]" :disabled="service.instances.length === 0" :aria-expanded="!collapsedServices.has(service.name)" :aria-label="service.name" @click="$event.detail <= 1 && toggleService(service.name)" @dblclick.stop.prevent>
+                    <button class="tree-toggle min-h-[34px] w-[30px] flex-[0_0_30px] rounded-[5px] bg-transparent p-0 text-inherit text-[.8rem]" :disabled="service.instances.length === 0" :aria-expanded="!collapsedServices.has(service.name)" :aria-label="service.name" @click="$event.detail <= 1 && toggleService(service.name)" @dblclick.stop.prevent>
                         <font-awesome-icon icon="chevron-down" :class="{ collapsed: collapsedServices.has(service.name) }" />
                     </button>
                     <router-link :to="{ path: url, hash: '#service-' + encodeURIComponent(service.name) }" class="tree-link flex min-w-0 min-h-[34px] items-center gap-[8px] px-[4px] py-[3px] text-inherit text-base no-underline">

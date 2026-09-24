@@ -179,13 +179,13 @@ export default {
 
 <style lang="scss">
 .floating-tooltip-title {
-    font-weight: var(--font-weight-semibold);
+    font-weight: var(--fontWeight-semibold);
 }
 
 .floating-tooltip-detail {
     color: var(--muted-foreground);
     font-family: var(--font-mono);
-    font-size: var(--font-size-body-sm);
+    font-size: var(--text-sm-fontSize);
 }
 
 .floating-tooltip-enter-active {

@@ -3,10 +3,15 @@
         <div v-if="showToolbar || $slots['toolbar-end']" class="flex flex-none items-center justify-between gap-[0.4rem] overflow-x-auto p-[0.5rem] bg-terminal-bar">
             <div class="flex flex-[0_1_auto] items-center gap-[0.4rem]">
                 <template v-if="showToolbar">
-                    <button class="terminal-button inline-flex flex-none items-center gap-[0.35rem] min-h-[31px] max-[991.98px]:min-h-[44px] px-[0.75rem] py-[0.25rem] border border-solid border-secondary rounded-[0.375rem] text-secondary-foreground bg-secondary text-sm cursor-pointer hover:bg-secondary-hover focus-visible:outline-[2px] focus-visible:outline-solid focus-visible:outline-ring focus-visible:outline-offset-[2px]" @click="focus"><font-awesome-icon icon="terminal" /> {{ $t("focusTerminal") }}</button>
-                    <button class="terminal-button inline-flex flex-none items-center gap-[0.35rem] min-h-[31px] max-[991.98px]:min-h-[44px] px-[0.75rem] py-[0.25rem] border border-solid border-secondary rounded-[0.375rem] text-secondary-foreground bg-secondary text-sm cursor-pointer hover:bg-secondary-hover focus-visible:outline-[2px] focus-visible:outline-solid focus-visible:outline-ring focus-visible:outline-offset-[2px]" :disabled="!hasSelection" @click="copySelection"><font-awesome-icon icon="copy" /> {{ $t("copySelection") }}</button>
-                    <button v-if="acceptsInput" class="terminal-button inline-flex flex-none items-center gap-[0.35rem] min-h-[31px] max-[991.98px]:min-h-[44px] px-[0.75rem] py-[0.25rem] border border-solid border-secondary rounded-[0.375rem] text-secondary-foreground bg-secondary text-sm cursor-pointer hover:bg-secondary-hover focus-visible:outline-[2px] focus-visible:outline-solid focus-visible:outline-ring focus-visible:outline-offset-[2px]" @click="handlePaste"><font-awesome-icon icon="paste" /> {{ $t("paste") }}</button>
-                    <button class="terminal-button inline-flex flex-none items-center gap-[0.35rem] min-h-[31px] max-[991.98px]:min-h-[44px] px-[0.75rem] py-[0.25rem] border border-solid border-secondary rounded-[0.375rem] text-secondary-foreground bg-secondary text-sm cursor-pointer hover:bg-secondary-hover focus-visible:outline-[2px] focus-visible:outline-solid focus-visible:outline-ring focus-visible:outline-offset-[2px]" @click="clear"><font-awesome-icon icon="trash" /> {{ $t("clearDisplay") }}</button>
+                    <button
+                        v-for="action in toolbarActions"
+                        :key="action.key"
+                        class="ui-btn ui-btn-sm terminal-button flex-none gap-[.35rem] px-3 max-[991.98px]:min-h-[44px]"
+                        :disabled="action.disabled"
+                        @click="runToolbarAction(action.key)"
+                    >
+                        <font-awesome-icon :icon="action.icon" /> {{ $t(action.label) }}
+                    </button>
                 </template>
             </div>
             <div v-if="$slots['toolbar-end']" class="ms-auto flex flex-[0_1_auto] items-center gap-[0.4rem]">
@@ -111,6 +116,23 @@ export default {
     computed: {
         acceptsInput() {
             return this.mode === "mainTerminal" || this.mode === "interactive" || this.mode === "interactiveContainer";
+        },
+        toolbarActions() {
+            return [
+                { key: "focus",
+                    icon: "terminal",
+                    label: "focusTerminal" },
+                { key: "copy",
+                    icon: "copy",
+                    label: "copySelection",
+                    disabled: !this.hasSelection },
+                ...(this.acceptsInput ? [{ key: "paste",
+                    icon: "paste",
+                    label: "paste" }] : []),
+                { key: "clear",
+                    icon: "trash",
+                    label: "clearDisplay" },
+            ];
         },
     },
     created() {
@@ -222,6 +244,15 @@ export default {
     },
 
     methods: {
+        runToolbarAction(key) {
+            const handlers = {
+                focus: this.focus,
+                copy: this.copySelection,
+                paste: this.handlePaste,
+                clear: this.clear,
+            };
+            handlers[key]?.call(this);
+        },
         bind(endpoint, name, callback, options = {}) {
             // Workaround: normally this.name should be set, but it is not sometimes, so we use the parameter, but eventually this.name and name must be the same name
             if (name) {
@@ -450,7 +481,6 @@ export default {
 .terminal-button:disabled:hover {
     color: var(--muted-foreground);
     background-color: var(--secondary);
-    border-color: var(--secondary);
     opacity: 1;
 }
 </style>

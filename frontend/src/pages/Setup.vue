@@ -14,7 +14,7 @@
                 </p>
 
                 <div class="floating-field">
-                    <select id="language" v-model="$root.language" class="field-control field-select">
+                    <select id="language" v-model="$root.language" class="ui-floating-field field-select">
                         <option v-for="(lang, i) in $i18n.availableLocales" :key="`Lang${i}`" :value="lang">
                             {{ $i18n.messages[lang].languageName }}
                         </option>
@@ -23,21 +23,21 @@
                 </div>
 
                 <div class="floating-field mt-[1rem]">
-                    <input id="floatingInput" v-model="username" type="text" class="field-control" :placeholder="$t('Username')" required data-cy="username-input">
+                    <input id="floatingInput" v-model="username" type="text" class="ui-floating-field" :placeholder="$t('Username')" required data-cy="username-input">
                     <label for="floatingInput">{{ $t("Username") }}</label>
                 </div>
 
                 <div class="floating-field mt-[1rem]">
-                    <input id="floatingPassword" v-model="password" type="password" class="field-control" :placeholder="$t('Password')" required data-cy="password-input">
+                    <input id="floatingPassword" v-model="password" type="password" class="ui-floating-field" :placeholder="$t('Password')" required data-cy="password-input">
                     <label for="floatingPassword">{{ $t("Password") }}</label>
                 </div>
 
                 <div class="floating-field mt-[1rem]">
-                    <input id="repeat" v-model="repeatPassword" type="password" class="field-control" :placeholder="$t('Repeat Password')" required data-cy="password-repeat-input">
+                    <input id="repeat" v-model="repeatPassword" type="password" class="ui-floating-field" :placeholder="$t('Repeat Password')" required data-cy="password-repeat-input">
                     <label for="repeat">{{ $t("Repeat Password") }}</label>
                 </div>
 
-                <button class="submit-button w-full mt-[1rem]" type="submit" :disabled="processing" data-cy="submit-setup-form">
+                <button class="ui-btn ui-btn-primary w-full mt-[1rem] min-h-[40px] px-5 text-base" type="submit" :disabled="processing" data-cy="submit-setup-form">
                     {{ $t("Create") }}
                 </button>
             </form>
@@ -109,59 +109,13 @@ export default {
         top: 0.35rem;
         left: 1.3rem;
         color: var(--muted-foreground);
-        font-size: var(--font-size-body-sm);
+        font-size: var(--text-sm-fontSize);
         pointer-events: none;
-    }
-}
-
-.field-control {
-    display: block;
-    width: 100%;
-    min-height: 3.625rem;
-    padding: 1.5rem 1.3rem 0.45rem;
-    border: 1px solid var(--border);
-    border-radius: 0.375rem;
-    background: var(--input-surface);
-    color: var(--secondary-foreground);
-    font-size: var(--font-size-body);
-
-    &::placeholder {
-        color: transparent;
-    }
-
-    &:focus-visible {
-        outline: 2px solid var(--ring);
-        outline-offset: 1px;
     }
 }
 
 .field-select {
     appearance: auto;
-}
-
-.submit-button {
-    min-height: 2.5rem;
-    padding: 0.375rem 1.25rem;
-    border: 1px solid var(--primary);
-    border-radius: 0.375rem;
-    background: var(--primary);
-    color: var(--primary-foreground);
-    font-size: var(--font-size-body);
-    cursor: pointer;
-
-    &:hover:not(:disabled) {
-        background: var(--primary-hover);
-    }
-
-    &:focus-visible {
-        outline: 2px solid var(--ring);
-        outline-offset: 2px;
-    }
-
-    &:disabled {
-        opacity: 0.65;
-        cursor: not-allowed;
-    }
 }
 
 </style>

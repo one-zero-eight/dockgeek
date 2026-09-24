@@ -22,7 +22,7 @@
                         <slot name="header">
                             <h5 class="fd-title m-0 overflow-hidden text-ellipsis whitespace-nowrap text-foreground">{{ title }}</h5>
                         </slot>
-                        <button v-if="!hideClose" type="button" class="fd-close flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-inherit opacity-70 hover:bg-hover hover:opacity-100 hover:outline-none focus-visible:bg-hover focus-visible:opacity-100 focus-visible:outline-none" :aria-label="$t('close')" @click="cancel">
+                        <button v-if="!hideClose" type="button" class="fd-close flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-lg bg-transparent p-0 text-inherit opacity-70 hover:bg-hover hover:opacity-100 hover:outline-none focus-visible:bg-hover focus-visible:opacity-100 focus-visible:outline-none" :aria-label="$t('close')" @click="cancel">
                             <font-awesome-icon icon="times" />
                         </button>
                     </header>
@@ -33,10 +33,10 @@
 
                     <footer v-if="!hideFooter" class="fd-footer flex shrink-0 flex-wrap items-center justify-end gap-2 px-[1.15rem] pb-[1.15rem]">
                         <slot name="footer" :cancel="cancel" :ok="ok" :busy="busy">
-                            <button type="button" class="fd-button inline-flex min-h-[38px] items-center justify-center gap-1 rounded-md border border-transparent bg-secondary px-3 py-1.5 text-secondary-foreground leading-[1.5] cursor-pointer disabled:cursor-not-allowed disabled:opacity-65 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2" :class="buttonVariant(cancelVariant)" :disabled="busy" @click="cancel">
+                            <button type="button" class="fd-button inline-flex min-h-[38px] items-center justify-center gap-1 rounded-md bg-secondary px-3 py-1.5 text-secondary-foreground leading-[1.5] cursor-pointer disabled:cursor-not-allowed disabled:opacity-65 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2" :class="buttonVariant(cancelVariant)" :disabled="busy" @click="cancel">
                                 {{ cancelTitle || $t("cancel") }}
                             </button>
-                            <button type="button" class="fd-button fd-ok inline-flex min-h-[38px] items-center justify-center gap-1 rounded-md border border-transparent bg-secondary px-3 py-1.5 text-secondary-foreground leading-[1.5] cursor-pointer disabled:cursor-not-allowed disabled:opacity-65 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2" :class="buttonVariant(okVariant)" :disabled="okDisabled || busy" @click="ok">
+                            <button type="button" class="fd-button fd-ok inline-flex min-h-[38px] items-center justify-center gap-1 rounded-md bg-secondary px-3 py-1.5 text-secondary-foreground leading-[1.5] cursor-pointer disabled:cursor-not-allowed disabled:opacity-65 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2" :class="buttonVariant(okVariant)" :disabled="okDisabled || busy" @click="ok">
                                 <span v-if="busy" class="fd-spinner h-4 w-4 rounded-full border-[0.2em] border-current border-r-transparent" aria-hidden="true" />
                                 {{ okTitle || $t("ok") }}
                             </button>

@@ -9,19 +9,11 @@
                 <!-- Left -->
                 <div class="w-full px-3 md:w-7/12 md:flex-none">
                     <!-- Stats -->
-                    <div class="panel-box big-padding mb-[1.5rem] text-center p-5">
+                    <div class="panel-box mb-[1.5rem] text-center p-5">
                         <div class="-mx-3 flex flex-wrap">
-                            <div class="min-w-0 flex-1 px-3">
-                                <h3>{{ $t("active") }}</h3>
-                                <span class="num active block text-3xl font-bold text-primary">{{ activeNum }}</span>
-                            </div>
-                            <div class="min-w-0 flex-1 px-3">
-                                <h3>{{ $t("exited") }}</h3>
-                                <span class="num exited block text-3xl font-bold text-destructive">{{ exitedNum }}</span>
-                            </div>
-                            <div class="min-w-0 flex-1 px-3">
-                                <h3>{{ $t("inactive") }}</h3>
-                                <span class="num inactive block text-3xl font-bold">{{ inactiveNum }}</span>
+                            <div v-for="summary in stackSummaries" :key="summary.key" class="min-w-0 flex-1 px-3">
+                                <h3>{{ $t(summary.key) }}</h3>
+                                <span class="num block text-3xl font-bold" :class="summary.color">{{ summary.value }}</span>
                             </div>
                         </div>
                     </div>
@@ -29,30 +21,30 @@
                 <!-- Right -->
                 <div class="w-full px-3 md:w-5/12 md:flex-none">
                     <!-- Agent List -->
-                    <div class="panel-box big-padding p-5">
-                        <h4 class="mb-[1rem]">{{ $tc("dockgeAgent", 2) }} <span class="status-badge warning-badge">beta</span></h4>
+                    <div class="panel-box p-5">
+                        <h4 class="mb-[1rem]">{{ $tc("dockgeAgent", 2) }} <span class="ui-badge ui-badge-warning">beta</span></h4>
 
                         <div v-for="(agentItem, endpoint) in $root.agentList" :key="endpoint" class="mb-[1rem] agent">
                             <!-- Agent Status -->
                             <template v-if="$root.agentStatusList[endpoint]">
-                                <span v-if="$root.agentStatusList[endpoint] === 'online'" class="status-badge primary-badge me-[.5rem]">{{ $t("agentOnline") }}</span>
-                                <span v-else-if="$root.agentStatusList[endpoint] === 'offline'" class="status-badge danger-badge me-[.5rem]">{{ $t("agentOffline") }}</span>
-                                <span v-else class="status-badge neutral-badge me-[.5rem]">{{ $t($root.agentStatusList[endpoint]) }}</span>
+                                <span v-if="$root.agentStatusList[endpoint] === 'online'" class="ui-badge ui-badge-primary me-[.5rem]">{{ $t("agentOnline") }}</span>
+                                <span v-else-if="$root.agentStatusList[endpoint] === 'offline'" class="ui-badge ui-badge-danger me-[.5rem]">{{ $t("agentOffline") }}</span>
+                                <span v-else class="ui-badge ui-badge-neutral me-[.5rem]">{{ $t($root.agentStatusList[endpoint]) }}</span>
                             </template>
 
                             <!-- Agent Display Name -->
                             <template v-if="$root.agentStatusList[endpoint]">
-                                <span v-if="endpoint === '' && agentItem.name === ''" class="status-badge neutral-badge me-[.5rem]">{{ $t("Current") }}</span>
+                                <span v-if="endpoint === '' && agentItem.name === ''" class="ui-badge ui-badge-neutral me-[.5rem]">{{ $t("Current") }}</span>
                                 <span v-else-if="agentItem.name === ''" :href="agentItem.url" class="me-[.5rem]">{{ endpoint }}</span>
                                 <span v-else :href="agentItem.url" class="me-[.5rem]">{{ agentItem.name }}</span>
                             </template>
 
                             <!-- Edit Name  -->
-                            <font-awesome-icon v-if="agentItem.name !== ''" icon="pen-to-square" @click="showEditAgentNameDialog[agentItem.name] = !showEditAgentNameDialog[agentItem.Name]" />
+                            <button v-if="agentItem.name !== ''" type="button" class="inline-flex items-center rounded text-muted-foreground hover:text-link focus-visible:outline-2 focus-visible:outline-ring" :aria-label="$t('Update Name')" @click="showEditAgentNameDialog[endpoint] = true"><font-awesome-icon icon="pen-to-square" /></button>
 
                             <!-- Edit Dialog -->
                             <FloatingDialog
-                                v-model="showEditAgentNameDialog[agentItem.name]"
+                                v-model="showEditAgentNameDialog[endpoint]"
                                 size="sm"
                                 no-close-on-backdrop
                                 :title="$t('Update Name')"
@@ -61,11 +53,11 @@
                                 @ok="updateName(agentItem.url, agentItem.updatedName)"
                             >
                                 <label for="updatedName" class="field-label">{{ $t("Current value") }}: {{ agentItem.name }}</label>
-                                <input id="updatedName" v-model="agentItem.updatedName" type="text" class="field-control" optional>
+                                <input id="updatedName" v-model="agentItem.updatedName" type="text" class="ui-field" optional>
                             </FloatingDialog>
 
                             <!-- Remove Button -->
-                            <font-awesome-icon v-if="endpoint !== ''" class="ms-[.5rem] remove-agent" icon="trash" @click="showRemoveAgentDialog[agentItem.url] = !showRemoveAgentDialog[agentItem.url]" />
+                            <button v-if="endpoint !== ''" type="button" class="remove-agent ms-[.5rem] rounded bg-transparent focus-visible:outline-2 focus-visible:outline-ring" :aria-label="$t('removeAgent')" @click="showRemoveAgentDialog[agentItem.url] = true"><font-awesome-icon icon="trash" /></button>
 
                             <!-- Remove Agent Dialog -->
                             <FloatingDialog
@@ -81,31 +73,31 @@
                             </FloatingDialog>
                         </div>
 
-                        <button v-if="!showAgentForm" class="action-button neutral-button !border-0" @click="showAgentForm = !showAgentForm">{{ $t("addAgent") }}</button>
+                        <button v-if="!showAgentForm" class="ui-btn" @click="showAgentForm = !showAgentForm">{{ $t("addAgent") }}</button>
 
                         <!-- Add Agent Form -->
                         <form v-if="showAgentForm" @submit.prevent="addAgent">
                             <div class="mb-[1rem]">
                                 <label for="url" class="field-label">{{ $t("dockgeURL") }}</label>
-                                <input id="url" v-model="agent.url" type="url" class="field-control" required placeholder="http://">
+                                <input id="url" v-model="agent.url" type="url" class="ui-field" required placeholder="http://">
                             </div>
 
                             <div class="mb-[1rem]">
                                 <label for="username" class="field-label">{{ $t("Username") }}</label>
-                                <input id="username" v-model="agent.username" type="text" class="field-control" required>
+                                <input id="username" v-model="agent.username" type="text" class="ui-field" required>
                             </div>
 
                             <div class="mb-[1rem]">
                                 <label for="password" class="field-label">{{ $t("Password") }}</label>
-                                <input id="password" v-model="agent.password" type="password" class="field-control" required autocomplete="new-password">
+                                <input id="password" v-model="agent.password" type="password" class="ui-field" required autocomplete="new-password">
                             </div>
 
                             <div class="mb-[1rem]">
                                 <label for="name" class="field-label">{{ $t("Friendly Name") }}</label>
-                                <input id="name" v-model="agent.name" type="text" class="field-control" optional>
+                                <input id="name" v-model="agent.name" type="text" class="ui-field" optional>
                             </div>
 
-                            <button type="submit" class="action-button primary-button" :disabled="connectingAgent">
+                            <button type="submit" class="ui-btn ui-btn-gradient-primary px-5" :disabled="connectingAgent">
                                 <template v-if="connectingAgent">{{ $t("connecting") }}</template>
                                 <template v-else>{{ $t("connect") }}</template>
                             </button>
@@ -158,6 +150,19 @@ export default {
     },
 
     computed: {
+        stackSummaries() {
+            return [
+                { key: "active",
+                    value: this.activeNum,
+                    color: "text-primary" },
+                { key: "exited",
+                    value: this.exitedNum,
+                    color: "text-destructive" },
+                { key: "inactive",
+                    value: this.inactiveNum,
+                    color: "" },
+            ];
+        },
         activeNum() {
             return this.getStatusNum("active");
         },
@@ -315,60 +320,12 @@ export default {
 
 <style lang="scss" scoped>
 .field-label { display: inline-block; margin-bottom: 0.5rem; color: var(--foreground); }
-.field-control {
-    display: block;
-    width: 100%;
-    min-height: 2.375rem;
-    padding: 0.375rem 0.75rem;
-    border: 1px solid var(--border);
-    border-radius: 0.375rem;
-    background: var(--input-surface);
-    color: var(--secondary-foreground);
-    font-size: var(--font-size-body);
-
-    &:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
-}
-.action-button {
-    min-height: 2.375rem;
-    padding: 0.375rem 1.25rem;
-    border: 1px solid var(--border);
-    border-radius: 0.375rem;
-    background: var(--secondary);
-    color: var(--secondary-foreground);
-    cursor: pointer;
-
-    &:hover:not(:disabled) { background-color: var(--secondary-hover); }
-    &:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
-    &:disabled { opacity: 0.65; cursor: not-allowed; }
-
-    &.primary-button {
-        border-color: var(--primary);
-        background: var(--gradient-primary);
-        color: var(--primary-foreground);
-
-        &:hover:not(:disabled) {
-            background: var(--gradient-primary-active);
-        }
-    }
-}
-.status-badge {
-    display: inline-block;
-    padding: 0.35em 0.65em;
-    border-radius: 0.375rem;
-    font-size: var(--font-size-meta-sm);
-    font-weight: var(--font-weight-medium);
-    line-height: 1;
-}
-.warning-badge { background: var(--warning); color: var(--primary-foreground); }
-.primary-badge { background: var(--primary); color: var(--primary-foreground); }
-.danger-badge { background: var(--destructive); color: white; }
-.neutral-badge { background: var(--muted); color: var(--foreground); }
 @media (max-width: 575px) {
-    .field-control, .action-button { min-height: 44px; }
+    .ui-field, .ui-btn { min-height: 44px; }
 }
 
 table {
-    font-size: var(--font-size-body-sm);
+    font-size: var(--text-sm-fontSize);
 
     tr {
         transition: all ease-in-out 0.2ms;

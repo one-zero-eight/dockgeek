@@ -352,8 +352,8 @@ export default {
     border: 0;
     border-radius: 8px;
     color: inherit;
-    font-size: var(--font-size-body-sm);
-    font-weight: var(--font-weight-medium);
+    font-size: var(--text-sm-fontSize);
+    font-weight: var(--fontWeight-medium);
     background: transparent;
     text-align: start;
     text-decoration: none;
@@ -399,7 +399,7 @@ export default {
     display: block;
     padding: 0.35rem 0.75rem;
     color: var(--muted-foreground);
-    font-size: var(--font-size-body-sm);
+    font-size: var(--text-sm-fontSize);
     opacity: 1;
 }
 

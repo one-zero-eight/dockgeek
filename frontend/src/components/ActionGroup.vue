@@ -305,8 +305,8 @@ export default {
         background-color: var(--secondary);
         color: var(--secondary-foreground);
         font-family: inherit;
-        font-size: var(--font-size-body);
-        font-weight: var(--font-weight-medium);
+        font-size: var(--text-base-fontSize);
+        font-weight: var(--fontWeight-medium);
         white-space: nowrap;
         line-height: 1;
         cursor: pointer;
@@ -379,7 +379,7 @@ export default {
         padding: 0.5rem 0.75rem;
         border-radius: 0;
         background-color: var(--secondary);
-        font-size: var(--font-size-body);
+        font-size: var(--text-base-fontSize);
         line-height: 1;
         white-space: nowrap;
 
@@ -416,7 +416,7 @@ export default {
     .action-group-btn {
         min-height: 28px;
         padding: 0.2rem 0.65rem;
-        font-size: var(--font-size-body-sm);
+        font-size: var(--text-sm-fontSize);
         gap: 0.35rem;
     }
 
@@ -429,7 +429,7 @@ export default {
 .action-group-menu.is-sm .floating-menu-item {
     min-height: 28px;
     padding: 0.2rem 0.65rem;
-    font-size: var(--font-size-body-sm);
+    font-size: var(--text-sm-fontSize);
     gap: 0.35rem;
 }
 </style>

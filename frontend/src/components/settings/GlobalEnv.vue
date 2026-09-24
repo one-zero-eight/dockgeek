@@ -19,7 +19,7 @@
                 <div class="my-[1.5rem] first:mt-0">
                     <!-- Save Button -->
                     <div>
-                        <button class="inline-grid min-h-[2.375rem] min-w-[5rem] items-center justify-center max-[575px]:min-h-[44px] rounded-md border border-primary bg-primary bg-gradient-primary px-5 py-1.5 text-primary-foreground cursor-pointer hover:bg-gradient-primary-active focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2 disabled:cursor-wait" type="submit" :disabled="saving">
+                        <button class="ui-settings-save" type="submit" :disabled="saving">
                             <span class="col-start-1 row-start-1" :class="{ invisible: saving || saved }" :aria-hidden="saving || saved">{{ $t("Save") }}</span>
                             <span class="col-start-1 row-start-1 inline-flex items-center justify-center gap-2" :class="{ invisible: !saving }" :aria-hidden="!saving">
                                 <font-awesome-icon icon="spinner" :spin="saving" aria-hidden="true" /> {{ $t("Save") }}

@@ -302,8 +302,8 @@ export default {
     h2 {
         margin: 0;
         color: var(--foreground);
-        font-size: var(--font-size-card-title);
-        font-weight: var(--font-weight-medium);
+        font-size: 1.25rem;
+        font-weight: var(--fontWeight-medium);
     }
 }
 
@@ -313,8 +313,8 @@ export default {
     :deep(.form-label) {
         margin-bottom: 0.45rem;
         color: var(--foreground);
-        font-size: var(--font-size-body-sm);
-        font-weight: var(--font-weight-semibold);
+        font-size: var(--text-sm-fontSize);
+        font-weight: var(--fontWeight-semibold);
     }
 
     :deep(.settings-subheading),

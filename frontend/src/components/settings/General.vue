@@ -6,7 +6,7 @@
                 <label for="timezone" class="mb-2 inline-block text-foreground">
                     {{ $t("Display Timezone") }}
                 </label>
-                <select id="timezone" v-model="$root.userTimezone" class="block w-full min-w-0 min-h-[2.375rem] max-[575px]:min-h-[44px] rounded-md border border-border bg-input-surface px-3 py-1.5 text-secondary-foreground text-base focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2">
+                <select id="timezone" v-model="$root.userTimezone" class="ui-field min-w-0 max-[575px]:min-h-[44px] text-secondary-foreground text-base">
                     <option value="auto">
                         {{ $t("Auto") }}: {{ guessTimezone }}
                     </option>
@@ -25,7 +25,7 @@
                 <label for="timezone" class="mb-2 inline-block text-foreground">
                     {{ $t("Server Timezone") }}
                 </label>
-                <select id="timezone" v-model="settings.serverTimezone" class="block w-full min-w-0 min-h-[2.375rem] max-[575px]:min-h-[44px] rounded-md border border-border bg-input-surface px-3 py-1.5 text-secondary-foreground text-base focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2">
+                <select id="timezone" v-model="settings.serverTimezone" class="ui-field min-w-0 max-[575px]:min-h-[44px] text-secondary-foreground text-base">
                     <option value="UTC">UTC</option>
                     <option
                         v-for="(timezone, index) in timezoneList"
@@ -47,10 +47,10 @@
                     <input
                         id="primaryBaseURL"
                         v-model="settings.primaryHostname"
-                        class="min-w-0 min-h-[2.375rem] max-[575px]:min-h-[44px] w-full flex-1 rounded-l-md border border-border bg-input-surface px-3 py-1.5 text-secondary-foreground text-base focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+                        class="ui-field min-w-0 flex-1 max-[575px]:min-h-[44px] rounded-e-none text-secondary-foreground text-base"
                         :placeholder="$t(`CurrentHostname`)"
                     />
-                    <button class="min-h-[2.375rem] max-[575px]:min-h-[44px] shrink-0 rounded-r-md border border-primary bg-transparent px-5 py-1.5 text-link cursor-pointer hover:bg-primary-hover hover:text-primary-foreground focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2" type="button" @click="autoGetPrimaryHostname">
+                    <button class="min-h-[2.375rem] max-[575px]:min-h-[44px] shrink-0 rounded-r-md bg-transparent px-5 py-1.5 text-link cursor-pointer hover:bg-primary-hover hover:text-primary-foreground focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2" type="button" @click="autoGetPrimaryHostname">
                         {{ $t("autoGet") }}
                     </button>
                 </div>
@@ -58,7 +58,7 @@
 
             <!-- Save Button -->
             <div>
-                <button class="inline-grid min-h-[2.375rem] min-w-[5rem] items-center justify-center max-[575px]:min-h-[44px] rounded-md border border-primary bg-primary bg-gradient-primary px-5 py-1.5 text-primary-foreground cursor-pointer hover:bg-gradient-primary-active focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2 disabled:cursor-wait" type="submit" :disabled="saving">
+                <button class="ui-settings-save" type="submit" :disabled="saving">
                     <span class="col-start-1 row-start-1" :class="{ invisible: saving || saved }" :aria-hidden="saving || saved">{{ $t("Save") }}</span>
                     <span class="col-start-1 row-start-1 inline-flex items-center justify-center gap-2" :class="{ invisible: !saving }" :aria-hidden="!saving">
                         <font-awesome-icon icon="spinner" :spin="saving" aria-hidden="true" /> {{ $t("Save") }}

@@ -182,14 +182,14 @@ export default {
         height: 100%;
         padding: 8px 10px 0;
         color: var(--secondary-foreground);
-        font-size: var(--font-size-body-sm);
-        font-weight: var(--font-weight-medium);
+        font-size: var(--text-sm-fontSize);
+        font-weight: var(--fontWeight-medium);
         overflow: hidden;
         text-decoration: none;
 
         &.router-link-exact-active, &.active {
             color: var(--primary);
-            font-weight: var(--font-weight-semibold);
+            font-weight: var(--fontWeight-semibold);
         }
 
         svg {
@@ -217,7 +217,7 @@ export default {
         border: 0;
         color: var(--secondary-foreground);
         background: transparent;
-        font-size: var(--font-size-body);
+        font-size: var(--text-base-fontSize);
         line-height: var(--line-height-tight);
         transition: color 0.15s ease, background 0.15s ease;
 
@@ -238,7 +238,7 @@ export default {
     border-radius: 0.375rem;
     background: var(--gradient-warning);
     color: var(--primary-foreground);
-    font-weight: var(--font-weight-medium);
+    font-weight: var(--fontWeight-medium);
     text-decoration: none;
 
     &:hover, &:focus-visible {
@@ -273,8 +273,8 @@ export default {
         width: 24px;
         height: 24px;
         border-radius: 50%;
-        font-weight: var(--font-weight-bold);
-        font-size: var(--font-size-meta-sm);
+        font-weight: var(--fontWeight-bold);
+        font-size: var(--text-xs-fontSize);
         letter-spacing: 0.02em;
         transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
     }
@@ -321,13 +321,13 @@ export default {
 .profile-menu .floating-menu-text,
 .profile-menu .dropdown-item-text {
     color: var(--muted-foreground);
-    font-size: var(--font-size-body-sm);
+    font-size: var(--text-sm-fontSize);
     opacity: 1;
 }
 
 .profile-menu .floating-menu-text strong,
 .profile-menu .dropdown-item-text strong {
     color: var(--foreground);
-    font-weight: var(--font-weight-semibold);
+    font-weight: var(--fontWeight-semibold);
 }
 </style>

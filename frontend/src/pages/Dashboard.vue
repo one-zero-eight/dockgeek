@@ -8,7 +8,7 @@
             <aside v-show="!sidebarCollapsed" id="projects-sidebar" class="dashboard-sidebar sticky top-0 flex flex-col h-full min-h-0 max-w-[360px] min-w-[260px] self-start pt-3 pb-4">
                 <div class="sidebar-heading mb-[1rem] flex flex-none items-center gap-4">
                     <h1 class="mb-0">{{ $t("stacks") }}</h1>
-                    <router-link to="/compose" class="add-stack inline-flex flex-none items-center justify-center w-8 h-8 p-0 rounded-full border border-primary bg-primary bg-gradient-primary text-primary-foreground no-underline hover:bg-gradient-primary-active" :aria-label="$t('newProject')" :title="$t('newProject')">
+                    <router-link to="/compose" class="ui-add-stack" :aria-label="$t('newProject')" :title="$t('newProject')">
                         <font-awesome-icon icon="plus" />
                     </router-link>
                 </div>
@@ -73,11 +73,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.add-stack {
-    &:hover { color: var(--primary-foreground); }
-    &:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
-}
-
 .dashboard-sidebar {
     flex: 0 0 28%;
 }

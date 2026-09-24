@@ -9,7 +9,7 @@
 
 :root {
     font-family: var(--font-ui);
-    font-size: var(--font-size-body);
+    font-size: var(--text-base-fontSize);
     line-height: var(--line-height-body);
     -webkit-text-size-adjust: 100%;
 }
@@ -36,6 +36,7 @@ textarea {
 }
 
 button {
+    border: 0;
     cursor: pointer;
 }
 
@@ -52,10 +53,10 @@ h1, h2, h3, h4, h5, h6 {
     line-height: var(--line-height-tight);
 }
 
-h3 { font-size: var(--font-size-subsection-title); }
-h4 { font-size: var(--font-size-card-title); }
-h5 { font-size: var(--font-size-body); }
-h6 { font-size: var(--font-size-body-sm); }
+h3 { font-size: var(--text-2xl-fontSize); }
+h4 { font-size: 1.25rem; }
+h5 { font-size: var(--text-base-fontSize); }
+h6 { font-size: var(--text-sm-fontSize); }
 
 html, body, #app {
     min-width: 320px;
@@ -72,15 +73,15 @@ body {
 
 h1, h2, h3, h4, h5, h6 {
     color: var(--foreground);
-    font-weight: var(--font-weight-medium);
+    font-weight: var(--fontWeight-medium);
 }
 
 h1 {
-    font-size: var(--font-size-page-title);
+    font-size: 2rem;
 }
 
 h2 {
-    font-size: var(--font-size-section-title);
+    font-size: 1.625rem;
 }
 
 * {
@@ -118,8 +119,8 @@ optgroup {
 }
 
 @media (max-width: 550px) {
-    h1 { font-size: var(--font-size-section-title); }
-    h2 { font-size: var(--font-size-card-title); }
+    h1 { font-size: 1.625rem; }
+    h2 { font-size: 1.25rem; }
 }
 
 .dark mark {

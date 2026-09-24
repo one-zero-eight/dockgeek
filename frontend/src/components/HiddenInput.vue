@@ -12,7 +12,7 @@
             :readonly="readonly"
         >
 
-        <button type="button" class="visibility-button inline-flex min-w-[2.75rem] items-center justify-center rounded-e-[.375rem] border border-primary border-l-0 bg-transparent text-link cursor-pointer hover:bg-primary hover:text-primary-foreground max-[575px]:min-h-[44px]" :aria-label="visibility === 'password' ? 'Show password' : 'Hide password'" :aria-pressed="visibility === 'text'" @click="visibility === 'password' ? showInput() : hideInput()">
+        <button type="button" class="visibility-button inline-flex min-w-[2.75rem] items-center justify-center rounded-e-[.375rem] bg-transparent text-link cursor-pointer hover:bg-primary hover:text-primary-foreground max-[575px]:min-h-[44px]" :aria-label="visibility === 'password' ? 'Show password' : 'Hide password'" :aria-pressed="visibility === 'text'" @click="visibility === 'password' ? showInput() : hideInput()">
             <font-awesome-icon :icon="visibility === 'password' ? 'eye' : 'eye-slash'" />
         </button>
     </div>
