@@ -42,7 +42,7 @@
 
                             <!-- Agent Display Name -->
                             <template v-if="$root.agentStatusList[endpoint]">
-                                <span v-if="endpoint === '' && agentItem.name === ''" class="status-badge neutral-badge me-[.5rem]">Current</span>
+                                <span v-if="endpoint === '' && agentItem.name === ''" class="status-badge neutral-badge me-[.5rem]">{{ $t("Current") }}</span>
                                 <span v-else-if="agentItem.name === ''" :href="agentItem.url" class="me-[.5rem]">{{ endpoint }}</span>
                                 <span v-else :href="agentItem.url" class="me-[.5rem]">{{ agentItem.name }}</span>
                             </template>
@@ -60,7 +60,7 @@
                                 ok-variant="info"
                                 @ok="updateName(agentItem.url, agentItem.updatedName)"
                             >
-                                <label for="updatedName" class="field-label">Current value: {{ $t(agentItem.name) }}</label>
+                                <label for="updatedName" class="field-label">{{ $t("Current value") }}: {{ agentItem.name }}</label>
                                 <input id="updatedName" v-model="agentItem.updatedName" type="text" class="field-control" optional>
                             </FloatingDialog>
 

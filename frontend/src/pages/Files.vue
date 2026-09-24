@@ -105,7 +105,7 @@
                                     </template>
                                     <button class="floating-menu-item" type="button" role="menuitem" @click="openRename(entry)">{{ $t("rename") }}</button>
                                     <button class="floating-menu-item" type="button" role="menuitem" @click="openMove(entry)">{{ $t("move") }}</button>
-                                    <button class="floating-menu-item text-destructive" type="button" role="menuitem" @click="openDelete(entry)">{{ $t("Delete") }}</button>
+                                    <button class="floating-menu-item text-destructive" type="button" role="menuitem" @click="openDelete(entry)">{{ $t("deleteStack") }}</button>
                                 </FloatingMenu>
                             </div>
                         </article>
@@ -140,7 +140,7 @@
                 <div class="file-help mt-1 text-muted-foreground text-meta">{{ $t("destinationDirectoryHint") }}</div>
             </FloatingDialog>
 
-            <FloatingDialog v-model="showDelete" size="sm" :title="$t('confirmDelete')" :ok-title="$t('Delete')" ok-variant="danger" :cancel-title="$t('cancel')" @ok="deleteEntry">
+            <FloatingDialog v-model="showDelete" size="sm" :title="$t('confirmDelete')" :ok-title="$t('deleteStack')" ok-variant="danger" :cancel-title="$t('cancel')" @ok="deleteEntry">
                 {{ $t("fileDeleteConfirm", { name: activeEntry?.name }) }}
             </FloatingDialog>
 
