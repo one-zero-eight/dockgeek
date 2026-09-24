@@ -95,7 +95,7 @@
                         id="name"
                         v-model="stack.name"
                         type="text"
-                        class="stack-name-input placeholder:opacity-50"
+                        class="ui-field placeholder:opacity-50"
                         required
                         spellcheck="false"
                         autocomplete="off"
@@ -162,6 +162,7 @@
                             :disabled="!isEditMode"
                             :hasFocus="editorFocus"
                             @change="yamlCodeChange"
+                            @destroy="disposeYamlClient"
                         />
 
                         <!-- Editor actions -->
@@ -169,7 +170,7 @@
                             <div class="flex items-stretch overflow-hidden rounded-md" role="group">
                                 <button
                                     type="button"
-                                    class="compose-button compose-button-primary !rounded-none"
+                                    class="ui-btn ui-btn-gradient-primary !rounded-none"
                                     :disabled="processing || !canSaveStack"
                                     @click="requestDeployStack"
                                 >
@@ -178,7 +179,7 @@
                                 </button>
                                 <button
                                     type="button"
-                                    class="compose-button !rounded-none !border-l-0"
+                                    class="ui-btn !rounded-none"
                                     :disabled="processing || !canSaveStack"
                                     @click="saveStack"
                                 >
@@ -189,7 +190,7 @@
                             <button
                                 v-if="!isAdd"
                                 type="button"
-                                class="compose-button"
+                                class="ui-btn"
                                 :disabled="processing"
                                 @click="discardStack"
                             >
@@ -198,7 +199,7 @@
                             <div class="editor-format-btn flex items-stretch">
                                 <button
                                     type="button"
-                                    class="compose-button"
+                                    class="ui-btn"
                                     :disabled="processing || formattingYaml"
                                     :title="$t('formatYaml')"
                                     @click="formatYaml"
@@ -248,7 +249,7 @@
                         <div class="progress-header-tools">
                             <button
                                 type="button"
-                                class="compose-button compose-button-sm"
+                                class="ui-btn ui-btn-sm"
                                 @click="$refs.progressTerminal?.focus()"
                             >
                                 <font-awesome-icon icon="terminal" />
@@ -256,7 +257,7 @@
                             </button>
                             <button
                                 type="button"
-                                class="compose-button compose-button-sm"
+                                class="ui-btn ui-btn-sm"
                                 :disabled="!progressTerminalHasSelection"
                                 @click="$refs.progressTerminal?.copySelection()"
                             >
@@ -265,7 +266,7 @@
                             </button>
                             <button
                                 type="button"
-                                class="compose-button compose-button-sm"
+                                class="ui-btn ui-btn-sm"
                                 @click="$refs.progressTerminal?.clear()"
                             >
                                 <font-awesome-icon icon="trash" />
@@ -299,6 +300,7 @@ import { parseDocument } from "yaml";
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { composeLanguageSupport, formatComposeYaml } from "../editor/compose-language";
+import { YamlLanguageClient } from "../editor/yaml-client";
 import { getEditorTheme } from "../editor/editor-theme";
 import {
     envsubstYAML,
@@ -313,7 +315,7 @@ import {
 import { FloatingDialog, FloatingMenu, FloatingTooltip } from "../components/floating";
 import ActionGroup from "../components/ActionGroup.vue";
 import dotenv from "dotenv";
-import { ref } from "vue";
+import { markRaw, ref } from "vue";
 
 const template = `services:
   nginx:
@@ -405,6 +407,7 @@ export default {
     },
     setup() {
         const editorFocus = ref(false);
+        const yamlClient = markRaw(new YamlLanguageClient());
 
         const focusEffectHandler = (state, focusing) => {
             editorFocus.value = focusing;
@@ -413,13 +416,16 @@ export default {
 
         const baseExtensions = [
             yaml(),
-            composeLanguageSupport(),
+            composeLanguageSupport(yamlClient),
             lineNumbers(),
             EditorView.focusChangeEffect.of(focusEffectHandler)
         ];
 
-        return { baseExtensions,
-            editorFocus };
+        return {
+            baseExtensions,
+            editorFocus,
+            disposeYamlClient: () => yamlClient.dispose(),
+        };
     },
     data() {
         return {
@@ -1235,34 +1241,11 @@ export default {
 </script>
 
 <style scoped lang="scss">
-.stack-name-input {
-    display: block; width: 100%; min-height: 38px; padding: 0.375rem 0.75rem;
-    border: 1px solid var(--border); border-radius: 0.375rem;
-    color: var(--foreground); background: var(--input-surface); font-size: var(--font-size-body);
-    &:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
-}
 .project-status-dot.tone-primary { background: var(--primary) !important; }
 .project-status-dot.tone-warning { background: var(--warning) !important; }
 .project-status-dot.tone-danger { background: var(--destructive) !important; }
 .project-status-dot.tone-stopped { background: var(--warning) !important; }
 .project-status-dot.tone-secondary { background: var(--muted) !important; }
-.compose-button {
-    display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
-    min-height: 38px; padding: 0.375rem 0.75rem; border: 1px solid var(--secondary);
-    border-radius: 0.375rem; color: var(--secondary-foreground); background: var(--secondary);
-    font: inherit; line-height: 1.5; cursor: pointer;
-    &:hover { background: var(--secondary-hover); }
-    &:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
-    &:disabled { opacity: 0.65; cursor: not-allowed; }
-    &.compose-button-primary {
-        color: var(--primary-foreground);
-        background: var(--gradient-primary);
-        border-color: var(--primary);
-        &:hover:not(:disabled) { background: var(--gradient-primary-active); }
-    }
-}
-.compose-button-sm { min-height: 31px; padding: 0.25rem 0.5rem; font-size: var(--font-size-body-sm); }
-
 .progress-terminal {
     height: 288px;
 }
@@ -1283,7 +1266,7 @@ export default {
         background-color: var(--background);
         color: var(--muted-foreground);
         font-family: var(--font-mono);
-        font-size: var(--font-size-body-sm);
+        font-size: var(--text-sm-fontSize);
         line-height: 1.45;
         text-align: start;
         cursor: pointer;
@@ -1322,7 +1305,7 @@ export default {
         opacity: 0.75;
     }
 
-    .stack-name-input {
+    .ui-field {
         font-family: var(--font-mono);
     }
 }
@@ -1333,7 +1316,7 @@ export default {
     flex-direction: column;
     padding: 0;
     font-family: var(--font-mono);
-    font-size: var(--font-size-body-sm);
+    font-size: var(--text-sm-fontSize);
 
     :deep(.vue-codemirror) {
         overflow: hidden;
@@ -1377,8 +1360,8 @@ export default {
     margin-right: auto;
     color: var(--muted-foreground);
     font-family: inherit;
-    font-size: var(--font-size-body-sm);
-    font-weight: var(--font-weight-medium);
+    font-size: var(--text-sm-fontSize);
+    font-weight: var(--fontWeight-medium);
     letter-spacing: 0.01em;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1397,8 +1380,8 @@ export default {
     background: transparent;
     color: var(--muted-foreground);
     font-family: inherit;
-    font-size: var(--font-size-body-sm);
-    font-weight: var(--font-weight-medium);
+    font-size: var(--text-sm-fontSize);
+    font-weight: var(--fontWeight-medium);
     line-height: 1;
     white-space: nowrap;
     transition: background-color 0.15s ease, color 0.15s ease;
@@ -1476,8 +1459,8 @@ export default {
     border-top: 1px solid var(--border);
     // Break out of `.editor-box` monospace so buttons match ActionGroup.
     font-family: var(--font-ui);
-    font-size: var(--font-size-body);
-    font-weight: var(--font-weight-regular);
+    font-size: var(--text-base-fontSize);
+    font-weight: var(--fontWeight-normal);
 
     .editor-format-btn {
         margin-inline-start: auto;
@@ -1486,8 +1469,8 @@ export default {
 
 .stack-label {
     margin-inline-start: 0.35rem;
-    font-size: var(--font-size-card-title);
-    font-weight: var(--font-weight-regular);
+    font-size: 1.25rem;
+    font-weight: var(--fontWeight-normal);
 }
 
 .compact-compose-tabs {
@@ -1504,7 +1487,7 @@ export default {
     border: 0;
     border-radius: 6px;
     color: inherit;
-    font-size: var(--font-size-body-sm);
+    font-size: var(--text-sm-fontSize);
     background: transparent;
     transition: background 0.15s ease, color 0.15s ease;
 
@@ -1681,8 +1664,8 @@ export default {
         min-width: 0;
         margin: 0;
         color: var(--terminal-foreground);
-        font-size: var(--font-size-meta-sm);
-        font-weight: var(--font-weight-semibold);
+        font-size: var(--text-xs-fontSize);
+        font-weight: var(--fontWeight-semibold);
         letter-spacing: 0.01em;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -1694,18 +1677,17 @@ export default {
         align-items: center;
         gap: 0.15rem;
 
-        .compose-button {
+        .ui-btn {
             display: inline-flex;
             align-items: center;
             gap: 0.35rem;
             min-height: 24px !important;
             height: 24px;
             padding: 0 0.45rem !important;
-            border: 1px solid transparent !important;
             border-radius: 4px;
             color: var(--terminal-muted) !important;
-            font-size: var(--font-size-meta-sm);
-            font-weight: var(--font-weight-medium);
+            font-size: var(--text-xs-fontSize);
+            font-weight: var(--fontWeight-medium);
             line-height: 1;
             background: transparent !important;
             .svg-inline--fa {
@@ -1717,7 +1699,6 @@ export default {
             &:focus-visible {
                 color: var(--terminal-strong) !important;
                 background: rgba(255, 255, 255, 0.08) !important;
-                border-color: rgba(255, 255, 255, 0.08) !important;
             }
 
             &:disabled {
@@ -1792,7 +1773,7 @@ export default {
         padding: 0.55rem 0.7rem;
         border-radius: 8px;
         font-family: var(--font-mono);
-        font-size: var(--font-size-body-sm);
+        font-size: var(--text-sm-fontSize);
         line-height: 1.35;
         white-space: normal;
         overflow-wrap: anywhere;
@@ -1815,7 +1796,7 @@ export default {
     .stack-path-option-agent {
         color: var(--muted-foreground);
         font-family: inherit;
-        font-size: var(--font-size-meta-sm);
+        font-size: var(--text-xs-fontSize);
     }
 
     .stack-path-option.active {

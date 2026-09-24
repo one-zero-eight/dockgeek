@@ -148,7 +148,7 @@ export function isMappingValueLinePrefix(linePrefix: string): boolean {
 }
 
 function completionLabel(item: CompletionItem): string {
-    return typeof item.label === "string" ? item.label : item.label.label;
+    return item.label;
 }
 
 /**

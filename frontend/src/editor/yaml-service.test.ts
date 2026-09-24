@@ -13,7 +13,7 @@ import {
     validateComposeDocument,
 } from "./yaml-service";
 import { COMPOSE_DOCUMENT_URI } from "./yaml-protocol";
-import { StaleResponseError, YamlLanguageClient } from "./yaml-client";
+import { DisposedClientError, StaleResponseError, YamlLanguageClient } from "./yaml-client";
 
 const ls = createComposeLanguageService();
 let nextVersion = 1;
@@ -304,54 +304,36 @@ services:
     assert.ok(Array.isArray(diagnostics));
 });
 
-test("YamlLanguageClient rejects stale responses", async () => {
-    const responses: Array<{ id: number; version: number }> = [];
-    const fakeWorker = {
-        onmessage: null as ((event: MessageEvent) => void) | null,
-        onerror: null as ((event: ErrorEvent) => void) | null,
-        postMessage(message: { id: number; version: number; type: string }) {
-            responses.push({
-                id: message.id,
-                version: message.version,
-            });
-            // Reply with an older version than requested.
-            queueMicrotask(() => {
-                this.onmessage?.({
-                    data: {
-                        type: "validate",
-                        id: message.id,
-                        version: message.version - 1,
-                        diagnostics: [],
-                    },
-                } as MessageEvent);
-            });
-        },
-        terminate() {
-            // no-op
-        },
-    };
-
-    const client = new YamlLanguageClient(COMPOSE_DOCUMENT_URI, () => fakeWorker as unknown as Worker);
-    await assert.rejects(
-        () => client.validate("services: {}\n", 5),
-        (error: unknown) => error instanceof StaleResponseError
-    );
+test("YamlLanguageClient validates the screenshot YAML without a worker", async () => {
+    const client = new YamlLanguageClient();
+    const diagnostics = await client.validate(`services:
+  1519-api:
+    image: busybox:1.36
+    command: ["sh", "-c", "httpd -f -p 8080"]
+    ports:
+      - "18019:8080"
+    deploy:
+      resources:
+        limits:
+          memory: 64m
+# 秘钥
+qgml`, 1);
+    assert.ok(diagnostics.some((diagnostic) => diagnostic.range.start.line === 11));
     client.dispose();
 });
 
-test("YamlLanguageClient dispose rejects pending work", async () => {
-    const fakeWorker = {
-        onmessage: null as ((event: MessageEvent) => void) | null,
-        onerror: null as ((event: ErrorEvent) => void) | null,
-        postMessage() {
-            // never replies
-        },
-        terminate() {
-            // no-op
-        },
-    };
-    const client = new YamlLanguageClient(COMPOSE_DOCUMENT_URI, () => fakeWorker as unknown as Worker);
+test("YamlLanguageClient rejects outdated validation", async () => {
+    const client = new YamlLanguageClient();
+    const pending = client.validate("services: {}\n", 1);
+    await client.validate("services: {}\n", 2);
+    await assert.rejects(pending, (error: unknown) => error instanceof StaleResponseError);
+    client.dispose();
+});
+
+test("YamlLanguageClient rejects pending work after disposal", async () => {
+    const client = new YamlLanguageClient();
     const pending = client.validate("services: {}\n", 1);
     client.dispose();
-    await assert.rejects(pending, /disposed/i);
+    await assert.rejects(pending, (error: unknown) => error instanceof DisposedClientError);
+    await assert.rejects(client.validate("services: {}\n", 2), (error: unknown) => error instanceof DisposedClientError);
 });

@@ -9,14 +9,8 @@ import {
 } from "@codemirror/autocomplete";
 import { syntaxTree } from "@codemirror/language";
 import { linter, type Diagnostic as CmDiagnostic } from "@codemirror/lint";
-import { StateField, type EditorState, type Extension, type Text } from "@codemirror/state";
-import {
-    EditorView,
-    hoverTooltip,
-    keymap,
-    ViewPlugin,
-    type ViewUpdate,
-} from "@codemirror/view";
+import { Facet, StateField, type EditorState, type Extension, type Text } from "@codemirror/state";
+import { EditorView, hoverTooltip, keymap } from "@codemirror/view";
 import {
     InsertTextFormat,
     type CompletionItem,
@@ -25,7 +19,7 @@ import {
     type MarkupContent as MarkupContentType,
     type Position,
 } from "vscode-languageserver-types";
-import { StaleResponseError, YamlLanguageClient } from "./yaml-client";
+import { DisposedClientError, StaleResponseError, YamlLanguageClient } from "./yaml-client";
 import { composeCompletionBoost } from "./yaml-service";
 
 function offsetToPosition(doc: Text, offset: number): Position {
@@ -221,28 +215,13 @@ const documentVersionField = StateField.define<number>({
     },
 });
 
-/**
- * Owns the worker client for the lifetime of the current editor configuration.
- * vue-codemirror6 reconfigures extensions when `disabled` flips; creating the
- * client inside the plugin ensures dispose/recreate stay paired.
- */
-class ComposeLanguagePlugin {
-    readonly client = new YamlLanguageClient();
-
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    update(_update: ViewUpdate): void {
-        // no-op
-    }
-
-    destroy(): void {
-        this.client.dispose();
-    }
-}
-
-const composeLanguagePlugin = ViewPlugin.fromClass(ComposeLanguagePlugin);
+/** Store the editor-owned client in state so reconfiguration cannot dispose it. */
+const yamlClientFacet = Facet.define<YamlLanguageClient, YamlLanguageClient | null>({
+    combine: (clients) => clients[0] ?? null,
+});
 
 function getClient(view: EditorView): YamlLanguageClient | null {
-    return view.plugin(composeLanguagePlugin)?.client ?? null;
+    return view.state.facet(yamlClientFacet);
 }
 
 /**
@@ -258,7 +237,7 @@ export async function formatComposeYaml(view: EditorView): Promise<boolean> {
     const version = view.state.field(documentVersionField);
     try {
         const edits = await client.format(text, version);
-        if (!edits.length || view.state.field(documentVersionField) !== version) {
+        if (!edits.length || getClient(view) !== client || view.state.field(documentVersionField) !== version) {
             return false;
         }
         const changes = edits
@@ -271,7 +250,7 @@ export async function formatComposeYaml(view: EditorView): Promise<boolean> {
         view.dispatch({ changes });
         return true;
     } catch (error) {
-        if (error instanceof StaleResponseError) {
+        if (error instanceof StaleResponseError || error instanceof DisposedClientError) {
             return false;
         }
         throw error;
@@ -281,7 +260,7 @@ export async function formatComposeYaml(view: EditorView): Promise<boolean> {
 /**
  * CodeMirror extensions that provide Compose schema validation, completion, and hover.
  */
-export function composeLanguageSupport(): Extension {
+export function composeLanguageSupport(client: YamlLanguageClient): Extension {
     const diagnose = linter(async (view) => {
         const client = getClient(view);
         if (!client) {
@@ -291,7 +270,7 @@ export function composeLanguageSupport(): Extension {
         const version = view.state.field(documentVersionField);
         try {
             const diagnostics = await client.validate(text, version);
-            if (view.state.field(documentVersionField) !== version) {
+            if (getClient(view) !== client || view.state.field(documentVersionField) !== version) {
                 return [];
             }
             return diagnostics.map((diagnostic): CmDiagnostic => ({
@@ -302,7 +281,7 @@ export function composeLanguageSupport(): Extension {
                 source: typeof diagnostic.source === "string" ? diagnostic.source : "compose",
             }));
         } catch (error) {
-            if (error instanceof StaleResponseError) {
+            if (error instanceof StaleResponseError || error instanceof DisposedClientError) {
                 return [];
             }
             console.error(error);
@@ -363,7 +342,7 @@ export function composeLanguageSupport(): Extension {
                         options: result.items.map((item) => completionItemToCm(item, context.state.doc)),
                     };
                 } catch (error) {
-                    if (error instanceof StaleResponseError || context.aborted) {
+                    if (error instanceof StaleResponseError || error instanceof DisposedClientError || context.aborted) {
                         return null;
                     }
                     console.error(error);
@@ -406,7 +385,7 @@ export function composeLanguageSupport(): Extension {
                 },
             };
         } catch (error) {
-            if (!(error instanceof StaleResponseError)) {
+            if (!(error instanceof StaleResponseError || error instanceof DisposedClientError)) {
                 console.error(error);
             }
             return null;
@@ -417,7 +396,7 @@ export function composeLanguageSupport(): Extension {
 
     return [
         documentVersionField,
-        composeLanguagePlugin,
+        yamlClientFacet.of(client),
         diagnose,
         complete,
         hover,
