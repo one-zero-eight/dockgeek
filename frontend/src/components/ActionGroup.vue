@@ -1,5 +1,5 @@
 <template>
-    <div ref="root" class="action-group action-group--adaptive relative inline-flex min-w-0 flex-nowrap items-stretch overflow-hidden" :class="{ 'is-sm': size === 'sm' }" role="group" :aria-label="ariaLabel">
+    <div ref="root" class="action-group action-group--adaptive relative inline-flex min-w-0 flex-nowrap items-stretch overflow-hidden" :class="{ 'is-sm': size === 'sm', 'is-header': size === 'header' }" role="group" :aria-label="ariaLabel">
         <button
             v-for="action in visibleActions"
             :key="action.key"
@@ -132,11 +132,11 @@ export default {
             type: String,
             default: "",
         },
-        /** `md` matches the project header; `sm` is denser for service cards. */
+        /** `header` fits project titles; `sm` is denser for service cards. */
         size: {
             type: String,
             default: "md",
-            validator: value => [ "md", "sm" ].includes(value),
+            validator: value => [ "md", "header", "sm" ].includes(value),
         },
     },
     emits: [ "select" ],
@@ -166,7 +166,7 @@ export default {
             ];
         },
         menuPanelClass() {
-            return this.size === "sm" ? "action-group-menu is-sm" : "action-group-menu";
+            return `action-group-menu${this.size === "md" ? "" : ` is-${this.size}`}`;
         },
     },
     watch: {
@@ -402,14 +402,35 @@ export default {
     }
 }
 
+.action-group--adaptive.is-header {
+    .action-group-btn {
+        min-height: 32px;
+        padding: 0.35rem 0.6rem;
+        font-size: var(--text-sm-fontSize);
+        gap: 0.35rem;
+    }
+
+    .action-group-more {
+        width: 32px;
+        padding: 0;
+    }
+}
+
+.action-group-menu.is-header .floating-menu-item {
+    min-height: 32px;
+    padding: 0.35rem 0.6rem;
+    font-size: var(--text-sm-fontSize);
+}
+
 @media (max-width: 991.98px) {
-    .action-group--adaptive:not(.is-sm) .action-group-btn {
+    .action-group--adaptive:not(.is-sm):not(.is-header) .action-group-btn {
         min-height: 44px;
     }
 
-    .action-group--adaptive:not(.is-sm) .action-group-more {
+    .action-group--adaptive:not(.is-sm):not(.is-header) .action-group-more {
         width: 44px;
     }
+
 }
 
 .action-group--adaptive.is-sm {

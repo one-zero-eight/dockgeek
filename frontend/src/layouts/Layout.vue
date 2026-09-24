@@ -91,8 +91,8 @@
         </main>
 
         <nav v-if="$root.isCompact && $root.loggedIn" class="bottom-nav fixed bottom-0 left-0 z-1000 w-full flex bg-card text-center whitespace-nowrap" :aria-label="$t('mainNavigation')">
-            <router-link to="/" exact-active-class="active"><font-awesome-icon icon="home" /><span>{{ $t("home") }}</span></router-link>
-            <router-link to="/stacks"><font-awesome-icon icon="stream" /><span>{{ $t("stacks") }}</span></router-link>
+            <router-link to="/" active-class="home-route-parent" exact-active-class="active"><font-awesome-icon icon="home" /><span>{{ $t("home") }}</span></router-link>
+            <router-link to="/stacks" :class="{ active: isProjectsRoute }"><font-awesome-icon icon="stream" /><span>{{ $t("stacks") }}</span></router-link>
             <router-link to="/console"><font-awesome-icon icon="terminal" /><span>{{ $t("console") }}</span></router-link>
             <router-link to="/files"><font-awesome-icon icon="folder-open" /><span>{{ $t("files") }}</span></router-link>
             <router-link to="/settings"><font-awesome-icon icon="cog" /><span>{{ $t("Settings") }}</span></router-link>
@@ -127,6 +127,10 @@ export default {
             classes[this.$root.theme] = true;
             classes["mobile"] = this.$root.isMobile;
             return classes;
+        },
+
+        isProjectsRoute() {
+            return this.$route.path === "/stacks" || this.$route.path === "/compose" || this.$route.path.startsWith("/compose/") || this.$route.path.startsWith("/terminal/");
         },
 
         hasNewVersion() {
@@ -189,7 +193,6 @@ export default {
 
         &.router-link-exact-active, &.active {
             color: var(--primary);
-            font-weight: var(--fontWeight-semibold);
         }
 
         svg {

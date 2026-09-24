@@ -39,7 +39,7 @@
                 </div>
                 <ul v-if="!collapsedServices.has(service.name) && service.instances.length" class="tree-children">
                     <li v-for="instance in service.instances" :key="instance.name">
-                        <router-link :to="containerRoute(instance)" class="tree-link container-link flex min-w-0 min-h-[34px] items-center gap-[8px] px-[4px] py-[3px] text-inherit text-base no-underline">
+                        <router-link :to="containerRoute(instance)" class="tree-link container-link relative isolate flex min-w-0 min-h-[34px] items-center gap-[8px] px-[4px] py-[3px] text-inherit text-base no-underline">
                             <FloatingTooltip placement="right">
                                 <template #trigger="{ triggerAttrs }">
                                     <span

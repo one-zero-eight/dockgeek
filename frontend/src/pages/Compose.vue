@@ -31,6 +31,7 @@
                     :actions="projectActions"
                     :disabled="processing"
                     :max-visible="3"
+                    size="header"
                     :aria-label="$t('projectActions')"
                     @select="requestProjectAction"
                 />
@@ -39,11 +40,11 @@
             <!-- URLs -->
             <div v-if="urls.length > 0" class="mb-[1rem]">
                 <a v-for="(urlItem, index) in urls" :key="index" target="_blank" :href="urlItem.url">
-                    <span class="url-badge me-[.5rem] inline-block px-[0.65em] py-[0.35em] rounded-md bg-muted text-foreground text-xs font-medium leading-none">{{ urlItem.display }}</span>
+                    <span class="ui-badge ui-badge-neutral me-[.5rem]">{{ urlItem.display }}</span>
                 </a>
             </div>
 
-            <div v-if="$root.isCompact && stack.isManagedByDockge && !isFullPageEditor" class="compact-compose-tabs mb-[1rem]" role="tablist">
+            <div v-if="$root.isCompact && stack.isManagedByDockge && !isFullPageEditor" class="compact-compose-tabs mb-[1rem] flex w-full items-center gap-[0.15rem] rounded-lg bg-card p-1" role="tablist">
                 <button class="compact-tab" :class="{ active: compactTab === 'containers' }" type="button" role="tab" :aria-selected="compactTab === 'containers'" @click="compactTab = 'containers'">{{ $t("services") }}</button>
                 <button class="compact-tab" :class="{ active: compactTab === 'compose' }" type="button" role="tab" :aria-selected="compactTab === 'compose'" @click="compactTab = 'compose'">Compose</button>
             </div>
@@ -1473,31 +1474,30 @@ export default {
     font-weight: var(--fontWeight-normal);
 }
 
-.compact-compose-tabs {
-    display: flex;
-    overflow: hidden;
-    padding: 3px;
-    border-radius: 8px;
-    background: var(--background);
-}
-
 .compact-tab {
     flex: 1 1 0;
+    min-width: 0;
+    min-height: 38px;
     padding: 0.35rem 0.75rem;
-    border: 0;
-    border-radius: 6px;
-    color: inherit;
+    border-radius: 0.5rem;
+    color: var(--secondary-foreground);
     font-size: var(--text-sm-fontSize);
+    font-weight: var(--fontWeight-medium);
     background: transparent;
-    transition: background 0.15s ease, color 0.15s ease;
+    transition: color 0.15s ease, background 0.15s ease;
 
-    &:hover {
+    &:hover:not(.active) {
         background: var(--hover);
     }
 
     &.active {
-        color: var(--primary-foreground);
-        background: var(--gradient-primary);
+        color: var(--primary);
+        background: var(--selected);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--ring);
+        outline-offset: 2px;
     }
 }
 

@@ -6,11 +6,11 @@
                     <span>{{ name }}</span>
                 </router-link>
                 <span v-else>{{ name }}</span>
-                <span class="entity-label ms-[.1rem] select-none text-muted-foreground text-xs font-normal lowercase">{{ $t("service") }}</span>
+                <span class="entity-label ms-[.1rem] select-none opacity-50 text-xs font-normal lowercase">{{ $t("service") }}</span>
             </h4>
             <ActionGroup
-                class="flex-[1_1_140px] min-w-[38px] max-w-[65%] justify-end"
-                size="sm"
+                class="flex-[1_1_140px] min-w-[32px] max-w-[65%] justify-end"
+                size="header"
                 :actions="serviceActions"
                 :max-visible="3"
                 :aria-label="$t('serviceActions')"
@@ -21,13 +21,13 @@
             <router-link class="ui-entity-link" :to="containerDetailsRoute(singleContainer)">
                 <span>{{ singleContainer.name }}</span>
             </router-link>
-            <span class="entity-label ms-[.1rem] select-none text-muted-foreground text-xs font-normal lowercase">{{ $tc("container", 1) }}</span>
+            <span class="entity-label ms-[.1rem] select-none opacity-50 text-xs font-normal lowercase">{{ $tc("container", 1) }}</span>
         </div>
 
         <div v-if="imageDisplay" class="mb-[.5rem] flex flex-wrap items-baseline gap-x-[.1rem] gap-y-[.25rem] break-all text-foreground text-sm">
             <a v-if="imageUrl" class="tag text-inherit no-underline hover:text-link focus-visible:text-link" :href="imageUrl" :title="imageDisplay" target="_blank" rel="noopener noreferrer">{{ imageDisplay }}</a>
             <span v-else class="tag" :title="imageDisplay">{{ imageDisplay }}</span>
-            <span class="entity-label select-none text-muted-foreground text-xs font-normal lowercase">{{ $t("image") }}</span>
+            <span class="entity-label select-none opacity-50 text-xs font-normal lowercase">{{ $t("image") }}</span>
         </div>
         <div v-if="singleContainer" class="flex flex-wrap items-center gap-x-[.375rem] gap-y-[.35rem]">
             <FloatingTooltip v-if="statusDetail" placement="top">
@@ -59,7 +59,7 @@
                         <router-link class="ui-entity-link" :to="containerDetailsRoute(instance)">
                             <span>{{ instance.name }}</span>
                         </router-link>
-                        <span class="entity-label ms-[.1rem] select-none text-muted-foreground text-xs font-normal lowercase">{{ $tc("container", 1) }}</span>
+                        <span class="entity-label ms-[.1rem] select-none opacity-50 text-xs font-normal lowercase">{{ $tc("container", 1) }}</span>
                     </div>
                 </div>
                 <div class="mt-[.25rem] flex flex-wrap items-center gap-x-[.375rem] gap-y-[.35rem]">
@@ -455,14 +455,6 @@ export default defineComponent({
 .service-card {
     .tag {
         opacity: 1;
-    }
-
-    .port-link {
-        // Hover shifts the foreground only, never the badge surface
-        &:hover .status-badge,
-        &:focus-visible .status-badge {
-            color: var(--link) !important;
-        }
     }
 
     .entity-label { font-family: var(--font-ui); }

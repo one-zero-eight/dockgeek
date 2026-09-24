@@ -2,7 +2,7 @@
     <div class="settings-page flex flex-col gap-4 w-full max-w-[1100px] mx-auto min-h-0">
         <div class="settings-shell grid gap-4 min-h-0 items-start">
             <nav v-if="showSubMenu" class="settings-nav flex flex-col gap-1 p-2 rounded-[0.85rem] bg-card" :aria-label="$t('Settings')">
-                <div v-if="$root.isCompact" class="account-block flex items-center gap-3 mb-[0.35rem] py-[0.65rem] px-3 rounded-[0.65rem] bg-hover">
+                <div v-if="$root.isCompact && $root.loggedIn" class="account-block flex items-center gap-3 mb-[0.35rem] py-[0.65rem] px-3 rounded-[0.65rem]">
                     <div class="profile-pic flex flex-none items-center justify-center w-[34px] h-[34px] rounded-full border-0 bg-primary bg-gradient-primary text-primary-foreground text-sm font-bold">{{ $root.usernameFirstChar }}</div>
                     <div class="account-text min-w-0 text-sm">
                         <i18n-t v-if="$root.username != null" tag="span" keypath="signedInDisp">
@@ -11,7 +11,6 @@
                         <span v-else>{{ $t("signedInDispDisabled") }}</span>
                     </div>
                 </div>
-
                 <router-link
                     v-for="(item, key) in subMenus"
                     :key="key"
@@ -23,7 +22,7 @@
                     <span>{{ item.title }}</span>
                 </router-link>
 
-                <div v-if="$root.isCompact && $root.loggedIn" class="settings-nav-actions flex flex-col gap-1 mt-2 pt-2 border-t-0 bg-transparent">
+                <div v-if="$root.isCompact && $root.loggedIn" class="settings-nav-actions flex flex-col gap-1 mt-4">
                     <button type="button" class="settings-nav-item menu-action flex w-full items-center gap-[0.65rem] rounded-[0.6rem] text-left font-medium" @click="scanFolder">
                         <font-awesome-icon icon="arrows-rotate" class="nav-icon" />
                         <span>{{ $t("scanFolder") }}</span>

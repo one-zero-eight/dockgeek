@@ -19,7 +19,7 @@ export default defineConfig({
         "ui-btn-gradient-primary": "bg-gradient-primary text-primary-foreground hover:bg-gradient-primary-active hover:text-primary-foreground",
         "ui-btn-danger": "bg-destructive text-white hover:text-white",
         "ui-field": "block w-full min-h-[38px] px-3 py-1.5 rounded-md border border-border bg-input-surface text-foreground focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2",
-        "ui-badge": "inline-block rounded-md bg-muted px-[.65em] py-[.35em] text-foreground text-xs font-medium leading-none tracking-[.01em]",
+        "ui-badge": "inline-flex h-5 items-center justify-center rounded-md bg-muted px-2 text-foreground text-xs font-medium leading-none tracking-[.01em] whitespace-nowrap",
         "ui-badge-primary": "bg-primary text-primary-foreground",
         "ui-badge-danger": "bg-destructive text-white",
         "ui-badge-warning": "bg-warning text-primary-foreground",
