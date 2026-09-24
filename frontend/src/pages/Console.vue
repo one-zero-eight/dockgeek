@@ -1,26 +1,24 @@
 <template>
     <transition name="slide-fade" appear>
         <div v-if="!processing">
-            <h1 class="mb-3">{{ $t("console") }}</h1>
-
             <Terminal v-if="enableConsole" class="terminal" :rows="20" mode="mainTerminal" name="console" :endpoint="endpoint"></Terminal>
 
-            <div v-else class="alert alert-warning shadow-box" role="alert">
-                <h4 class="alert-heading">{{ $t("Console is not enabled") }}</h4>
+            <div v-else class="console-notice panel-box p-4 border border-warning rounded-md text-foreground bg-card" role="alert">
+                <h4 class="console-notice-heading mb-2 text-card-title">{{ $t("Console is not enabled") }}</h4>
                 <i18n-t keypath="ConsoleNotEnabledMSG1" tag="p">
-                    <template #docker><code>{{ $t('dockerCode') }}</code></template>
-                    <template #rm><code>{{ $t('rmCode') }}</code></template>
+                    <template #docker><code class="bg-muted text-foreground">{{ $t('dockerCode') }}</code></template>
+                    <template #rm><code class="bg-muted text-foreground">{{ $t('rmCode') }}</code></template>
                 </i18n-t>
 
                 <i18n-t keypath="ConsoleNotEnabledMSG2" tag="p">
                     <template #rmRf>
-                        <code>{{ $t('rmRfCode') }}</code>
+                        <code class="bg-muted text-foreground">{{ $t('rmRfCode') }}</code>
                     </template>
                 </i18n-t>
 
                 <i18n-t keypath="ConsoleNotEnabledMSG3" tag="p">
                     <template #envVar>
-                        <code>{{ $t('envVarCode') }}</code>
+                        <code class="bg-muted text-foreground">{{ $t('envVarCode') }}</code>
                     </template>
                 </i18n-t>
             </div>

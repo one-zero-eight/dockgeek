@@ -12,7 +12,7 @@
                 v-if="isOpen"
                 :id="panelId"
                 ref="floatingEl"
-                class="floating-tooltip-panel"
+                class="floating-tooltip-panel floating-shadow fixed z-[1090] flex w-max max-w-[min(320px,calc(100vw-16px))] flex-col gap-[0.15rem] rounded-lg border border-border bg-popover px-[0.65rem] py-[0.45rem] text-popover-foreground text-meta leading-[1.35] pointer-events-none"
                 :class="panelClass"
                 :style="panelStyle"
                 role="tooltip"
@@ -126,7 +126,7 @@ export default {
             return {
                 ...rest,
                 ref: setTriggerRef,
-                class: [ "floating-tooltip-trigger", attrsClass, { "is-open": isOpen.value }],
+                class: [ "floating-tooltip-trigger cursor-inherit", attrsClass, { "is-open": isOpen.value }],
                 "aria-describedby": isOpen.value ? panelId : undefined,
                 onPointerenter: open,
                 onPointerleave: close,
@@ -178,44 +178,13 @@ export default {
 </script>
 
 <style lang="scss">
-@import "../../styles/vars.scss";
-
-.floating-tooltip-trigger {
-    cursor: inherit;
-}
-
-.floating-tooltip-panel {
-    position: fixed;
-    z-index: 1090;
-    display: flex;
-    width: max-content;
-    max-width: min(320px, calc(100vw - 16px));
-    flex-direction: column;
-    gap: 0.15rem;
-    padding: 0.45rem 0.65rem;
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    border-radius: 8px;
-    pointer-events: none;
-    background-color: #fff;
-    color: #111;
-    font-size: 0.85rem;
-    line-height: 1.35;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-
-    .dark & {
-        border: 1px solid $dark-border-color;
-        background-color: $dark-header-bg;
-        color: $dark-font-color;
-    }
-}
-
 .floating-tooltip-title {
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
 }
 
 .floating-tooltip-detail {
-    opacity: 0.7;
-    font-family: 'JetBrains Mono', monospace;
+    color: var(--muted-foreground);
+    font-family: var(--font-mono);
     font-size: 0.8rem;
 }
 

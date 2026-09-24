@@ -6,7 +6,7 @@
         :ok-title="yesText"
         :cancel-title="noText"
         :ok-variant="btnStyle"
-        cancel-variant="btn-secondary"
+        cancel-variant="secondary"
         @ok="yes"
         @cancel="no"
     >
@@ -25,7 +25,7 @@ export default {
         /** Style of button */
         btnStyle: {
             type: String,
-            default: "btn-primary",
+            default: "primary",
         },
         /** Text to use as yes */
         yesText: {

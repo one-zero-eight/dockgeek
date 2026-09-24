@@ -1,10 +1,10 @@
 <template>
     <div>
-        <div class="my-4">
-            <label for="language" class="form-label">
+        <div class="my-[1.5rem] first:mt-0">
+            <label for="language" class="mb-2 inline-block text-foreground">
                 {{ $t("Language") }}
             </label>
-            <select id="language" v-model="$root.language" class="form-select">
+            <select id="language" v-model="$root.language" class="block w-full min-h-[2.375rem] max-[575px]:min-h-[44px] rounded-md border border-border bg-input-surface px-3 py-1.5 text-secondary-foreground text-control focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2">
                 <option
                     v-for="(lang, i) in $i18n.availableLocales"
                     :key="`Lang${i}`"
@@ -14,53 +14,25 @@
                 </option>
             </select>
         </div>
-        <div v-show="true" class="my-4">
-            <label for="timezone" class="form-label">{{ $t("Theme") }}</label>
-            <div>
-                <div
-                    class="btn-group"
-                    role="group"
-                    aria-label="Basic checkbox toggle button group"
-                >
+        <div v-show="true" class="my-[1.5rem] first:mt-0 flex flex-col items-start gap-2">
+            <div id="theme-label" class="text-foreground">{{ $t("Theme") }}</div>
+            <div class="inline-flex shrink-0 overflow-hidden rounded-md border border-border bg-border" role="radiogroup" aria-labelledby="theme-label">
+                <span v-for="option in themeOptions" :key="option.value" class="relative inline-flex not-last:border-r border-border">
                     <input
-                        id="btncheck1"
+                        :id="`theme-${option.value}`"
                         v-model="$root.userTheme"
                         type="radio"
-                        class="btn-check"
+                        class="peer sr-only"
                         name="theme"
-                        autocomplete="off"
-                        value="light"
+                        :value="option.value"
                     />
-                    <label class="btn btn-outline-primary" for="btncheck1">
-                        {{ $t("Light") }}
+                    <label
+                        :for="`theme-${option.value}`"
+                        class="relative inline-flex min-h-[2.375rem] max-[575px]:min-h-[44px] items-center justify-center bg-card px-3 py-1.5 text-link cursor-pointer hover:bg-hover peer-checked:bg-primary peer-checked:bg-gradient-primary peer-checked:text-primary-foreground peer-focus-visible:z-1 peer-focus-visible:outline-2 peer-focus-visible:outline-ring peer-focus-visible:-outline-offset-2"
+                    >
+                        {{ $t(option.label) }}
                     </label>
-
-                    <input
-                        id="btncheck2"
-                        v-model="$root.userTheme"
-                        type="radio"
-                        class="btn-check"
-                        name="theme"
-                        autocomplete="off"
-                        value="dark"
-                    />
-                    <label class="btn btn-outline-primary" for="btncheck2">
-                        {{ $t("Dark") }}
-                    </label>
-
-                    <input
-                        id="btncheck3"
-                        v-model="$root.userTheme"
-                        type="radio"
-                        class="btn-check"
-                        name="theme"
-                        autocomplete="off"
-                        value="auto"
-                    />
-                    <label class="btn btn-outline-primary" for="btncheck3">
-                        {{ $t("Auto") }}
-                    </label>
-                </div>
+                </span>
             </div>
         </div>
     </div>
@@ -68,27 +40,23 @@
 
 <script>
 export default {
-
+    data() {
+        return {
+            themeOptions: [
+                {
+                    value: "light",
+                    label: "Light",
+                },
+                {
+                    value: "dark",
+                    label: "Dark",
+                },
+                {
+                    value: "auto",
+                    label: "Auto",
+                },
+            ],
+        };
+    },
 };
 </script>
-
-<style lang="scss" scoped>
-@import "../../styles/vars.scss";
-
-.btn-check:active + .btn-outline-primary,
-.btn-check:checked + .btn-outline-primary,
-.btn-check:hover + .btn-outline-primary {
-    color: #fff;
-
-    .dark & {
-        color: #000;
-    }
-}
-
-.dark {
-    .list-group-item {
-        background-color: $dark-bg2;
-        color: $dark-font-color;
-    }
-}
-</style>

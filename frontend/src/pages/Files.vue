@@ -1,59 +1,56 @@
 <template>
     <transition name="slide-fade" appear>
         <div class="files-page">
-            <div class="page-header mb-3">
-                <div>
-                    <h1 class="mb-1">{{ $t("files") }}</h1>
-                    <div class="text-muted small">{{ $t("fileManagerRestrictedHint") }}</div>
-                </div>
-                <select v-model="selectedEndpoint" class="form-select endpoint-select" @change="switchEndpoint">
+            <div class="page-header mb-[1rem] flex items-center justify-between gap-[0.65rem]">
+                <div class="text-muted-foreground text-[.875em]">{{ $t("fileManagerRestrictedHint") }}</div>
+                <select v-model="selectedEndpoint" class="file-input endpoint-select" @change="switchEndpoint">
                     <option v-for="option in endpointOptions" :key="option.value" :value="option.value" :disabled="option.offline">
                         {{ option.label }}{{ option.offline ? ` (${$t('agentOffline')})` : "" }}
                     </option>
                 </select>
             </div>
 
-            <div v-if="loadingInfo" class="shadow-box big-padding">{{ $t("loading") }}</div>
-            <div v-else-if="!info.enabled" class="alert alert-warning shadow-box">
+            <div v-if="loadingInfo" class="panel-box big-padding">{{ $t("loading") }}</div>
+            <div v-else-if="!info.enabled" class="file-notice panel-box p-4 rounded-md border border-warning bg-card text-foreground">
                 <h4>{{ $t("fileManagerDisabled") }}</h4>
                 <p class="mb-2">{{ $t("fileManagerDisabledHint") }}</p>
                 <code>DOCKGE_FILE_MANAGER_ROOT=/managed-files</code>
             </div>
 
             <template v-else>
-                <div class="file-toolbar shadow-box mb-3">
-                    <nav class="breadcrumbs" :aria-label="$t('breadcrumb')">
+                <div class="file-toolbar panel-box mb-[1rem] flex items-center justify-between gap-[0.65rem] p-[0.8rem]">
+                    <nav class="breadcrumbs flex flex-wrap items-center gap-[0.35rem] min-w-0" :aria-label="$t('breadcrumb')">
                         <button class="crumb" :aria-label="$t('rootDirectory')" :title="$t('rootDirectory')" @click="openDirectory('')"><font-awesome-icon icon="folder-open" /></button>
                         <template v-for="crumb in breadcrumbs" :key="crumb.path">
                             <span>/</span>
                             <button class="crumb" @click="openDirectory(crumb.path)">{{ crumb.name }}</button>
                         </template>
                     </nav>
-                    <div class="toolbar-actions">
-                        <button class="btn btn-normal" :disabled="busy" @click="refresh"><font-awesome-icon icon="arrows-rotate" /> <span>{{ $t("refresh") }}</span></button>
-                        <button class="btn btn-normal" :disabled="busy" @click="openCreate('directory')"><font-awesome-icon icon="folder" /> <span>{{ $t("newFolder") }}</span></button>
-                        <button class="btn btn-normal" :disabled="busy" @click="openCreate('file')"><font-awesome-icon icon="file" /> <span>{{ $t("newTextFile") }}</span></button>
-                        <button class="btn btn-primary" :disabled="busy" @click="$refs.fileInput.click()"><font-awesome-icon icon="upload" /> <span>{{ $t("uploadFiles") }}</span></button>
-                        <input ref="fileInput" class="d-none" type="file" multiple @change="selectFiles" />
+                    <div class="toolbar-actions flex items-center gap-[0.65rem]">
+                        <button class="file-button" :disabled="busy" @click="refresh"><font-awesome-icon icon="arrows-rotate" /> <span>{{ $t("refresh") }}</span></button>
+                        <button class="file-button" :disabled="busy" @click="openCreate('directory')"><font-awesome-icon icon="folder" /> <span>{{ $t("newFolder") }}</span></button>
+                        <button class="file-button" :disabled="busy" @click="openCreate('file')"><font-awesome-icon icon="file" /> <span>{{ $t("newTextFile") }}</span></button>
+                        <button class="file-button file-button-primary" :disabled="busy" @click="$refs.fileInput.click()"><font-awesome-icon icon="upload" /> <span>{{ $t("uploadFiles") }}</span></button>
+                        <input ref="fileInput" class="hidden" type="file" multiple @change="selectFiles" />
                     </div>
                 </div>
 
                 <div
-                    class="file-list shadow-box"
+                    class="file-list panel-box relative overflow-hidden min-h-[180px]"
                     :class="{ dragging: dragActive }"
                     @dragenter.prevent="dragActive = true"
                     @dragover.prevent="dragActive = true"
                     @dragleave.prevent="dragActive = false"
                     @drop.prevent="dropFiles"
                 >
-                    <div v-if="busy && !transfer" class="loading-overlay">{{ $t("loading") }}</div>
+                    <div v-if="busy && !transfer" class="loading-overlay px-4 py-12 text-center text-muted-foreground">{{ $t("loading") }}</div>
 
-                    <div class="desktop-file-table table-responsive">
-                        <table class="table align-middle mb-0">
-                            <thead><tr><th>{{ $t("fileName") }}</th><th>{{ $t("type") }}</th><th>{{ $t("size") }}</th><th>{{ $t("modifiedAt") }}</th><th class="text-end">{{ $t("actions") }}</th></tr></thead>
+                    <div class="desktop-file-table overflow-x-auto">
+                        <table class="file-table w-full align-middle mb-0">
+                            <thead><tr><th>{{ $t("fileName") }}</th><th>{{ $t("type") }}</th><th>{{ $t("size") }}</th><th>{{ $t("modifiedAt") }}</th><th class="text-right">{{ $t("actions") }}</th></tr></thead>
                             <tbody>
                                 <tr v-if="entries.length === 0 && !busy">
-                                    <td colspan="5" class="empty-state">{{ $t("emptyDirectory") }}</td>
+                                    <td colspan="5" class="empty-state px-4 py-12 text-center text-muted-foreground">{{ $t("emptyDirectory") }}</td>
                                 </tr>
                                 <tr v-for="entry in entries" :key="entry.path">
                                     <td><button class="file-name" @click="openEntry(entry)"><font-awesome-icon :icon="entry.type === 'directory' ? 'folder' : 'file'" /> {{ entry.name }}</button></td>
@@ -61,21 +58,21 @@
                                     <td>{{ entry.type === "file" ? formatSize(entry.size) : "—" }}</td>
                                     <td>{{ formatDate(entry.modifiedAt) }}</td>
                                     <td>
-                                        <div class="row-actions">
-                                            <button v-if="entry.type === 'file'" class="btn btn-sm btn-normal" @click="download(entry)"><font-awesome-icon icon="download" /> {{ $t("download") }}</button>
-                                            <button v-if="canView(entry)" class="btn btn-sm btn-normal" @click="openLog(entry)"><font-awesome-icon icon="eye" /> {{ $t(isLogEntry(entry) ? "viewLog" : "viewReadOnly") }}</button>
+                                        <div class="row-actions flex flex-wrap items-center justify-end gap-[0.65rem]">
+                                            <button v-if="entry.type === 'file'" class="file-button file-button-sm" @click="download(entry)"><font-awesome-icon icon="download" /> {{ $t("download") }}</button>
+                                            <button v-if="canView(entry)" class="file-button file-button-sm" @click="openLog(entry)"><font-awesome-icon icon="eye" /> {{ $t(isLogEntry(entry) ? "viewLog" : "viewReadOnly") }}</button>
                                             <button
                                                 v-if="entry.type === 'file' && !isKnownBinary(entry)"
-                                                class="btn btn-sm btn-normal"
+                                                class="file-button file-button-sm"
                                                 :disabled="isEditTooLarge(entry)"
                                                 :title="isEditTooLarge(entry) ? $t('fileTooLargeToEdit') : $t('Edit')"
                                                 @click="edit(entry)"
                                             >
                                                 <font-awesome-icon icon="file-pen" /> {{ $t("Edit") }}
                                             </button>
-                                            <button class="btn btn-sm btn-normal" @click="openRename(entry)">{{ $t("rename") }}</button>
-                                            <button class="btn btn-sm btn-normal" @click="openMove(entry)">{{ $t("move") }}</button>
-                                            <button class="btn btn-sm btn-danger" @click="openDelete(entry)"><font-awesome-icon icon="trash" /></button>
+                                            <button class="file-button file-button-sm" @click="openRename(entry)">{{ $t("rename") }}</button>
+                                            <button class="file-button file-button-sm" @click="openMove(entry)">{{ $t("move") }}</button>
+                                            <button class="file-button file-button-sm file-button-danger" @click="openDelete(entry)"><font-awesome-icon icon="trash" /></button>
                                         </div>
                                     </td>
                                 </tr>
@@ -84,18 +81,18 @@
                     </div>
 
                     <div class="mobile-file-cards">
-                        <div v-if="entries.length === 0 && !busy" class="empty-state">{{ $t("emptyDirectory") }}</div>
+                        <div v-if="entries.length === 0 && !busy" class="empty-state px-4 py-12 text-center text-muted-foreground">{{ $t("emptyDirectory") }}</div>
                         <article v-for="entry in entries" :key="entry.path" class="file-card">
                             <button class="file-card-main" @click="openEntry(entry)">
                                 <font-awesome-icon class="file-card-icon" :icon="entry.type === 'directory' ? 'folder' : 'file'" />
                                 <span><strong>{{ entry.name }}</strong><small>{{ $t(`fileType.${entry.type}`) }} · {{ entry.type === "file" ? formatSize(entry.size) : formatDate(entry.modifiedAt) }}</small></span>
                             </button>
                             <div class="file-card-actions">
-                                <button v-if="entry.type === 'file'" class="btn btn-sm btn-normal" :aria-label="$t('download')" @click="download(entry)"><font-awesome-icon icon="download" /></button>
-                                <button v-if="canView(entry)" class="btn btn-sm btn-normal" :aria-label="$t(isLogEntry(entry) ? 'viewLog' : 'viewReadOnly')" @click="openLog(entry)"><font-awesome-icon icon="eye" /></button>
+                                <button v-if="entry.type === 'file'" class="file-button file-button-sm" :aria-label="$t('download')" @click="download(entry)"><font-awesome-icon icon="download" /></button>
+                                <button v-if="canView(entry)" class="file-button file-button-sm" :aria-label="$t(isLogEntry(entry) ? 'viewLog' : 'viewReadOnly')" @click="openLog(entry)"><font-awesome-icon icon="eye" /></button>
                                 <button
                                     v-if="entry.type === 'file' && !isKnownBinary(entry)"
-                                    class="btn btn-sm btn-normal"
+                                    class="file-button file-button-sm"
                                     :disabled="isEditTooLarge(entry)"
                                     :aria-label="isEditTooLarge(entry) ? $t('fileTooLargeToEdit') : $t('Edit')"
                                     @click="edit(entry)"
@@ -104,46 +101,46 @@
                                 </button>
                                 <FloatingMenu placement="bottom-end" class="file-card-menu">
                                     <template #trigger="{ triggerAttrs }">
-                                        <button v-bind="triggerAttrs" class="btn btn-sm btn-normal" type="button" :aria-label="$t('actions')"><font-awesome-icon icon="ellipsis" /></button>
+                                        <button v-bind="triggerAttrs" class="file-button file-button-sm" type="button" :aria-label="$t('actions')"><font-awesome-icon icon="ellipsis" /></button>
                                     </template>
                                     <button class="floating-menu-item" type="button" role="menuitem" @click="openRename(entry)">{{ $t("rename") }}</button>
                                     <button class="floating-menu-item" type="button" role="menuitem" @click="openMove(entry)">{{ $t("move") }}</button>
-                                    <button class="floating-menu-item text-danger" type="button" role="menuitem" @click="openDelete(entry)">{{ $t("Delete") }}</button>
+                                    <button class="floating-menu-item text-destructive" type="button" role="menuitem" @click="openDelete(entry)">{{ $t("Delete") }}</button>
                                 </FloatingMenu>
                             </div>
                         </article>
                     </div>
                 </div>
 
-                <div v-if="total > limit" class="pagination-bar mt-3">
-                    <button class="btn btn-normal" :disabled="offset === 0 || busy" @click="changePage(-1)">{{ $t("previous") }}</button>
+                <div v-if="total > limit" class="pagination-bar mt-[1rem] flex items-center justify-between gap-[0.65rem]">
+                    <button class="file-button" :disabled="offset === 0 || busy" @click="changePage(-1)">{{ $t("previous") }}</button>
                     <span>{{ offset + 1 }}–{{ Math.min(offset + limit, total) }} / {{ total }}</span>
-                    <button class="btn btn-normal" :disabled="offset + limit >= total || busy" @click="changePage(1)">{{ $t("next") }}</button>
+                    <button class="file-button" :disabled="offset + limit >= total || busy" @click="changePage(1)">{{ $t("next") }}</button>
                 </div>
 
-                <div v-if="transfer" class="transfer-panel shadow-box">
-                    <div class="d-flex justify-content-between gap-2"><strong>{{ transfer.label }}</strong><button class="btn btn-sm btn-normal" @click="cancelTransfer">{{ $t("cancel") }}</button></div>
-                    <div class="progress mt-2"><div class="progress-bar" :style="{ width: `${transfer.percent}%` }">{{ transfer.percent }}%</div></div>
+                <div v-if="transfer" class="transfer-panel panel-box fixed z-1500 right-4 bottom-4 w-[min(420px,calc(100vw-2rem))] p-4">
+                    <div class="flex justify-between gap-2"><strong>{{ transfer.label }}</strong><button class="file-button file-button-sm" @click="cancelTransfer">{{ $t("cancel") }}</button></div>
+                    <div class="file-progress mt-[.5rem] h-4 overflow-hidden rounded-md bg-background"><div class="file-progress-bar h-full min-w-8 bg-primary text-primary-foreground text-xs text-center whitespace-nowrap" :style="{ width: `${transfer.percent}%` }">{{ transfer.percent }}%</div></div>
                 </div>
             </template>
 
             <FloatingDialog v-model="showCreate" size="sm" :title="createType === 'directory' ? $t('newFolder') : $t('newTextFile')" :ok-title="$t('Create')" :cancel-title="$t('cancel')" @ok="createEntry">
-                <label class="form-label" for="new-entry-name">{{ $t("fileName") }}</label>
-                <input id="new-entry-name" v-model="newName" class="form-control" @keyup.enter="createEntry" />
+                <label class="file-label inline-block mb-2" for="new-entry-name">{{ $t("fileName") }}</label>
+                <input id="new-entry-name" v-model="newName" class="file-input" @keyup.enter="createEntry" />
             </FloatingDialog>
 
             <FloatingDialog v-model="showRename" size="sm" :title="$t('rename')" :ok-title="$t('rename')" :cancel-title="$t('cancel')" @ok="renameEntry">
-                <label class="form-label" for="rename-entry">{{ $t("fileName") }}</label>
-                <input id="rename-entry" v-model="renameName" class="form-control" />
+                <label class="file-label inline-block mb-2" for="rename-entry">{{ $t("fileName") }}</label>
+                <input id="rename-entry" v-model="renameName" class="file-input" />
             </FloatingDialog>
 
             <FloatingDialog v-model="showMove" size="sm" :title="$t('move')" :ok-title="$t('move')" :cancel-title="$t('cancel')" @ok="moveEntry">
-                <label class="form-label" for="move-destination">{{ $t("destinationDirectory") }}</label>
-                <input id="move-destination" v-model="moveDestination" class="form-control" placeholder="/" />
-                <div class="form-text">{{ $t("destinationDirectoryHint") }}</div>
+                <label class="file-label inline-block mb-2" for="move-destination">{{ $t("destinationDirectory") }}</label>
+                <input id="move-destination" v-model="moveDestination" class="file-input" placeholder="/" />
+                <div class="file-help mt-1 text-muted-foreground text-meta">{{ $t("destinationDirectoryHint") }}</div>
             </FloatingDialog>
 
-            <FloatingDialog v-model="showDelete" size="sm" :title="$t('confirmDelete')" :ok-title="$t('Delete')" ok-variant="btn-danger" :cancel-title="$t('cancel')" @ok="deleteEntry">
+            <FloatingDialog v-model="showDelete" size="sm" :title="$t('confirmDelete')" :ok-title="$t('Delete')" ok-variant="danger" :cancel-title="$t('cancel')" @ok="deleteEntry">
                 {{ $t("fileDeleteConfirm", { name: activeEntry?.name }) }}
             </FloatingDialog>
 
@@ -179,20 +176,20 @@
                 @hidden="stopLogPolling"
             >
                 <div class="log-viewer-toolbar">
-                    <button class="btn btn-sm btn-normal" :class="{ active: logFollow }" @click="toggleLogFollow">
+                    <button class="file-button file-button-sm" :class="{ active: logFollow }" @click="toggleLogFollow">
                         <font-awesome-icon :icon="logFollow ? 'pause' : 'play'" /> {{ $t(logFollow ? "pauseFollow" : "resumeFollow") }}
                     </button>
-                    <button class="btn btn-sm btn-normal" :disabled="!logHasSelection" @click="copyLogSelection"><font-awesome-icon icon="copy" /> {{ $t("copySelection") }}</button>
-                    <button class="btn btn-sm btn-normal" @click="clearLogDisplay"><font-awesome-icon icon="trash" /> {{ $t("clearDisplay") }}</button>
-                    <button class="btn btn-sm btn-normal" :disabled="logLoading" @click="reloadLog"><font-awesome-icon icon="arrows-rotate" /> {{ $t("reloadLog") }}</button>
-                    <button v-if="logEntry" class="btn btn-sm btn-normal" :disabled="busy" @click="download(logEntry)"><font-awesome-icon icon="download" /> {{ $t("download") }}</button>
-                    <button v-if="logHasNewContent && !logFollow" class="btn btn-sm btn-primary ms-auto" @click="resumeLogFollow">{{ $t("newLogContent") }}</button>
+                    <button class="file-button file-button-sm" :disabled="!logHasSelection" @click="copyLogSelection"><font-awesome-icon icon="copy" /> {{ $t("copySelection") }}</button>
+                    <button class="file-button file-button-sm" @click="clearLogDisplay"><font-awesome-icon icon="trash" /> {{ $t("clearDisplay") }}</button>
+                    <button class="file-button file-button-sm" :disabled="logLoading" @click="reloadLog"><font-awesome-icon icon="arrows-rotate" /> {{ $t("reloadLog") }}</button>
+                    <button v-if="logEntry" class="file-button file-button-sm" :disabled="busy" @click="download(logEntry)"><font-awesome-icon icon="download" /> {{ $t("download") }}</button>
+                    <button v-if="logHasNewContent && !logFollow" class="file-button file-button-sm file-button-primary ms-auto" @click="resumeLogFollow">{{ $t("newLogContent") }}</button>
                     <span v-else-if="logLoading" class="log-viewer-status ms-auto">{{ $t("loading") }}</span>
                 </div>
-                <div v-if="logNotice" class="alert alert-info py-2 mb-2">{{ logNotice }}</div>
-                <div v-if="logError" class="alert alert-danger py-2 mb-2">
+                <div v-if="logNotice" class="file-notice py-[.5rem] mb-[.5rem] px-4 rounded-md border border-primary bg-card text-foreground">{{ logNotice }}</div>
+                <div v-if="logError" class="file-notice py-[.5rem] mb-[.5rem] px-4 rounded-md border border-destructive bg-card text-foreground">
                     <span>{{ logError }}</span>
-                    <button class="btn btn-sm btn-danger ms-2" @click="reloadLog">{{ $t("retry") }}</button>
+                    <button class="file-button file-button-sm file-button-danger ms-[.5rem]" @click="reloadLog">{{ $t("retry") }}</button>
                 </div>
                 <div class="log-viewer-body">
                     <FileLogViewer
@@ -800,77 +797,69 @@ export default {
 </script>
 
 <style scoped lang="scss">
-@import "../styles/vars.scss";
-
-.page-header, .file-toolbar, .toolbar-actions, .row-actions, .pagination-bar {
-    display: flex;
-    align-items: center;
-    gap: 0.65rem;
-}
-
-.page-header, .file-toolbar, .pagination-bar { justify-content: space-between; }
 .endpoint-select { width: min(320px, 100%); }
-.file-toolbar { padding: 0.8rem; }
-.breadcrumbs { display: flex; align-items: center; flex-wrap: wrap; gap: 0.35rem; min-width: 0; }
+.file-button {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
+    min-height: 38px; padding: 0.375rem 0.75rem; border: 1px solid var(--secondary);
+    border-radius: 0.375rem; color: var(--secondary-foreground); background: var(--secondary);
+    font: inherit; font-size: var(--font-size-control); line-height: 1.5; text-decoration: none;
+    cursor: pointer;
+    &:hover { color: var(--secondary-foreground); background: var(--secondary-hover); }
+    &:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+    &:disabled { opacity: 0.65; cursor: not-allowed; }
+    &.active, &.file-button-primary { color: var(--primary-foreground); background: var(--primary); border-color: var(--primary); }
+    &.file-button-danger { color: white; background: var(--destructive); border-color: var(--destructive); }
+}
+.file-button-sm { min-height: 31px; padding: 0.25rem 0.5rem; font-size: var(--font-size-control-sm); }
+.file-input {
+    display: block; width: 100%; min-height: 38px; padding: 0.375rem 0.75rem;
+    border: 1px solid var(--border); border-radius: 0.375rem;
+    color: var(--foreground); background: var(--input-surface); font: inherit;
+    &:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
+}
+.file-table { border-collapse: collapse; color: var(--foreground); }
+.file-table th, .file-table td { padding: 0.5rem; border-bottom: 1px solid var(--border); }
+.file-table tbody tr:hover { background: var(--hover); }
 .crumb, .file-name { padding: 0; border: 0; color: inherit; background: transparent; text-align: left; overflow-wrap: anywhere; }
-.crumb:hover, .file-name:hover { color: $primary; }
-.file-list { position: relative; overflow: hidden; min-height: 180px; }
-.file-list.dragging { outline: 3px dashed $primary; outline-offset: -6px; }
-.loading-overlay, .empty-state { padding: 3rem 1rem; text-align: center; color: $dark-font-color3; }
-.row-actions { justify-content: flex-end; flex-wrap: wrap; }
+.crumb:hover, .file-name:hover { color: var(--link); }
+.file-list.dragging { outline: 3px dashed var(--primary); outline-offset: -6px; }
 .mobile-file-cards { display: none; }
-.transfer-panel { position: fixed; z-index: 1500; right: 1rem; bottom: 1rem; width: min(420px, calc(100vw - 2rem)); padding: 1rem; }
-.editor-meta { display: flex; flex: 0 0 auto; justify-content: flex-end; gap: 0.5rem; margin-bottom: 0.5rem; color: $dark-font-color3; font-size: 0.8rem; }
-.editor-meta span { padding: 0.15rem 0.5rem; border: 1px solid rgba(127,127,127,.25); border-radius: 0.35rem; }
-.text-editor { display: flex; overflow: hidden; flex: 1 1 auto; min-height: 0; border: 1px solid rgba(127,127,127,.3); border-radius: 0.4rem; font-family: 'JetBrains Mono', monospace; font-size: 14px; }
+.editor-meta { display: flex; flex: 0 0 auto; justify-content: flex-end; gap: 0.5rem; margin-bottom: 0.5rem; color: var(--muted-foreground); font-size: var(--font-size-meta-sm); }
+.editor-meta span { padding: 0.15rem 0.5rem; border: 1px solid var(--border); border-radius: 0.35rem; }
+.text-editor { display: flex; overflow: hidden; flex: 1 1 auto; min-height: 0; border: 1px solid var(--border); border-radius: 0.4rem; font-family: var(--font-mono); font-size: var(--font-size-body-sm); }
 .text-editor :deep(.file-text-editor), .text-editor :deep(.cm-editor) { width: 100%; height: 100%; min-height: 0; }
 .text-editor :deep(.cm-scroller) { overflow: auto; }
 .log-viewer-toolbar { display: flex; flex: 0 0 auto; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem; }
-.log-viewer-toolbar .active { color: #fff; background: $primary; }
-.log-viewer-status { align-self: center; color: $dark-font-color3; }
-.log-viewer-body { display: flex; overflow: hidden; flex: 1 1 auto; min-height: 0; border: 1px solid rgba(127,127,127,.3); border-radius: 0.4rem; font-family: 'JetBrains Mono', monospace; font-size: 14px; }
+.log-viewer-toolbar .active { color: var(--primary-foreground); background: var(--primary); }
+.log-viewer-status { align-self: center; color: var(--muted-foreground); }
+.log-viewer-body { display: flex; overflow: hidden; flex: 1 1 auto; min-height: 0; border: 1px solid var(--border); border-radius: 0.4rem; font-family: var(--font-mono); font-size: var(--font-size-body-sm); }
 :global(.file-editor-dialog .fd-body),
 :global(.file-log-dialog .fd-body) { display: flex; overflow: hidden; flex: 1 1 auto; flex-direction: column; min-height: 0; }
 
-.files-page {
-    .dark & .text-muted {
-        color: $dark-font-color !important;
-    }
-}
-
-.desktop-file-table {
-    .dark & .table {
-        --bs-table-bg: transparent;
-        --bs-table-color: #d8dee4;
-        --bs-table-border-color: #{$dark-border-color};
-    }
-
-    .dark & thead th {
-        color: #d8dee4;
-        background-color: $dark-header-bg;
-        border-color: $dark-border-color;
-    }
-}
+.desktop-file-table thead th { color: var(--foreground); background: var(--popover); text-align: left; white-space: nowrap; }
+.desktop-file-table thead th:last-child { text-align: right; }
 
 @media (max-width: 767.98px) {
     .page-header { align-items: stretch; flex-direction: column; }
     .endpoint-select { width: 100%; }
     .file-toolbar { align-items: stretch; flex-direction: column; }
     .toolbar-actions { display: grid; grid-template-columns: repeat(2, 1fr); }
-    .toolbar-actions .btn { min-width: 0; padding-inline: 0.6rem; }
+    .toolbar-actions .file-button { min-width: 0; padding-inline: 0.6rem; }
     .desktop-file-table { display: none; }
     .mobile-file-cards { display: block; }
-    .file-card { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem; border-bottom: 1px solid rgba(127,127,127,.2); }
+    .file-card { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem; border-bottom: 1px solid var(--border); }
     .file-card-main { display: flex; align-items: center; flex: 1; gap: 0.75rem; min-width: 0; padding: 0; border: 0; color: inherit; background: transparent; text-align: left; }
     .file-card-main span { display: flex; overflow: hidden; flex-direction: column; min-width: 0; }
     .file-card-main strong { overflow: hidden; text-overflow: ellipsis; }
-    .file-card-main small { color: $dark-font-color3; }
-    .file-card-icon { flex: 0 0 auto; font-size: 1.4rem; color: $primary; }
+    .file-card-main small { color: var(--muted-foreground); }
+    .file-card-icon { flex: 0 0 auto; font-size: 1.4rem; color: var(--link); }
     .file-card-actions { display: flex; flex: 0 0 auto; gap: 0.25rem; }
     .pagination-bar { flex-wrap: wrap; }
     .transfer-panel { bottom: calc(70px + env(safe-area-inset-bottom)); }
-    .text-editor { font-size: 16px; }
-    .log-viewer-body { font-size: 16px; }
-    .log-viewer-toolbar .btn { min-height: 44px; }
+    .text-editor { font-size: var(--font-size-control); }
+    .log-viewer-body { font-size: var(--font-size-control); }
+    .log-viewer-toolbar .file-button { min-height: 44px; }
+    .file-button, .file-input { min-height: 44px; }
+    .file-input { font-size: 16px; }
 }
 </style>

@@ -1,9 +1,61 @@
-@import "vars.scss";
-@import "bootstrap/scss/bootstrap";
+@import "theme.scss";
 
-#app {
-    font-family: BlinkMacSystemFont, segoe ui, Roboto, helvetica neue, Arial, noto sans, sans-serif, apple color emoji, segoe ui emoji, segoe ui symbol, noto color emoji;
+// Minimal app reset: Wind4's reset preflight is disabled.
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
 }
+
+:root {
+    font-family: var(--font-ui);
+    font-size: var(--font-size-body);
+    line-height: var(--line-height-body);
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    margin: 0;
+    font-family: var(--font-ui);
+}
+
+a {
+    color: var(--link);
+}
+
+a:hover {
+    color: var(--link);
+}
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
+    border-style: solid;
+}
+
+button {
+    cursor: pointer;
+}
+
+button:disabled {
+    cursor: default;
+}
+
+p {
+    margin: 0 0 1rem;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    margin: 0 0 0.5rem;
+    line-height: var(--line-height-tight);
+}
+
+h3 { font-size: 1.75rem; }
+h4 { font-size: 1.5rem; }
+h5 { font-size: 1.25rem; }
+h6 { font-size: 1rem; }
 
 html, body, #app {
     min-width: 320px;
@@ -13,48 +65,27 @@ html, body, #app {
     overflow: hidden;
 }
 
-#app > .app-layout {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    min-height: 0;
-    overflow: hidden;
+body {
+    background-color: var(--background);
+    color: var(--foreground);
 }
 
-#app > .app-layout > .desktop-header {
-    flex: 0 0 auto;
-}
-
-#app > .app-layout > main {
-    display: flex;
-    flex-direction: column;
-    flex: 1 1 0;
-    min-height: 0;
-    overflow-x: hidden;
-    overflow-y: auto;
-}
-
-@media (max-width: 991.98px) {
-    #app > .app-layout > main {
-        padding: 12px 12px calc(76px + env(safe-area-inset-bottom));
-    }
+h1, h2, h3, h4, h5, h6 {
+    color: var(--foreground);
+    font-weight: var(--font-weight-medium);
 }
 
 h1 {
-    font-size: 32px;
+    font-size: var(--font-size-page-title);
 }
 
 h2 {
-    font-size: 26px;
-}
-
-textarea.form-control {
-    border-radius: 19px;
+    font-size: var(--font-size-section-title);
 }
 
 * {
     scrollbar-width: thin;
-    scrollbar-color: $primary transparent;
+    scrollbar-color: var(--primary) transparent;
 }
 
 ::-webkit-scrollbar {
@@ -67,464 +98,32 @@ textarea.form-control {
     background: transparent;
 }
 
-.bg-maintenance {
-    color: white !important;
-    background-color: $maintenance !important;
-}
-
-.bg-stopped {
-    color: $dark-font-color2 !important;
-    background-color: $stopped !important;
-}
-
-.badge.bg-secondary {
-    color: #3d4450;
-    background-color: #e8eaed;
-    border: 1px solid transparent;
-    font-weight: 500;
-    letter-spacing: 0.01em;
-    padding: 0.35em 0.65em;
-}
-
-.dark .badge.bg-secondary {
-    color: #f0f3f6;
-    background-color: #21262d;
-    border: 1px solid #30363d;
-}
-
-.bg-dark {
-    color: white;
-}
-
-.text-maintenance {
-    color: $maintenance !important;
-}
-
-.text-stopped {
-    color: $stopped !important;
-}
-
 ::placeholder {
-    color: $dark-font-color3;
+    color: var(--muted-foreground);
+    opacity: 1;
 }
-
-.incident a,
-.bg-maintenance a {
-    color: inherit;
-}
-
-.list-group {
-    border-radius: 0.75rem;
-
-    .dark & {
-        .list-group-item {
-            background-color: $dark-bg2;
-            color: $dark-font-color;
-            border-color: $dark-border-color;
-        }
-    }
-}
-
 
 // optgroup
 optgroup {
-    color: #b1b1b1;
+    color: var(--muted-foreground);
     option {
-        color: #212529;
-    }
-}
-
-.dark {
-    optgroup {
-        color: #535864;
-        option {
-            color: $dark-font-color;
-        }
+        color: var(--foreground);
     }
 }
 
 // Scrollbar
 ::-webkit-scrollbar-thumb {
-    background: $primary;
+    background: var(--primary);
     border-radius: 20px;
-}
-
-.modal {
-    backdrop-filter: blur(3px);
-}
-
-.modal-content {
-    border-radius: 1rem;
-    box-shadow: 0 15px 70px rgba(0, 0, 0, 0.1);
-
-    .dark & {
-        box-shadow: 0 15px 70px rgb(0 0 0);
-        background-color: $dark-bg;
-    }
-}
-
-.VuePagination__count {
-    font-size: 13px;
-    text-align: center;
-}
-
-.shadow-box {
-    box-shadow: 0 15px 70px rgba(0, 0, 0, 0.1);
-    padding: 10px;
-    border-radius: 10px;
-
-    &.big-padding {
-        padding: 20px;
-    }
-}
-
-.btn {
-    padding-left: 20px;
-    padding-right: 20px;
-}
-
-.btn-sm {
-    border-radius: 25px;
-}
-
-.btn-primary {
-    color: white;
-    background: $primary-gradient;
-
-    &:hover, &:active, &:focus, &.active {
-        color: white;
-        background: $primary-gradient-active;
-        border-color: $highlight;
-    }
-
-    .dark & {
-        color: $dark-font-color2;
-    }
-}
-
-.btn-normal {
-    $bg-color: #F5F5F5;
-
-    background-color: $bg-color;
-    border-color: $bg-color;
-
-    &:hover {
-        $hover-color: darken($bg-color, 3%);
-        background-color: $hover-color;
-        border-color: $hover-color;
-    }
-}
-
-.btn-warning {
-    color: white;
-    background: $warning-gradient;
-    border-color: transparent;
-
-    &:hover, &:active, &:focus, &.active {
-        color: white;
-        background: $warning-gradient-active;
-        border-color: transparent;
-    }
-
-    .dark & {
-        color: $dark-font-color2;
-    }
-}
-
-.btn-info {
-    color: white;
-
-    &:hover, &:active, &:focus, &.active {
-        color: white;
-    }
-}
-
-.btn-dark {
-    background-color: #161B22;
-}
-
-.btn-outline-normal {
-    padding: 4px 10px;
-    border: 1px solid #ced4da;
-    border-radius: 25px;
-    background-color: transparent;
-
-    .dark & {
-        color: $dark-font-color;
-        border: 1px solid $dark-font-color2;
-    }
-
-    &.active {
-        background-color: $highlight-white;
-
-        .dark & {
-            background-color: $dark-font-color2;
-        }
-    }
 }
 
 @media (max-width: 550px) {
     h1 { font-size: 1.7rem; }
     h2 { font-size: 1.4rem; }
-
-    .btn, .form-control, .form-select {
-        min-height: 44px;
-    }
-
-    .form-control, .form-select {
-        font-size: 16px;
-    }
-
-    .modal-dialog {
-        margin: 0.5rem;
-    }
-
-    .modal-footer {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-    }
-
-    .modal-footer .btn {
-        margin: 0;
-    }
-
-    .table-shadow-box {
-        padding: 10px !important;
-
-        thead {
-            display: none;
-        }
-
-        tbody {
-            .shadow-box {
-                background-color: white;
-            }
-        }
-
-        tr {
-            margin-top: 0 !important;
-            padding: 4px 10px !important;
-            display: block;
-            margin-bottom: 6px;
-
-            td:first-child {
-                font-weight: bold;
-            }
-
-            td:nth-child(-n+3) {
-                text-align: center;
-            }
-
-            td:last-child {
-                text-align: left;
-            }
-
-            td {
-                border-bottom: 1px solid $dark-font-color;
-                display: block;
-                padding: 4px;
-
-                .badge {
-                    margin: auto;
-                    display: block;
-                    width: 30%;
-                }
-            }
-        }
-    }
 }
 
-// Dark Theme override here
-.dark {
-    background-color: #090c10;
-    color: $dark-font-color;
-
-    mark, .mark {
-        background-color: #b6ad86;
-    }
-
-    .shadow-box {
-        &:not(.alert) {
-            background-color: $dark-bg;
-        }
-    }
-
-    .form-check-input {
-        background-color: $dark-bg2;
-        border-color: $dark-border-color;
-    }
-
-    .input-group-text {
-        background-color: #282f39;
-        border-color: $dark-border-color;
-        color: $dark-font-color;
-    }
-
-    .form-check-input:checked {
-        border-color: $primary; // Re-apply bootstrap border
-    }
-
-    .form-switch .form-check-input {
-        background-color: #232f3b;
-    }
-
-    a:not(.btn),
-    .table,
-    .nav-link {
-        color: $dark-font-color;
-
-        &.btn-info {
-            color: white;
-        }
-    }
-
-    .incident a,
-    .bg-maintenance a {
-        color: inherit;
-    }
-
-    .form-control,
-    .form-control:focus,
-    .form-select,
-    .form-select:focus {
-        color: $dark-font-color;
-        background-color: $dark-bg2;
-    }
-
-    .form-select:disabled {
-        color: rgba($dark-font-color, 0.7);
-        background-color: $dark-bg;
-    }
-
-    .form-control, .form-select {
-        border-color: $dark-border-color;
-    }
-
-    .form-control:disabled, .form-control[readonly] {
-        background-color: #232f3b;
-        opacity: 1;
-    }
-
-    .table-hover > tbody > tr:hover > * {
-        --bs-table-accent-bg: #070a10;
-        color: $dark-font-color;
-    }
-
-    .nav-pills .nav-link.active, .nav-pills .show > .nav-link {
-        color: $dark-font-color2;
-        background: $primary-gradient;
-
-        &:hover {
-            background: $primary-gradient-active;
-        }
-    }
-
-    .bg-primary {
-        color: $dark-font-color2;
-        background: $primary-gradient;
-    }
-
-    .btn-secondary {
-        color: white;
-    }
-
-    .btn-normal {
-        $bg-color: $dark-header-bg;
-
-        color: $dark-font-color;
-        background-color: $bg-color;
-        border-color: $bg-color;
-
-        &:hover {
-            $hover-color: darken($bg-color, 3%);
-            background-color: $hover-color;
-            border-color: $hover-color;
-        }
-    }
-
-    .btn-warning {
-        color: $dark-font-color2;
-
-        &:hover, &:active, &:focus, &.active {
-            color: $dark-font-color2;
-        }
-    }
-
-    .btn-close {
-        box-shadow: none;
-        filter: invert(1);
-
-        &:hover {
-            opacity: 0.6;
-        }
-    }
-
-    .modal-header {
-        border-color: $dark-bg;
-    }
-
-    .modal-footer {
-        border-color: $dark-bg;
-    }
-
-    // Pagination
-    .page-item.disabled .page-link {
-        background-color: $dark-bg;
-        border-color: $dark-border-color;
-    }
-
-    .page-link {
-        background-color: $dark-bg;
-        border-color: $dark-border-color;
-        color: $dark-font-color;
-    }
-
-    .stack-list {
-        .item {
-            &:hover {
-                background-color: $dark-bg2;
-            }
-
-            &.active {
-                background-color: $dark-bg2;
-            }
-        }
-    }
-
-    @media (max-width: 550px) {
-        .table-shadow-box {
-            tbody {
-                .shadow-box {
-                    background-color: $dark-bg2;
-
-                    td {
-                        border-bottom: 1px solid $dark-border-color;
-                    }
-                }
-            }
-        }
-    }
-
-    .alert {
-        &.bg-info,
-        &.bg-warning,
-        &.bg-danger,
-        &.bg-maintenance,
-        &.bg-light {
-            color: $dark-font-color2;
-        }
-    }
-}
-
-// Floating Label
-.form-floating > .form-control:focus ~ label::after, .form-floating > .form-control:not(:placeholder-shown) ~ label::after, .form-floating > .form-control-plaintext ~ label::after, .form-floating > .form-select ~ label::after {
-    background-color: transparent;
-}
-
-.form-floating > label {
-    .dark & {
-        color: $dark-font-color3 !important;
-    }
+.dark mark {
+    background-color: #b6ad86;
 }
 
 
@@ -535,7 +134,7 @@ optgroup {
 // page-change
 .slide-fade-enter-active,
 .slide-fade-leave-active {
-    transition: opacity 0.2s $easing-in;
+    transition: opacity 0.2s cubic-bezier(0.54, 0.78, 0.55, 0.97);
 }
 
 .slide-fade-enter-from,
@@ -544,11 +143,11 @@ optgroup {
 }
 
 .slide-fade-right-enter-active {
-    transition: all 0.2s $easing-in;
+    transition: all 0.2s cubic-bezier(0.54, 0.78, 0.55, 0.97);
 }
 
 .slide-fade-right-leave-active {
-    transition: all 0.2s $easing-in;
+    transition: all 0.2s cubic-bezier(0.54, 0.78, 0.55, 0.97);
 }
 
 .slide-fade-right-enter-from,
@@ -558,11 +157,11 @@ optgroup {
 }
 
 .slide-fade-up-enter-active {
-    transition: all 0.2s $easing-in;
+    transition: all 0.2s cubic-bezier(0.54, 0.78, 0.55, 0.97);
 }
 
 .slide-fade-up-leave-active {
-    transition: all 0.2s $easing-in;
+    transition: all 0.2s cubic-bezier(0.54, 0.78, 0.55, 0.97);
 }
 
 .slide-fade-up-enter-from,
@@ -571,273 +170,16 @@ optgroup {
     opacity: 0;
 }
 
-.stack-list {
-    &.scrollbar {
-        overflow-y: auto;
-    }
+code {
+    padding: .2em .4em;
+    margin: 0;
+    font-size: 85%;
+    white-space: break-spaces;
+    background-color: var(--background);
 
-    .item {
-        display: flex;
-        align-items: center;
-        height: 52px;
-        text-decoration: none;
-        border-radius: 10px;
-        transition: all ease-in-out 0.15s;
-        width: 100%;
-        padding: 0 8px;
-
-        &.disabled {
-            opacity: 0.3;
-        }
-
-        &:hover {
-            background-color: $highlight-white;
-        }
-
-        &.active {
-            background-color: #cdf8f4;
-        }
-
-        .title {
-            display: inline-block;
-            margin-top: -4px;
-        }
-    }
-}
-
-.alert-success {
-    color: #122f21;
-    background-color: $primary;
-    border-color: $primary;
-}
-
-.alert-info {
-    color: #055160;
-    background-color: #cff4fc;
-    border-color: #cff4fc;
-}
-
-.alert-danger {
-    color: #842029;
-    background-color: #f8d7da;
-    border-color: #f8d7da;
-}
-
-.btn-success {
-    color: #fff;
-    background: $success-gradient;
-    border-color: transparent;
-
-    &:hover,
-    &:focus,
-    &:active,
-    &.active {
-        color: #fff;
-        background: $success-gradient-active;
-        border-color: transparent;
-    }
-
-    .dark & {
-        color: $dark-font-color2;
-    }
-}
-
-.btn-danger {
-    color: #fff;
-    background: $danger-gradient;
-    border-color: transparent;
-
-    &:hover,
-    &:focus,
-    &:active,
-    &.active {
-        color: #fff;
-        background: $danger-gradient-active;
-        border-color: transparent;
-    }
-}
-
-.dark {
-    .Vue-Toastification__toast {
-        min-height: 3rem;
-        padding: 0.85rem 1rem;
-        border: 0;
-        border-radius: 10px;
-        background-color: $dark-bg;
-        color: $dark-font-color;
-        box-shadow:
-            0 0 0 1px rgba(255, 255, 255, 0.06),
-            0 12px 40px rgba(0, 0, 0, 0.55);
-        font-family: inherit;
-        font-size: 0.95rem;
-    }
-
-    .Vue-Toastification__toast--success,
-    .Vue-Toastification__toast--error,
-    .Vue-Toastification__toast--warning,
-    .Vue-Toastification__toast--info,
-    .Vue-Toastification__toast--default {
-        background-color: $dark-bg;
-        color: $dark-font-color;
-    }
-
-    .Vue-Toastification__toast-body {
-        color: $dark-font-color;
-        line-height: 1.4;
-    }
-
-    .Vue-Toastification__close-button {
-        color: $dark-font-color3;
-        opacity: 0.85;
-        text-shadow: none;
-
-        &:hover,
-        &:focus {
-            color: $dark-font-color;
-            opacity: 1;
-        }
-    }
-
-    .Vue-Toastification__progress-bar {
-        background: rgba($dark-font-color3, 0.45);
-    }
-
-    .Vue-Toastification__icon {
-        display: inline-flex;
-        flex: 0 0 auto;
-        align-items: center;
-        justify-content: center;
-        width: 1.5rem;
-        height: 1.5rem;
-        margin: auto 0.85rem auto 0;
-        border-radius: 50%;
-
-        svg {
-            display: block;
-            width: 0.85rem;
-            height: 0.85rem;
-        }
-    }
-
-    .Vue-Toastification__toast--success .Vue-Toastification__icon {
-        color: $dark-font-color2;
-        background: $success-gradient;
-    }
-
-    .Vue-Toastification__toast--error .Vue-Toastification__icon {
-        color: #fff;
-        background: $danger-gradient;
-    }
-
-    .Vue-Toastification__toast--warning .Vue-Toastification__icon {
-        color: $dark-font-color2;
-        background: $warning-gradient;
-    }
-
-    .Vue-Toastification__toast--info .Vue-Toastification__icon,
-    .Vue-Toastification__toast--default .Vue-Toastification__icon {
-        color: $dark-font-color2;
-        background: $primary-gradient;
-    }
-}
-
-
-[contenteditable=true] {
-    transition: all $easing-in 0.2s;
-    background-color: rgba(239, 239, 239, 0.7);
-    border-radius: 8px;
-
-    &.no-bg {
-        background-color: transparent !important;
-    }
-
-    &:focus {
-        outline: 0 solid #eee;
-        background-color: rgba(245, 245, 245, 0.9);
-    }
-
-    &:hover {
-        background-color: rgba(239, 239, 239, 0.8);
-    }
-
-    .dark & {
-        background-color: rgba(239, 239, 239, 0.2);
-    }
-
-    /*
-    &::after {
-        margin-left: 5px;
-        content: "🖊️";
-        font-size: 13px;
-        color: #eee;
-    }
-    */
-
-}
-
-.action {
-    transition: all $easing-in 0.2s;
-
-    &:hover {
-        cursor: pointer;
-        transform: scale(1.2);
-    }
-}
-
-.vue-image-crop-upload .vicp-wrap {
-    border-radius: 10px !important;
-}
-
-.spinner {
-    color: $primary;
-}
-
-
-h5.settings-subheading::after {
-    content: "";
-    display: block;
-    width: 50%;
-    padding-top: 8px;
-    border-bottom: 1px solid $dark-border-color;
-}
-
-/* required class */
-.code-editor, .css-editor {
-    /* we dont use `language-` classes anymore so thats why we need to add background and text color manually */
-
-    border-radius: 1rem;
-    padding: 10px 5px;
-    border: 1px solid #ced4da;
-
-    .dark & {
-        background: $dark-bg2;
-        border: 1px solid $dark-border-color;
-    }
-}
-
-
-$shadow-box-padding: 20px;
-
-.shadow-box-with-fixed-bottom-bar {
-    padding-top: $shadow-box-padding;
-    padding-bottom: 0;
-    padding-right: $shadow-box-padding;
-    padding-left: $shadow-box-padding;
-}
-
-.fixed-bottom-bar {
-    position: sticky;
-    bottom: 0;
-    margin-left: -$shadow-box-padding;
-    margin-right: -$shadow-box-padding;
-    z-index: 100;
-    background-color: rgba(white, 0.2);
-    backdrop-filter: blur(2px);
-    border-radius: 0 0 10px 10px;
-
-    .dark & {
-        background-color: rgba($dark-header-bg, 0.9);
-    }
+    border-radius: 6px;
+    font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    color: var(--foreground);
 }
 
 @media (max-width: 770px) {
@@ -852,34 +194,21 @@ $shadow-box-padding: 20px;
     }
 }
 
-code {
-    padding: .2em .4em;
-    margin: 0;
-    font-size: 85%;
-    white-space: break-spaces;
-    background-color: rgba(239, 239, 239, 0.15);
-
-    border-radius: 6px;
-    font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    color: black;
-
-    .dark & {
-        color: $dark-font-color;
-    }
-}
-
-.form-text {
-    color: $dark-font-color3;
-}
-
-
 .cm-gutters {
 	background-color: transparent !important;
 }
-.dark [contenteditable="true"] {
-	background-color: transparent !important;
-}
 .cm-editor {
+	background-color: #fff !important;
+}
+.cm-editor [contenteditable="true"] {
+	background-color: transparent !important;
+
+	&:hover,
+	&:focus {
+		background-color: transparent !important;
+	}
+}
+.dark .cm-editor {
 	background-color: transparent !important;
 }
 .cm-activeLine, .cm-activeLineGutter {
@@ -903,7 +232,6 @@ code {
     border-radius: 8px;
     background: #fff;
     color: #202c39;
-    box-shadow: 0 10px 30px rgba(7, 10, 16, 0.2);
     font-family: inherit;
     font-size: 13px;
     line-height: 1.5;
@@ -967,10 +295,9 @@ code {
 .dark .cm-tooltip.cm-tooltip-hover:has(.cm-compose-hover),
 .dark .cm-tooltip.cm-compose-completions,
 .dark .cm-tooltip.cm-completionInfo:has(.cm-compose-hover) {
-    border-color: $dark-border-color;
-    background: $dark-header-bg;
+    border-color: #30363d;
+    background: #161b22;
     color: #dce5ef;
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
 }
 
 .dark .cm-tooltip.cm-compose-completions > ul > li[aria-selected] {
@@ -979,7 +306,7 @@ code {
 }
 
 .dark .cm-tooltip.cm-compose-completions .cm-completionMatchedText {
-    color: $highlight;
+    color: #9dd1ff;
 }
 
 // Localization

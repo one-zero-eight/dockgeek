@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
+import UnoCSS from "unocss/vite";
 import Components from "unplugin-vue-components/vite";
 import viteCompression from "vite-plugin-compression";
 import "vue";
@@ -28,6 +29,7 @@ export default defineConfig({
         outDir: "../frontend-dist",
     },
     plugins: [
+        UnoCSS({ configFile: "./frontend/uno.config.ts" }),
         vue(),
         Components(),
         viteCompression({

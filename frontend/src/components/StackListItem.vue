@@ -1,58 +1,58 @@
 <template>
-    <div class="stack-tree" :class="{ dim: !stack.isManagedByDockge }">
-        <div class="stack-row" :class="{ selected: $route.path === url && !$route.hash }" @click.self="stack.isManagedByDockge && $event.detail <= 1 && changeCollapsed()" @dblclick.prevent="stack.isManagedByDockge && $event.target !== $event.currentTarget && changeCollapsed()">
-            <button class="tree-toggle" :class="{ 'unmanaged-toggle': !stack.isManagedByDockge }" :disabled="!stack.isManagedByDockge" :aria-expanded="stack.isManagedByDockge ? !isCollapsed : undefined" :aria-label="stackName" @click="$event.detail <= 1 && changeCollapsed()" @dblclick.stop.prevent>
+    <div class="stack-tree select-none" :class="{ 'opacity-50': !stack.isManagedByDockge }">
+        <div class="stack-row relative isolate flex min-w-0 min-h-[34px] items-center cursor-pointer" :class="{ selected: $route.path === url && !$route.hash }" @click.self="stack.isManagedByDockge && $event.detail <= 1 && changeCollapsed()" @dblclick.prevent="stack.isManagedByDockge && $event.target !== $event.currentTarget && changeCollapsed()">
+            <button class="tree-toggle min-h-[34px] w-[30px] flex-[0_0_30px] rounded-[5px] border-0 bg-transparent p-0 text-inherit text-[.8rem]" :class="{ 'unmanaged-toggle': !stack.isManagedByDockge }" :disabled="!stack.isManagedByDockge" :aria-expanded="stack.isManagedByDockge ? !isCollapsed : undefined" :aria-label="stackName" @click="$event.detail <= 1 && changeCollapsed()" @dblclick.stop.prevent>
                 <font-awesome-icon icon="chevron-down" :class="{ collapsed: isCollapsed }" />
             </button>
-            <router-link :to="url" class="stack-link">
+            <router-link :to="url" class="stack-link flex min-w-0 min-h-[34px] items-center gap-[8px] px-[4px] py-[3px] text-inherit text-control no-underline">
                 <FloatingTooltip placement="right">
                     <template #trigger="{ triggerAttrs }">
                         <span
                             v-bind="triggerAttrs"
-                            class="node-icon-tooltip"
-                            :class="`text-${statusColor(stack.status)}`"
+                            class="inline-flex flex-[0_0_13px] items-center"
+                            :class="`stack-tone-${statusColor(stack.status)}`"
                             role="img"
                             :aria-label="$t(stackStatus.title)"
                         >
-                            <font-awesome-icon icon="layer-group" class="node-icon" />
+                            <font-awesome-icon icon="layer-group" class="node-icon w-[13px] flex-[0_0_13px]" />
                         </span>
                     </template>
                     <span class="floating-tooltip-title">{{ $t(stackStatus.title) }}</span>
                     <span class="floating-tooltip-detail">{{ stackStatus.detail }}</span>
                 </FloatingTooltip>
-                <span class="node-name" :title="stackName">{{ stackName }}</span>
+                <span class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap" :title="stackName">{{ stackName }}</span>
             </router-link>
         </div>
         <ul v-if="stack.isManagedByDockge && !isCollapsed" class="tree-children">
-            <li v-if="loading" class="tree-message">{{ $t("loading") }}</li>
-            <li v-else-if="error" class="tree-message text-danger" role="alert">{{ error }}</li>
-            <li v-else-if="services.length === 0" class="tree-message">{{ $t("noServices") }}</li>
+            <li v-if="loading" class="p-[6px] text-body [overflow-wrap:anywhere]">{{ $t("loading") }}</li>
+            <li v-else-if="error" class="p-[6px] text-body [overflow-wrap:anywhere] stack-tone-danger" role="alert">{{ error }}</li>
+            <li v-else-if="services.length === 0" class="p-[6px] text-body [overflow-wrap:anywhere]">{{ $t("noServices") }}</li>
             <li v-for="service in services" v-else :key="service.name">
-                <div class="tree-row" :class="{ selected: $route.path === url && $route.hash === '#service-' + encodeURIComponent(service.name) }" @click.self="$event.detail <= 1 && service.instances.length && toggleService(service.name)" @dblclick.prevent="$event.target !== $event.currentTarget && service.instances.length && toggleService(service.name)">
-                    <button class="tree-toggle" :disabled="service.instances.length === 0" :aria-expanded="!collapsedServices.has(service.name)" :aria-label="service.name" @click="$event.detail <= 1 && toggleService(service.name)" @dblclick.stop.prevent>
+                <div class="tree-row relative isolate flex min-w-0 min-h-[34px] items-center cursor-pointer" :class="{ selected: $route.path === url && $route.hash === '#service-' + encodeURIComponent(service.name) }" @click.self="$event.detail <= 1 && service.instances.length && toggleService(service.name)" @dblclick.prevent="$event.target !== $event.currentTarget && service.instances.length && toggleService(service.name)">
+                    <button class="tree-toggle min-h-[34px] w-[30px] flex-[0_0_30px] rounded-[5px] border-0 bg-transparent p-0 text-inherit text-[.8rem]" :disabled="service.instances.length === 0" :aria-expanded="!collapsedServices.has(service.name)" :aria-label="service.name" @click="$event.detail <= 1 && toggleService(service.name)" @dblclick.stop.prevent>
                         <font-awesome-icon icon="chevron-down" :class="{ collapsed: collapsedServices.has(service.name) }" />
                     </button>
-                    <router-link :to="{ path: url, hash: '#service-' + encodeURIComponent(service.name) }" class="tree-link">
-                        <font-awesome-icon icon="cubes" class="node-icon" :class="serviceStatusClass(service)" />
-                        <span class="node-name" :title="service.name">{{ service.name }}</span>
+                    <router-link :to="{ path: url, hash: '#service-' + encodeURIComponent(service.name) }" class="tree-link flex min-w-0 min-h-[34px] items-center gap-[8px] px-[4px] py-[3px] text-inherit text-control no-underline">
+                        <font-awesome-icon icon="cubes" class="node-icon w-[13px] flex-[0_0_13px]" :class="serviceStatusClass(service)" />
+                        <span class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap" :title="service.name">{{ service.name }}</span>
                     </router-link>
                 </div>
                 <ul v-if="!collapsedServices.has(service.name) && service.instances.length" class="tree-children">
                     <li v-for="instance in service.instances" :key="instance.name">
-                        <router-link :to="containerRoute(instance)" class="tree-link container-link">
+                        <router-link :to="containerRoute(instance)" class="tree-link container-link flex min-w-0 min-h-[34px] items-center gap-[8px] px-[4px] py-[3px] text-inherit text-control no-underline">
                             <FloatingTooltip placement="right">
                                 <template #trigger="{ triggerAttrs }">
                                     <span
                                         v-bind="triggerAttrs"
-                                        class="node-icon-tooltip"
+                                        class="inline-flex flex-[0_0_13px] items-center"
                                         :class="instanceStatusClass(instance)"
                                     >
-                                        <font-awesome-icon icon="cube" class="node-icon" />
+                                        <font-awesome-icon icon="cube" class="node-icon w-[13px] flex-[0_0_13px]" />
                                     </span>
                                 </template>
                                 <span class="floating-tooltip-detail">{{ instanceTitle(instance) }}</span>
                             </FloatingTooltip>
-                            <span class="node-name" :title="instance.name">{{ instance.name }}</span>
+                            <span class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap" :title="instance.name">{{ instance.name }}</span>
                         </router-link>
                     </li>
                 </ul>
@@ -169,16 +169,16 @@ export default {
             return this.$te(detail) ? this.$t(detail) : detail;
         },
         instanceStatusClass(instance) {
-            return `text-${containerStatusTone(instance)}`;
+            return `stack-tone-${containerStatusTone(instance)}`;
         },
         serviceStatusClass(service) {
             if (service.instances.some((instance) => formatContainerError(instance))) {
-                return "text-danger";
+                return "stack-tone-danger";
             }
             if (service.instances.some((instance) => instance.state === "running")) {
-                return "text-primary";
+                return "stack-tone-primary";
             }
-            return "text-secondary";
+            return "stack-tone-secondary";
         },
         instanceTitle(instance) {
             const parts = [ instance.statusDetail || instance.status ];
@@ -277,26 +277,21 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import "../styles/vars.scss";
+.stack-tone-primary { color: var(--primary); }
+.stack-tone-warning { color: var(--warning); }
+.stack-tone-danger { color: var(--destructive); }
+.stack-tone-stopped { color: var(--warning); }
+.stack-tone-secondary { color: var(--muted-foreground); }
 
 .stack-tree {
     --tree-indent: 0px;
-
-    user-select: none;
 }
 
 .stack-row,
 .tree-row,
 .container-link {
-    position: relative;
-    isolation: isolate;
-    display: flex;
-    align-items: center;
-    min-width: 0;
-    min-height: 34px;
     margin-inline-start: calc(-1 * var(--tree-indent));
     padding-inline-start: var(--tree-indent);
-    cursor: pointer;
 
     &::before {
         content: "";
@@ -309,12 +304,12 @@ export default {
 
     &:hover::before,
     &:focus-within::before {
-        background: rgba($primary, 0.08);
+        background: var(--hover);
     }
 
     &.selected::before,
     &.container-link.active::before {
-        background: rgba($primary, 0.24);
+        background: var(--selected);
     }
 }
 
@@ -323,16 +318,6 @@ export default {
 }
 
 .tree-toggle {
-    flex: 0 0 30px;
-    width: 30px;
-    min-height: 34px;
-    padding: 0;
-    border: 0;
-    border-radius: 5px;
-    background: transparent;
-    color: inherit;
-    font-size: 0.8rem;
-
     &:disabled:not(.unmanaged-toggle) {
         visibility: hidden;
     }
@@ -355,44 +340,8 @@ export default {
     }
 }
 
-.tree-link,
-.stack-link {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-width: 0;
-    min-height: 34px;
-    padding: 3px 4px;
-    color: inherit;
-    text-decoration: none;
-    font-size: 1rem;
-}
-
 .container-link {
     padding-inline-start: calc(var(--tree-indent) + 34px);
-}
-
-.node-icon {
-    width: 13px;
-    flex: 0 0 13px;
-}
-
-.node-icon-tooltip {
-    display: inline-flex;
-    flex: 0 0 13px;
-    align-items: center;
-}
-
-.node-name {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.tree-message {
-    padding: 6px;
-    font-size: 1rem;
-    overflow-wrap: anywhere;
 }
 
 .stack-row .stack-link {
@@ -416,7 +365,7 @@ export default {
 }
 
 .animated {
-    transition: all 0.2s $easing-in;
+    transition: all 0.2s cubic-bezier(0.54, 0.78, 0.55, 0.97);
 }
 
 .select-input-wrapper {
@@ -427,10 +376,6 @@ export default {
     padding-left: 4px;
     position: relative;
     z-index: 15;
-}
-
-.dim {
-    opacity: 0.5;
 }
 
 </style>

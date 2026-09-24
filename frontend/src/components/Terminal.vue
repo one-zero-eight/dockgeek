@@ -1,19 +1,19 @@
 <template>
-    <div class="terminal-shell shadow-box">
-        <div v-if="showToolbar || $slots['toolbar-end']" class="terminal-toolbar">
-            <div class="terminal-toolbar-start">
+    <div class="terminal-shell panel-box flex flex-col overflow-hidden">
+        <div v-if="showToolbar || $slots['toolbar-end']" class="flex flex-none items-center justify-between gap-[0.4rem] overflow-x-auto p-[0.5rem] bg-terminal-bar">
+            <div class="flex flex-[0_1_auto] items-center gap-[0.4rem]">
                 <template v-if="showToolbar">
-                    <button class="btn btn-sm btn-normal" @click="focus"><font-awesome-icon icon="terminal" /> {{ $t("focusTerminal") }}</button>
-                    <button class="btn btn-sm btn-normal" :disabled="!hasSelection" @click="copySelection"><font-awesome-icon icon="copy" /> {{ $t("copySelection") }}</button>
-                    <button v-if="acceptsInput" class="btn btn-sm btn-normal" @click="handlePaste"><font-awesome-icon icon="paste" /> {{ $t("paste") }}</button>
-                    <button class="btn btn-sm btn-normal" @click="clear"><font-awesome-icon icon="trash" /> {{ $t("clearDisplay") }}</button>
+                    <button class="terminal-button inline-flex flex-none items-center gap-[0.35rem] min-h-[31px] max-[991.98px]:min-h-[44px] px-[0.75rem] py-[0.25rem] border border-solid border-secondary rounded-[0.375rem] text-secondary-foreground bg-secondary text-control-sm cursor-pointer hover:bg-secondary-hover focus-visible:outline-[2px] focus-visible:outline-solid focus-visible:outline-ring focus-visible:outline-offset-[2px]" @click="focus"><font-awesome-icon icon="terminal" /> {{ $t("focusTerminal") }}</button>
+                    <button class="terminal-button inline-flex flex-none items-center gap-[0.35rem] min-h-[31px] max-[991.98px]:min-h-[44px] px-[0.75rem] py-[0.25rem] border border-solid border-secondary rounded-[0.375rem] text-secondary-foreground bg-secondary text-control-sm cursor-pointer hover:bg-secondary-hover focus-visible:outline-[2px] focus-visible:outline-solid focus-visible:outline-ring focus-visible:outline-offset-[2px]" :disabled="!hasSelection" @click="copySelection"><font-awesome-icon icon="copy" /> {{ $t("copySelection") }}</button>
+                    <button v-if="acceptsInput" class="terminal-button inline-flex flex-none items-center gap-[0.35rem] min-h-[31px] max-[991.98px]:min-h-[44px] px-[0.75rem] py-[0.25rem] border border-solid border-secondary rounded-[0.375rem] text-secondary-foreground bg-secondary text-control-sm cursor-pointer hover:bg-secondary-hover focus-visible:outline-[2px] focus-visible:outline-solid focus-visible:outline-ring focus-visible:outline-offset-[2px]" @click="handlePaste"><font-awesome-icon icon="paste" /> {{ $t("paste") }}</button>
+                    <button class="terminal-button inline-flex flex-none items-center gap-[0.35rem] min-h-[31px] max-[991.98px]:min-h-[44px] px-[0.75rem] py-[0.25rem] border border-solid border-secondary rounded-[0.375rem] text-secondary-foreground bg-secondary text-control-sm cursor-pointer hover:bg-secondary-hover focus-visible:outline-[2px] focus-visible:outline-solid focus-visible:outline-ring focus-visible:outline-offset-[2px]" @click="clear"><font-awesome-icon icon="trash" /> {{ $t("clearDisplay") }}</button>
                 </template>
             </div>
-            <div v-if="$slots['toolbar-end']" class="terminal-toolbar-end">
+            <div v-if="$slots['toolbar-end']" class="ms-auto flex flex-[0_1_auto] items-center gap-[0.4rem]">
                 <slot name="toolbar-end" />
             </div>
         </div>
-        <div v-pre ref="terminal" class="main-terminal"></div>
+        <div v-pre ref="terminal" class="main-terminal h-full min-h-0"></div>
     </div>
 </template>
 
@@ -443,56 +443,21 @@ export default {
 };
 </script>
 
-<style scoped lang="scss">
-.main-terminal {
-    min-height: 0;
-    height: 100%;
-}
-
-.terminal-shell {
-    display: flex;
-    overflow: hidden;
-    flex-direction: column;
-}
-
-.terminal-toolbar {
-    display: flex;
-    flex: 0 0 auto;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.4rem;
-    overflow-x: auto;
-    padding: 0.5rem;
-    background: #161b22;
-}
-
-.terminal-toolbar-start,
-.terminal-toolbar-end {
-    display: flex;
-    flex: 0 1 auto;
-    align-items: center;
-    gap: 0.4rem;
-}
-
-.terminal-toolbar-end {
-    margin-inline-start: auto;
-}
-
-.terminal-toolbar .btn {
-    flex: 0 0 auto;
-    padding-inline: 0.75rem;
-}
-
-@media (max-width: 991.98px) {
-    .terminal-toolbar .btn {
-        min-height: 44px;
-    }
+<style scoped>
+/* Keep the disabled label legible even when the toolbar's dark background
+   and the hover utility are active. */
+.terminal-button:disabled,
+.terminal-button:disabled:hover {
+    color: var(--muted-foreground);
+    background-color: var(--secondary);
+    border-color: var(--secondary);
+    opacity: 1;
 }
 </style>
 
 <style lang="scss">
 .terminal {
-    background-color: black !important;
+    background-color: var(--terminal-background) !important;
     height: 100%;
 }
 </style>

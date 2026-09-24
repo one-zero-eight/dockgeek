@@ -1,5 +1,5 @@
 <template>
-    <div ref="editorHost" class="file-text-editor"></div>
+    <div ref="editorHost" class="file-text-editor w-full h-full min-h-0"></div>
 </template>
 
 <script setup>
@@ -8,7 +8,7 @@ import { EditorState, Compartment } from "@codemirror/state";
 import { EditorView, keymap, lineNumbers } from "@codemirror/view";
 import { indentWithTab } from "@codemirror/commands";
 import { minimalSetup } from "codemirror";
-import { dracula as editorTheme } from "thememirror";
+import { getEditorTheme } from "../editor/editor-theme";
 
 const props = defineProps({
     content: { type: String,
@@ -33,7 +33,7 @@ onMounted(() => {
         lineNumbers(),
         keymap.of([ indentWithTab ]),
         noFocusOutline,
-        themeCompartment.of(props.dark ? editorTheme : []),
+        themeCompartment.of(getEditorTheme(props.dark)),
     ];
     if (props.languageSupport) {
         extensions.push(props.languageSupport);
@@ -49,7 +49,7 @@ onMounted(() => {
 });
 
 watch(() => props.dark, dark => {
-    editorView?.dispatch({ effects: themeCompartment.reconfigure(dark ? editorTheme : []) });
+    editorView?.dispatch({ effects: themeCompartment.reconfigure(getEditorTheme(dark)) });
 });
 
 onBeforeUnmount(() => {

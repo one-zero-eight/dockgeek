@@ -4,15 +4,14 @@
             class="compose-page"
             :class="{ 'stack-view-mode': !isAdd && !isEditMode && stack.isManagedByDockge, 'full-page-editor': isFullPageEditor }"
         >
-            <div class="project-header mb-3">
-                <h1 v-if="isAdd" class="mb-0">{{ $t("compose") }}</h1>
-                <h1 v-else class="project-title mb-0">
+            <div v-if="!isAdd" class="project-header mb-[1rem]">
+                <h1 class="project-title mb-0">
                     <FloatingTooltip placement="top-start">
                         <template #trigger="{ triggerAttrs }">
                             <span
                                 v-bind="triggerAttrs"
-                                class="project-status-dot"
-                                :class="`bg-${statusColor(globalStack?.status)}`"
+                                class="project-status-dot inline-block w-3 h-3 rounded-full align-[0.12em]"
+                                :class="`tone-${statusColor(globalStack?.status)}`"
                                 role="img"
                                 :aria-label="$t(projectStatus.title)"
                             />
@@ -20,8 +19,8 @@
                         <span class="floating-tooltip-title">{{ $t(projectStatus.title) }}</span>
                         <span class="floating-tooltip-detail">{{ projectStatus.detail }}</span>
                     </FloatingTooltip> <span>{{ stack.name }}</span>
-                    <span class="stack-label opacity-50 user-select-none">{{ $t("project") }}</span>
-                    <span v-if="$root.agentCount > 1 && endpoint !== ''" class="agent-name">
+                    <span class="stack-label opacity-50 select-none">{{ $t("project") }}</span>
+                    <span v-if="$root.agentCount > 1 && endpoint !== ''" class="agent-name text-muted-foreground text-meta">
                         ({{ endpointDisplay }})
                     </span>
                 </h1>
@@ -38,20 +37,20 @@
             </div>
 
             <!-- URLs -->
-            <div v-if="urls.length > 0" class="mb-3">
+            <div v-if="urls.length > 0" class="mb-[1rem]">
                 <a v-for="(urlItem, index) in urls" :key="index" target="_blank" :href="urlItem.url">
-                    <span class="badge bg-secondary me-2">{{ urlItem.display }}</span>
+                    <span class="url-badge me-[.5rem] inline-block px-[0.65em] py-[0.35em] rounded-md bg-muted text-foreground text-badge font-medium leading-none">{{ urlItem.display }}</span>
                 </a>
             </div>
 
-            <div v-if="$root.isCompact && stack.isManagedByDockge && !isFullPageEditor" class="compact-compose-tabs mb-3" role="tablist">
+            <div v-if="$root.isCompact && stack.isManagedByDockge && !isFullPageEditor" class="compact-compose-tabs mb-[1rem]" role="tablist">
                 <button class="compact-tab" :class="{ active: compactTab === 'containers' }" type="button" role="tab" :aria-selected="compactTab === 'containers'" @click="compactTab = 'containers'">{{ $t("services") }}</button>
                 <button class="compact-tab" :class="{ active: compactTab === 'compose' }" type="button" role="tab" :aria-selected="compactTab === 'compose'" @click="compactTab = 'compose'">Compose</button>
             </div>
 
             <!-- New project general fields -->
-            <div v-if="isAdd" class="shadow-box big-padding mb-3">
-                <label for="name" class="form-label">{{ $t("stackFolder") }}</label>
+            <div v-if="isAdd" class="panel-box big-padding mb-[1rem]">
+                <label for="name" class="stack-name-label inline-block mb-2">{{ $t("stackFolder") }}</label>
                 <div class="stack-folder-picker">
                     <FloatingMenu
                         placement="bottom-start"
@@ -96,7 +95,7 @@
                         id="name"
                         v-model="stack.name"
                         type="text"
-                        class="form-control"
+                        class="stack-name-input placeholder:opacity-50"
                         required
                         spellcheck="false"
                         autocomplete="off"
@@ -105,11 +104,11 @@
                         @blur="finalizeStackFolderName"
                     >
                 </div>
-                <div class="form-text">{{ $t("stackFolderHint") }}</div>
+                <div class="stack-name-help mt-1 text-muted-foreground text-meta">{{ $t("stackFolderHint") }}</div>
             </div>
 
-            <div v-if="stack.isManagedByDockge" class="row stack-content">
-                <div v-if="!isFullPageEditor" v-show="!$root.isCompact || compactTab === 'containers'" class="col-lg-6 containers-column">
+            <div v-if="stack.isManagedByDockge" class="stack-content -mx-3 flex flex-wrap">
+                <div v-if="!isFullPageEditor" v-show="!$root.isCompact || compactTab === 'containers'" class="containers-column w-full px-3 min-[992px]:w-1/2 min-[992px]:flex-none">
                     <div ref="containerList" class="container-list">
                         <Container
                             v-for="name in displayServiceNames"
@@ -124,9 +123,9 @@
                         />
                     </div>
                 </div>
-                <div v-show="isFullPageEditor || !$root.isCompact || compactTab !== 'containers'" class="compose-column" :class="isFullPageEditor ? 'col-12' : 'col-lg-6'">
+                <div v-show="isFullPageEditor || !$root.isCompact || compactTab !== 'containers'" class="compose-column px-3" :class="isFullPageEditor ? 'w-full' : 'w-full min-[992px]:w-1/2 min-[992px]:flex-none'">
                     <!-- YAML editor -->
-                    <div v-show="isFullPageEditor || !$root.isCompact || compactTab === 'compose'" class="shadow-box mb-3 editor-box" :class="{'edit-mode' : isEditMode}">
+                    <div v-show="isFullPageEditor || !$root.isCompact || compactTab === 'compose'" class="panel-box mb-[1rem] editor-box" :class="{'edit-mode' : isEditMode}">
                         <div class="editor-toolbar">
                             <span class="editor-filename">{{ stack.composeFileName || "compose.yaml" }}</span>
                             <button
@@ -158,7 +157,7 @@
                             :extensions="extensions"
                             minimal
                             wrap="true"
-                            dark="true"
+                            :dark="$root.isDark"
                             tab="true"
                             :disabled="!isEditMode"
                             :hasFocus="editorFocus"
@@ -167,10 +166,10 @@
 
                         <!-- Editor actions -->
                         <div v-if="isFullPageEditor" class="editor-actions">
-                            <div class="action-group" role="group">
+                            <div class="flex items-stretch overflow-hidden rounded-md" role="group">
                                 <button
                                     type="button"
-                                    class="btn action-group-btn btn-primary"
+                                    class="compose-button compose-button-primary !rounded-none"
                                     :disabled="processing || !canSaveStack"
                                     @click="requestDeployStack"
                                 >
@@ -179,27 +178,27 @@
                                 </button>
                                 <button
                                     type="button"
-                                    class="btn action-group-btn btn-normal"
+                                    class="compose-button !rounded-none !border-l-0"
                                     :disabled="processing || !canSaveStack"
                                     @click="saveStack"
                                 >
                                     <font-awesome-icon icon="save" />
                                     <span class="action-group-text">{{ $t("saveStackDraft") }}</span>
                                 </button>
-                                <button
-                                    v-if="!isAdd"
-                                    type="button"
-                                    class="btn action-group-btn btn-normal"
-                                    :disabled="processing"
-                                    @click="discardStack"
-                                >
-                                    <span class="action-group-text">{{ $t("discardStack") }}</span>
-                                </button>
                             </div>
-                            <div class="action-group editor-format-btn" role="group">
+                            <button
+                                v-if="!isAdd"
+                                type="button"
+                                class="compose-button"
+                                :disabled="processing"
+                                @click="discardStack"
+                            >
+                                <span class="action-group-text">{{ $t("discardStack") }}</span>
+                            </button>
+                            <div class="editor-format-btn flex items-stretch">
                                 <button
                                     type="button"
-                                    class="btn action-group-btn btn-normal"
+                                    class="compose-button"
                                     :disabled="processing || formattingYaml"
                                     :title="$t('formatYaml')"
                                     @click="formatYaml"
@@ -228,9 +227,9 @@
                 @ok="confirmProjectAction"
                 @hidden="clearPendingAction"
             >
-                <p class="mb-2">{{ $t(actionConfirm.message, { name: stack.name }) }}</p>
-                <div v-if="actionConfirm.commands?.length" class="action-commands">
-                    <pre><code v-for="(cmd, i) in actionConfirm.commands" :key="i"><span class="action-command-prompt">$</span> {{ cmd }}</code></pre>
+                <p class="mb-[.5rem]">{{ $t(actionConfirm.message, { name: stack.name }) }}</p>
+                <div v-if="actionConfirm.commands?.length" class="mt-3">
+                    <pre class="m-0 overflow-x-auto rounded-[0.35rem] bg-background px-3 py-[0.65rem]"><code v-for="(cmd, i) in actionConfirm.commands" :key="i" class="mt-[0.15rem] first:mt-0 block rounded-none bg-transparent p-0 font-app-mono text-[0.8rem] leading-[1.45] whitespace-pre text-foreground"><span class="text-[#1a7f37] [.dark_&]:text-[#7ee787]">$</span> {{ cmd }}</code></pre>
                 </div>
             </FloatingDialog>
 
@@ -249,7 +248,7 @@
                         <div class="progress-header-tools">
                             <button
                                 type="button"
-                                class="btn btn-sm btn-normal"
+                                class="compose-button compose-button-sm"
                                 @click="$refs.progressTerminal?.focus()"
                             >
                                 <font-awesome-icon icon="terminal" />
@@ -257,7 +256,7 @@
                             </button>
                             <button
                                 type="button"
-                                class="btn btn-sm btn-normal"
+                                class="compose-button compose-button-sm"
                                 :disabled="!progressTerminalHasSelection"
                                 @click="$refs.progressTerminal?.copySelection()"
                             >
@@ -266,7 +265,7 @@
                             </button>
                             <button
                                 type="button"
-                                class="btn btn-sm btn-normal"
+                                class="compose-button compose-button-sm"
                                 @click="$refs.progressTerminal?.clear()"
                             >
                                 <font-awesome-icon icon="trash" />
@@ -295,12 +294,12 @@
 <script>
 import CodeMirror from "vue-codemirror6";
 import { yaml } from "@codemirror/lang-yaml";
-import { dracula as editorTheme } from "thememirror";
 import { lineNumbers, EditorView } from "@codemirror/view";
 import { parseDocument } from "yaml";
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { composeLanguageSupport, formatComposeYaml } from "../editor/compose-language";
+import { getEditorTheme } from "../editor/editor-theme";
 import {
     envsubstYAML,
     getComposeTerminalName,
@@ -335,28 +334,28 @@ const PROJECT_ACTIONS = {
         title: "deployProjectConfirmTitle",
         message: "deployProjectConfirmMsg",
         ok: "deployStack",
-        variant: "btn-primary",
+        variant: "primary",
         commands: [ "docker compose up -d --remove-orphans" ],
     },
     startStack: {
         title: "startProjectConfirmTitle",
         message: "startProjectConfirmMsg",
         ok: "startStack",
-        variant: "btn-primary",
+        variant: "primary",
         commands: [ "docker compose up -d --remove-orphans" ],
     },
     restartStack: {
         title: "restartProjectConfirmTitle",
         message: "restartProjectConfirmMsg",
         ok: "restartStack",
-        variant: "btn-primary",
+        variant: "primary",
         commands: [ "docker compose restart" ],
     },
     updateStack: {
         title: "updateProjectConfirmTitle",
         message: "updateProjectConfirmMsg",
         ok: "updateStack",
-        variant: "btn-primary",
+        variant: "primary",
         commands: [
             "docker compose pull",
             "docker compose up -d --remove-orphans",
@@ -366,21 +365,21 @@ const PROJECT_ACTIONS = {
         title: "stopProjectConfirmTitle",
         message: "stopProjectConfirmMsg",
         ok: "stopStack",
-        variant: "btn-warning",
+        variant: "warning",
         commands: [ "docker compose stop" ],
     },
     downStack: {
         title: "downProjectConfirmTitle",
         message: "downProjectConfirmMsg",
         ok: "downStack",
-        variant: "btn-warning",
+        variant: "warning",
         commands: [ "docker compose down" ],
     },
     deleteStack: {
         title: "deleteProjectConfirmTitle",
         message: "deleteProjectConfirmMsg",
         ok: "deleteStack",
-        variant: "btn-danger",
+        variant: "danger",
         commands: [ "docker compose down --remove-orphans" ],
     },
 };
@@ -412,15 +411,14 @@ export default {
             return null;
         };
 
-        const extensions = [
-            editorTheme,
+        const baseExtensions = [
             yaml(),
             composeLanguageSupport(),
             lineNumbers(),
             EditorView.focusChangeEffect.of(focusEffectHandler)
         ];
 
-        return { extensions,
+        return { baseExtensions,
             editorFocus };
     },
     data() {
@@ -453,6 +451,13 @@ export default {
         };
     },
     computed: {
+        extensions() {
+            return [
+                getEditorTheme(this.$root.isDark),
+                ...this.baseExtensions,
+            ];
+        },
+
         endpointDisplay() {
             return this.$root.endpointDisplayFunction(this.endpoint);
         },
@@ -469,38 +474,38 @@ export default {
                 actions.push({ key: "restartStack",
                     i18nKey: "restartStack",
                     icon: "rotate",
-                    variant: "btn-normal" });
+                    variant: "normal" });
                 actions.push({ key: "updateStack",
                     i18nKey: "updateStack",
                     icon: "cloud-arrow-down",
-                    variant: "btn-normal" });
+                    variant: "normal" });
                 actions.push({ key: "stopStack",
                     i18nKey: "stopStack",
                     icon: "stop",
-                    variant: "btn-warning" });
+                    variant: "warning" });
             } else {
                 actions.push({ key: "startStack",
                     i18nKey: "startStack",
                     icon: "play",
-                    variant: "btn-primary" });
+                    variant: "primary" });
             }
 
             if (!this.active) {
                 actions.push({ key: "updateStack",
                     i18nKey: "updateStack",
                     icon: "cloud-arrow-down",
-                    variant: "btn-normal",
+                    variant: "normal",
                     menuOnly: true });
             }
             actions.push({ key: "downStack",
                 i18nKey: "downStack",
                 icon: "stop",
-                variant: "btn-warning",
+                variant: "warning",
                 menuOnly: true });
             actions.push({ key: "deleteStack",
                 i18nKey: "deleteStack",
                 icon: "trash",
-                variant: "btn-danger",
+                variant: "danger",
                 menuOnly: true });
 
             return actions;
@@ -1013,7 +1018,9 @@ export default {
 
             this.$root.emitAgent(this.stack.endpoint, "saveStack", this.stack.name, this.composeEditorContent(), this.stack.composeENV, this.isAdd, (res) => {
                 this.processing = false;
-                this.$root.toastRes(res);
+                if (!res.ok) {
+                    this.$root.toastRes(res);
+                }
 
                 if (res.ok) {
                     this.stack.name = res.name;
@@ -1228,7 +1235,33 @@ export default {
 </script>
 
 <style scoped lang="scss">
-@import "../styles/vars.scss";
+.stack-name-input {
+    display: block; width: 100%; min-height: 38px; padding: 0.375rem 0.75rem;
+    border: 1px solid var(--border); border-radius: 0.375rem;
+    color: var(--foreground); background: var(--input-surface); font-size: var(--font-size-control);
+    &:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
+}
+.project-status-dot.tone-primary { background: var(--primary) !important; }
+.project-status-dot.tone-warning { background: var(--warning) !important; }
+.project-status-dot.tone-danger { background: var(--destructive) !important; }
+.project-status-dot.tone-stopped { background: var(--warning) !important; }
+.project-status-dot.tone-secondary { background: var(--muted) !important; }
+.compose-button {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
+    min-height: 38px; padding: 0.375rem 0.75rem; border: 1px solid var(--secondary);
+    border-radius: 0.375rem; color: var(--secondary-foreground); background: var(--secondary);
+    font: inherit; line-height: 1.5; cursor: pointer;
+    &:hover { background: var(--secondary-hover); }
+    &:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+    &:disabled { opacity: 0.65; cursor: not-allowed; }
+    &.compose-button-primary {
+        color: var(--primary-foreground);
+        background: var(--gradient-primary);
+        border-color: var(--primary);
+        &:hover:not(:disabled) { background: var(--gradient-primary-active); }
+    }
+}
+.compose-button-sm { min-height: 31px; padding: 0.25rem 0.5rem; font-size: var(--font-size-control-sm); }
 
 .progress-terminal {
     height: 288px;
@@ -1245,27 +1278,25 @@ export default {
         align-items: center;
         gap: 0.5rem;
         padding: 0.45rem 0.7rem;
-        border: 1px solid var(--bs-border-color);
-        border-radius: var(--bs-border-radius);
-        background-color: rgba(127, 127, 127, 0.08);
-        color: $dark-font-color3;
-        font-family: "JetBrains Mono", ui-monospace, monospace;
+        border: 1px solid var(--border);
+        border-radius: 0.375rem;
+        background-color: var(--background);
+        color: var(--muted-foreground);
+        font-family: var(--font-mono);
         font-size: 0.8rem;
         line-height: 1.45;
         text-align: start;
         cursor: pointer;
-        box-shadow: none;
-
         &:hover,
         &:focus-visible,
         &.open {
-            border-color: $primary;
+            border-color: var(--primary);
             outline: none;
         }
     }
 
     .stack-path-dir {
-        color: $dark-font-color3;
+        color: var(--muted-foreground);
     }
 
     .stack-path-text {
@@ -1277,10 +1308,11 @@ export default {
     }
 
     .stack-path-name {
-        color: #fff;
+        color: var(--foreground);
 
         &.is-placeholder {
-            opacity: 0.45;
+            color: var(--muted-foreground);
+            opacity: 0.5;
         }
     }
 
@@ -1290,16 +1322,8 @@ export default {
         opacity: 0.75;
     }
 
-    .form-control {
-        font-family: "JetBrains Mono", ui-monospace, monospace;
-    }
-}
-
-.dark .stack-folder-picker {
-    .stack-path-full {
-        border-color: $dark-border-color;
-        background-color: rgba(0, 0, 0, 0.25);
-        color: $dark-font-color3;
+    .stack-name-input {
+        font-family: var(--font-mono);
     }
 }
 
@@ -1308,8 +1332,8 @@ export default {
     overflow: hidden;
     flex-direction: column;
     padding: 0;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 14px;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-body-sm);
 
     :deep(.vue-codemirror) {
         overflow: hidden;
@@ -1344,24 +1368,20 @@ export default {
     gap: 0.75rem;
     margin: 0;
     padding: 0.55rem 0.75rem;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-
-    .dark & {
-        border-bottom-color: $dark-border-color;
-    }
+    border-bottom: 1px solid var(--border);
 }
 
 .editor-filename {
     overflow: hidden;
     min-width: 0;
     margin-right: auto;
+    color: var(--muted-foreground);
     font-family: inherit;
-    font-size: 0.85rem;
-    font-weight: 500;
+    font-size: var(--font-size-meta);
+    font-weight: var(--font-weight-medium);
     letter-spacing: 0.01em;
     text-overflow: ellipsis;
     white-space: nowrap;
-    opacity: 0.85;
 }
 
 .editor-edit {
@@ -1375,14 +1395,13 @@ export default {
     border: 0;
     border-radius: 6px;
     background: transparent;
-    color: inherit;
+    color: var(--muted-foreground);
     font-family: inherit;
-    font-size: 0.8rem;
-    font-weight: 500;
+    font-size: var(--font-size-meta);
+    font-weight: var(--font-weight-medium);
     line-height: 1;
     white-space: nowrap;
-    opacity: 0.75;
-    transition: background-color 0.15s ease, opacity 0.15s ease;
+    transition: background-color 0.15s ease, color 0.15s ease;
 
     svg {
         display: block;
@@ -1392,25 +1411,19 @@ export default {
     }
 
     &:hover:not(:disabled) {
-        background: rgba(0, 0, 0, 0.06);
-        opacity: 1;
+        background: var(--hover);
+        color: var(--foreground);
     }
 
     &:focus-visible {
-        outline: 2px solid $primary;
+        outline: 2px solid var(--ring);
         outline-offset: 1px;
-        opacity: 1;
+        color: var(--foreground);
     }
 
     &:disabled {
         cursor: not-allowed;
-        opacity: 0.4;
-    }
-
-    .dark & {
-        &:hover:not(:disabled) {
-            background: rgba(255, 255, 255, 0.08);
-        }
+        color: var(--muted-foreground);
     }
 }
 
@@ -1425,10 +1438,9 @@ export default {
     border: 0;
     border-radius: 6px;
     background: transparent;
-    color: inherit;
+    color: var(--muted-foreground);
     line-height: 1;
-    opacity: 0.65;
-    transition: background-color 0.15s ease, opacity 0.15s ease;
+    transition: background-color 0.15s ease, color 0.15s ease;
 
     svg {
         display: block;
@@ -1437,25 +1449,19 @@ export default {
     }
 
     &:hover:not(:disabled) {
-        background: rgba(0, 0, 0, 0.06);
-        opacity: 1;
+        background: var(--hover);
+        color: var(--foreground);
     }
 
     &:focus-visible {
-        outline: 2px solid $primary;
+        outline: 2px solid var(--ring);
         outline-offset: 1px;
-        opacity: 1;
+        color: var(--foreground);
     }
 
     &:disabled {
         cursor: not-allowed;
-        opacity: 0.4;
-    }
-
-    .dark & {
-        &:hover:not(:disabled) {
-            background: rgba(255, 255, 255, 0.08);
-        }
+        color: var(--muted-foreground);
     }
 }
 
@@ -1467,15 +1473,11 @@ export default {
     gap: 0.5rem;
     margin: 0;
     padding: 0.6rem 0.75rem;
-    border-top: 1px solid rgba(0, 0, 0, 0.12);
+    border-top: 1px solid var(--border);
     // Break out of `.editor-box` monospace so buttons match ActionGroup.
-    font-family: var(--bs-body-font-family);
-    font-size: 1rem;
-    font-weight: 400;
-
-    .dark & {
-        border-top-color: $dark-border-color;
-    }
+    font-family: var(--font-ui);
+    font-size: var(--font-size-control);
+    font-weight: var(--font-weight-regular);
 
     .editor-format-btn {
         margin-inline-start: auto;
@@ -1484,13 +1486,8 @@ export default {
 
 .stack-label {
     margin-inline-start: 0.35rem;
-    font-size: 1.25rem;
-    font-weight: normal;
-}
-
-.agent-name {
-    font-size: 13px;
-    color: $dark-font-color3;
+    font-size: var(--font-size-card-title);
+    font-weight: var(--font-weight-regular);
 }
 
 .compact-compose-tabs {
@@ -1498,11 +1495,7 @@ export default {
     overflow: hidden;
     padding: 3px;
     border-radius: 8px;
-    background: #F5F5F5;
-
-    .dark & {
-        background: $dark-header-bg;
-    }
+    background: var(--background);
 }
 
 .compact-tab {
@@ -1510,31 +1503,19 @@ export default {
     padding: 0.35rem 0.75rem;
     border: 0;
     border-radius: 6px;
-    font-size: 0.9rem;
     color: inherit;
+    font-size: var(--font-size-body-sm);
     background: transparent;
     transition: background 0.15s ease, color 0.15s ease;
 
     &:hover {
-        background: rgba($primary, 0.15);
+        background: var(--hover);
     }
 
     &.active {
-        color: white;
-        background: $primary-gradient;
-
-        .dark & {
-            color: $dark-font-color2;
-        }
+        color: var(--primary-foreground);
+        background: var(--gradient-primary);
     }
-}
-
-.project-status-dot {
-    display: inline-block;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    vertical-align: 0.12em;
 }
 
 .project-header {
@@ -1582,8 +1563,7 @@ export default {
     }
 
     .stack-view-mode > .stack-content {
-        --bs-gutter-x: 1rem;
-
+        margin-inline: -0.5rem;
         overflow: hidden;
         flex: 1 1 0;
         min-height: 0;
@@ -1591,6 +1571,7 @@ export default {
 
     .stack-view-mode .containers-column,
     .stack-view-mode .compose-column {
+        padding-inline: 0.5rem;
         height: 100%;
         min-height: 0;
     }
@@ -1630,14 +1611,14 @@ export default {
     }
 
     .full-page-editor > .stack-content {
-        --bs-gutter-x: 0;
-
+        margin-inline: 0;
         overflow: hidden;
         flex: 1 1 auto;
         min-height: 0;
     }
 
     .full-page-editor .compose-column {
+        padding-inline: 0;
         display: flex;
         overflow: hidden;
         flex-direction: column;
@@ -1669,55 +1650,21 @@ export default {
     }
 }
 
-.action-commands {
-    margin-top: 0.75rem;
-
-    pre {
-        margin: 0;
-        padding: 0.65rem 0.75rem;
-        border-radius: 0.35rem;
-        background: rgba(0, 0, 0, 0.28);
-        overflow-x: auto;
-    }
-
-    code {
-        display: block;
-        padding: 0;
-        color: $dark-font-color;
-        font-family: "JetBrains Mono", ui-monospace, monospace;
-        font-size: 0.8rem;
-        line-height: 1.45;
-        white-space: pre;
-        background: transparent;
-    }
-
-    code + code {
-        margin-top: 0.15rem;
-    }
-
-    .action-command-prompt {
-        color: #7ee787;
-    }
-}
 </style>
 
 <style lang="scss">
-@import "../styles/vars.scss";
-
 .progress-terminal-dialog.floating-dialog {
     // Wide enough for TERMINAL_COLS (105) at 14px mono without wrapping progress lines
     --fd-width: 940px;
     overflow: hidden;
-    border: 1px solid $dark-border-color;
-    background: $dark-bg;
-    color: $dark-font-color;
-    box-shadow: 0 25px 70px rgba(0, 0, 0, 0.45);
-
+    border: 1px solid var(--terminal-border);
+    background: var(--terminal-bar);
+    color: var(--terminal-foreground);
     .fd-header {
         gap: 0.5rem;
         min-height: 34px;
         padding: 0.3rem 0.4rem 0.3rem 0.65rem;
-        border-bottom: 1px solid $dark-border-color;
+        border-bottom: 1px solid var(--terminal-border);
     }
 
     .progress-header-bar {
@@ -1733,9 +1680,9 @@ export default {
         flex: 1 1 auto;
         min-width: 0;
         margin: 0;
-        color: $dark-font-color;
-        font-size: 0.8rem;
-        font-weight: 600;
+        color: var(--terminal-foreground);
+        font-size: var(--font-size-meta-sm);
+        font-weight: var(--font-weight-semibold);
         letter-spacing: 0.01em;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -1747,7 +1694,7 @@ export default {
         align-items: center;
         gap: 0.15rem;
 
-        .btn {
+        .compose-button {
             display: inline-flex;
             align-items: center;
             gap: 0.35rem;
@@ -1756,13 +1703,11 @@ export default {
             padding: 0 0.45rem !important;
             border: 1px solid transparent !important;
             border-radius: 4px;
-            color: #8b949e !important;
+            color: var(--terminal-muted) !important;
             font-size: 0.7rem;
-            font-weight: 500;
+            font-weight: var(--font-weight-medium);
             line-height: 1;
             background: transparent !important;
-            box-shadow: none !important;
-
             .svg-inline--fa {
                 font-size: 0.65rem;
                 opacity: 0.9;
@@ -1770,8 +1715,8 @@ export default {
 
             &:hover,
             &:focus-visible {
-                color: #e6edf3 !important;
-                background: rgba(255, 255, 255, 0.06) !important;
+                color: var(--terminal-strong) !important;
+                background: rgba(255, 255, 255, 0.08) !important;
                 border-color: rgba(255, 255, 255, 0.08) !important;
             }
 
@@ -1786,7 +1731,7 @@ export default {
         width: 26px;
         height: 26px;
         border-radius: 6px;
-        color: $dark-font-color;
+        color: var(--terminal-foreground);
     }
 
     .fd-body {
@@ -1794,7 +1739,7 @@ export default {
         flex-direction: column;
         padding: 0;
         min-height: 0;
-        background: #000;
+        background: var(--terminal-background);
     }
 
     .progress-terminal.terminal-shell,
@@ -1806,8 +1751,7 @@ export default {
         padding: 0;
         border: 0;
         border-radius: 0;
-        box-shadow: none !important;
-        background: #000 !important;
+        background: var(--terminal-background) !important;
     }
 
     .progress-terminal .main-terminal {
@@ -1835,12 +1779,10 @@ export default {
 
 .stack-path-menu.floating-menu-panel {
     padding: 0.35rem;
-    border: 1px solid $dark-border-color;
+    border: 1px solid var(--border);
     border-radius: 10px;
-    background: $dark-bg;
-    color: $dark-font-color;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
-
+    background: var(--popover);
+    color: var(--secondary-foreground);
     .stack-path-option {
         display: flex;
         flex-direction: column;
@@ -1849,7 +1791,7 @@ export default {
         width: 100%;
         padding: 0.55rem 0.7rem;
         border-radius: 8px;
-        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-family: var(--font-mono);
         font-size: 0.8rem;
         line-height: 1.35;
         white-space: normal;
@@ -1858,35 +1800,36 @@ export default {
     }
 
     .stack-path-option-dir {
-        color: $dark-font-color3;
+        color: var(--muted-foreground);
     }
 
     .stack-path-option-name {
-        color: #fff;
+        color: var(--foreground);
 
         &.is-placeholder {
-            opacity: 0.45;
+            color: var(--muted-foreground);
+            opacity: 0.5;
         }
     }
 
     .stack-path-option-agent {
-        color: $dark-font-color;
+        color: var(--muted-foreground);
         font-family: inherit;
         font-size: 0.75rem;
     }
 
     .stack-path-option.active {
-        background: rgba($primary, 0.18);
+        background: var(--selected);
     }
 
     .stack-path-option:hover:not(:disabled),
     .stack-path-option:focus-visible {
-        background: rgba(255, 255, 255, 0.06);
+        background: var(--hover);
         outline: none;
     }
 
     .stack-path-option:disabled {
-        opacity: 0.45;
+        color: var(--muted-foreground);
     }
 }
 </style>

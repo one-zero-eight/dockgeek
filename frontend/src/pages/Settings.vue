@@ -1,61 +1,70 @@
 <template>
-    <div>
-        <h1 v-show="show" class="mb-3">
-            {{ $t("Settings") }}
-        </h1>
-
-        <div class="shadow-box shadow-box-settings">
-            <div class="row">
-                <div v-if="showSubMenu" class="settings-menu col-lg-3 col-md-5">
-                    <div v-if="$root.isCompact" class="account-block mb-2">
-                        <div class="profile-pic">{{ $root.usernameFirstChar }}</div>
-                        <div class="account-text">
-                            <i18n-t v-if="$root.username != null" tag="span" keypath="signedInDisp">
-                                <strong>{{ $root.username }}</strong>
-                            </i18n-t>
-                            <span v-else>{{ $t("signedInDispDisabled") }}</span>
-                        </div>
+    <div class="settings-page flex flex-col gap-4 w-full max-w-[1100px] mx-auto min-h-0">
+        <div class="settings-shell grid gap-4 min-h-0 items-start">
+            <nav v-if="showSubMenu" class="settings-nav flex flex-col gap-1 p-2 rounded-[0.85rem] bg-card" :aria-label="$t('Settings')">
+                <div v-if="$root.isCompact" class="account-block flex items-center gap-3 mb-[0.35rem] py-[0.65rem] px-3 rounded-[0.65rem] bg-hover">
+                    <div class="profile-pic flex flex-none items-center justify-center w-[34px] h-[34px] rounded-full border-0 bg-primary bg-gradient-primary text-primary-foreground text-[0.85rem] font-bold">{{ $root.usernameFirstChar }}</div>
+                    <div class="account-text min-w-0 text-body-sm">
+                        <i18n-t v-if="$root.username != null" tag="span" keypath="signedInDisp">
+                            <strong>{{ $root.username }}</strong>
+                        </i18n-t>
+                        <span v-else>{{ $t("signedInDispDisabled") }}</span>
                     </div>
+                </div>
 
-                    <router-link
-                        v-for="(item, key) in subMenus"
-                        :key="key"
-                        :to="`/settings/${key}`"
-                    >
-                        <div class="menu-item">
-                            {{ item.title }}
-                        </div>
-                    </router-link>
+                <router-link
+                    v-for="(item, key) in subMenus"
+                    :key="key"
+                    class="settings-nav-item flex items-center gap-[0.65rem] w-full rounded-[0.6rem] text-left font-medium cursor-pointer"
+                    :to="`/settings/${key}`"
+                    active-class="active"
+                >
+                    <font-awesome-icon :icon="item.icon" class="nav-icon" />
+                    <span>{{ item.title }}</span>
+                </router-link>
 
-                    <button v-if="$root.isCompact && $root.loggedIn" type="button" class="menu-action" @click="scanFolder">
-                        <font-awesome-icon icon="arrows-rotate" />
-                        {{ $t("scanFolder") }}
+                <div v-if="$root.isCompact && $root.loggedIn" class="settings-nav-actions flex flex-col gap-1 mt-2 pt-2 border-t-0 bg-transparent">
+                    <button type="button" class="settings-nav-item menu-action flex w-full items-center gap-[0.65rem] rounded-[0.6rem] text-left font-medium" @click="scanFolder">
+                        <font-awesome-icon icon="arrows-rotate" class="nav-icon" />
+                        <span>{{ $t("scanFolder") }}</span>
                     </button>
 
                     <button
-                        v-if="$root.isCompact && $root.loggedIn && $root.socketIO.token !== 'autoLogin'"
+                        v-if="$root.socketIO.token !== 'autoLogin'"
                         type="button"
-                        class="menu-action logout"
+                        class="settings-nav-item menu-action logout flex w-full items-center gap-[0.65rem] rounded-[0.6rem] text-left font-medium"
                         @click="$root.logout"
                     >
-                        <font-awesome-icon icon="sign-out-alt" />
-                        {{ $t("Logout") }}
+                        <font-awesome-icon icon="sign-out-alt" class="nav-icon" />
+                        <span>{{ $t("Logout") }}</span>
                     </button>
                 </div>
-                <div class="settings-content col-lg-9 col-md-7">
-                    <div v-if="currentPage" class="settings-content-header">
-                        <router-link v-if="$root.isMobile" to="/settings" class="btn btn-sm btn-normal me-2" :aria-label="$t('backToSettings')"><font-awesome-icon icon="arrow-left" /></router-link>
-                        {{ subMenus[currentPage].title }}
-                    </div>
-                    <div class="mx-3">
-                        <router-view v-slot="{ Component }">
-                            <transition name="slide-fade" appear>
-                                <component :is="Component" />
-                            </transition>
-                        </router-view>
+            </nav>
+
+            <section v-if="currentPage" class="settings-panel min-w-0 rounded-[0.85rem] bg-card overflow-hidden">
+                <div class="settings-panel-header flex items-center gap-[0.65rem] py-4 px-5 border-b-0 bg-card" :class="{ 'has-back': $root.isMobile }">
+                    <router-link
+                        v-if="$root.isMobile"
+                        to="/settings"
+                        class="back-btn"
+                        :aria-label="$t('backToSettings')"
+                    >
+                        <font-awesome-icon icon="chevron-left" />
+                    </router-link>
+                    <div class="panel-heading flex items-center gap-[0.65rem] min-w-0">
+                        <font-awesome-icon :icon="subMenus[currentPage].icon" class="panel-icon" />
+                        <h2>{{ subMenus[currentPage].title }}</h2>
                     </div>
                 </div>
-            </div>
+
+                <div class="settings-panel-body">
+                    <router-view v-slot="{ Component }">
+                        <transition name="slide-fade" appear>
+                            <component :is="Component" />
+                        </transition>
+                    </router-view>
+                </div>
+            </section>
         </div>
     </div>
 </template>
@@ -67,7 +76,6 @@ import { ALL_ENDPOINTS } from "../../../common/util-common";
 export default {
     data() {
         return {
-            show: true,
             settings: {},
             settingsLoaded: false,
         };
@@ -95,18 +103,23 @@ export default {
             return {
                 general: {
                     title: this.$t("general"),
+                    icon: "wrench",
                 },
                 appearance: {
                     title: this.$t("Appearance"),
+                    icon: "palette",
                 },
                 security: {
                     title: this.$t("Security"),
+                    icon: "lock",
                 },
                 globalEnv: {
                     title: this.$t("GlobalEnv"),
+                    icon: "file-pen",
                 },
                 about: {
                     title: this.$t("About"),
+                    icon: "info-circle",
                 },
             };
         },
@@ -131,7 +144,7 @@ export default {
          */
         loadGeneralPage() {
             if (!this.currentPage && !this.$root.isMobile) {
-                this.$router.push("/settings/appearance");
+                this.$router.push("/settings/general");
             }
         },
 
@@ -156,20 +169,28 @@ export default {
          * Save Settings
          * @param {saveSettingsCB} [callback]
          * @param {string} [currentPassword] Only need for disableAuth to true
+         * @param {boolean} [silentSuccess] Skip the success toast for inline save feedback
          */
-        saveSettings(callback, currentPassword) {
+        saveSettings(callback, currentPassword, silentSuccess = false) {
             let valid = this.validateSettings();
             if (valid.success) {
                 this.$root.getSocket().emit("setSettings", this.settings, currentPassword, (res) => {
-                    this.$root.toastRes(res);
-                    this.loadSettings();
+                    if (!res.ok || !silentSuccess) {
+                        this.$root.toastRes(res);
+                    }
+                    if (res.ok) {
+                        this.loadSettings();
+                    }
 
                     if (callback) {
-                        callback();
+                        callback(res);
                     }
                 });
             } else {
                 this.$root.toastError(valid.msg);
+                if (callback) {
+                    callback({ ok: false });
+                }
             }
         },
 
@@ -200,134 +221,124 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import "../styles/vars.scss";
-
-.shadow-box-settings {
-    padding: 20px;
+.settings-shell {
+    grid-template-columns: minmax(200px, 240px) minmax(0, 1fr);
 }
 
-footer {
-    color: #aaa;
-    font-size: 13px;
-    margin-top: 20px;
-    padding-bottom: 30px;
-    text-align: center;
-}
+.settings-nav-item {
+    padding: 0.65rem 0.8rem;
+    border: 0;
+    background: transparent;
+    color: var(--secondary-foreground);
+    text-decoration: none !important;
+    line-height: var(--line-height-tight);
+    cursor: pointer;
+    transition: color 0.15s ease, background 0.15s ease;
 
-.settings-menu {
-    a {
-        text-decoration: none !important;
-    }
-
-    .account-block {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin: 0.5em;
-        padding: 0.7em 1em;
-    }
-
-    .profile-pic {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        background: $primary-gradient;
-        color: $dark-font-color2;
-        font-weight: 700;
+    .nav-icon {
+        width: 1.1rem;
+        text-align: center;
+        color: var(--muted-foreground);
         flex: 0 0 auto;
     }
 
-    .account-text {
-        min-width: 0;
-        font-size: 0.95rem;
+    &:hover:not(.active),
+    &:focus-visible:not(.active) {
+        background: var(--hover);
     }
 
-    .menu-item,
-    .menu-action {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        width: calc(100% - 1em);
-        border: 0;
-        border-radius: 10px;
-        margin: 0.5em;
-        padding: 0.7em 1em;
-        background: transparent;
-        color: inherit;
-        text-align: left;
-        cursor: pointer;
-        border-left-width: 0;
-        transition: all ease-in-out 0.1s;
-    }
+    &.active {
+        color: var(--primary);
+        background: var(--selected);
 
-    .menu-item:hover,
-    .menu-action:hover {
-        background: $highlight-white;
-
-        .dark & {
-            background: $dark-header-bg;
-        }
-    }
-
-    .active .menu-item {
-        background: $highlight-white;
-        border-left: 4px solid $primary;
-        border-top-left-radius: 0;
-        border-bottom-left-radius: 0;
-
-        .dark & {
-            background: $dark-header-bg;
-        }
-    }
-}
-
-.settings-content {
-    .settings-content-header {
-        width: calc(100% + 20px);
-        border-bottom: 1px solid #dee2e6;
-        border-radius: 0 10px 0 0;
-        margin-top: -20px;
-        margin-right: -20px;
-        padding: 12.5px 1em;
-        font-size: 26px;
-
-        .dark & {
-            background: $dark-header-bg;
-            border-bottom: 0;
-        }
-
-        .mobile & {
-            padding: 15px 0 0 0;
-
-            .dark & {
-                background-color: transparent;
-            }
+        .nav-icon {
+            color: currentColor;
         }
     }
 }
 
 .logout {
-    color: $danger !important;
+    color: var(--destructive);
+
+    .nav-icon {
+        color: inherit;
+    }
+}
+
+.settings-panel-header {
+    &.has-back {
+        gap: 0.35rem;
+        padding-left: 0.65rem;
+    }
+
+    .back-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+        width: 2rem;
+        height: 2rem;
+        border-radius: 0.5rem;
+        color: var(--link);
+        text-decoration: none !important;
+        transition: background 0.15s ease, color 0.15s ease;
+
+        &:hover,
+        &:focus-visible {
+            color: var(--link);
+            background: var(--hover);
+            outline: none;
+        }
+
+        svg {
+            font-size: 0.95rem;
+        }
+    }
+
+    .panel-icon {
+        color: var(--link);
+    }
+
+    h2 {
+        margin: 0;
+        color: var(--foreground);
+        font-size: var(--font-size-card-title);
+        font-weight: var(--font-weight-medium);
+    }
+}
+
+.settings-panel-body {
+    padding: 1.25rem 1.35rem 1.5rem;
+
+    :deep(.form-label) {
+        margin-bottom: 0.45rem;
+        color: var(--foreground);
+        font-size: var(--font-size-label);
+        font-weight: var(--font-weight-semibold);
+    }
+
+    :deep(.settings-subheading),
+    :deep(.username) {
+        color: var(--foreground);
+    }
+
+    :deep(.form-text) {
+        margin-top: 0.4rem;
+    }
+
 }
 
 @media (max-width: 767.98px) {
-    .shadow-box-settings {
-        padding: 12px;
+    .settings-shell {
+        grid-template-columns: 1fr;
     }
 
-    .settings-content-header {
-        display: flex;
-        align-items: center;
-        width: 100% !important;
-        margin: 0 !important;
-        padding: 0 0 12px !important;
+    .settings-panel-body {
+        padding: 1rem;
     }
 
-    .settings-content > .mx-3 {
-        margin-inline: 0 !important;
+    .settings-panel-header {
+        padding: 0.9rem 1rem;
     }
 }
 </style>

@@ -1,10 +1,10 @@
 <template>
-    <div v-if="message" class="container-error" :class="{ expanded }">
-        <span class="container-error-text">{{ expanded ? message : preview }}</span>
+    <div v-if="message" class="text-foreground text-body-sm leading-[1.4]" :class="{ expanded }">
+        <span class="[overflow-wrap:anywhere]">{{ expanded ? message : preview }}</span>
         <button
             v-if="canExpand"
             type="button"
-            class="container-error-toggle"
+            class="ms-[.35rem] inline cursor-pointer select-none border-0 bg-transparent p-0 text-muted-foreground text-meta-sm leading-inherit underline underline-offset-[.12em] focus-visible:rounded-[.2rem] focus-visible:outline-[2px] focus-visible:outline-current focus-visible:outline-offset-[2px]"
             :aria-expanded="expanded"
             @click="expanded = !expanded"
         >
@@ -65,40 +65,3 @@ export default defineComponent({
     },
 });
 </script>
-
-<style scoped lang="scss">
-@import "../styles/vars";
-
-.container-error {
-    font-size: 0.9rem;
-    line-height: 1.4;
-    color: $dark-font-color;
-}
-
-.container-error-text {
-    overflow-wrap: anywhere;
-}
-
-.container-error-toggle {
-    display: inline;
-    margin: 0;
-    margin-inline-start: 0.35rem;
-    padding: 0;
-    border: 0;
-    background: none;
-    font-size: 0.8rem;
-    line-height: inherit;
-    color: inherit;
-    opacity: 0.75;
-    text-decoration: underline;
-    text-underline-offset: 0.12em;
-    cursor: pointer;
-    user-select: none;
-
-    &:focus-visible {
-        outline: 2px solid currentColor;
-        outline-offset: 2px;
-        border-radius: 0.2rem;
-    }
-}
-</style>

@@ -3,13 +3,13 @@
         <Transition name="floating-dialog" @after-leave="onAfterLeave">
             <div
                 v-if="modelValue"
-                class="floating-dialog-backdrop"
+                class="floating-dialog-backdrop fixed inset-0 z-[1090]"
                 role="presentation"
                 @pointerdown.self="onBackdropPointerdown"
             >
                 <div
                     ref="floatingEl"
-                    class="floating-dialog"
+                    class="floating-dialog flex flex-col overflow-hidden rounded-xl border border-border bg-card text-card-foreground outline-none"
                     :class="[ `size-${size}`, dialogClass, { 'is-fill': fill, 'is-busy': busy } ]"
                     :style="dialogStyle"
                     role="dialog"
@@ -18,26 +18,26 @@
                     tabindex="-1"
                     @keydown="onDialogKeydown"
                 >
-                    <header v-if="hasHeader" class="fd-header">
+                    <header v-if="hasHeader" class="fd-header flex shrink-0 items-center justify-between gap-4 px-[1.15rem] pt-[1.15rem]">
                         <slot name="header">
-                            <h5 class="fd-title">{{ title }}</h5>
+                            <h5 class="fd-title m-0 overflow-hidden text-ellipsis whitespace-nowrap text-foreground text-[1.05rem] font-medium">{{ title }}</h5>
                         </slot>
-                        <button v-if="!hideClose" type="button" class="fd-close" :aria-label="$t('close')" @click="cancel">
+                        <button v-if="!hideClose" type="button" class="fd-close flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-inherit opacity-70 hover:bg-hover hover:opacity-100 hover:outline-none focus-visible:bg-hover focus-visible:opacity-100 focus-visible:outline-none" :aria-label="$t('close')" @click="cancel">
                             <font-awesome-icon icon="times" />
                         </button>
                     </header>
 
-                    <div class="fd-body">
+                    <div class="fd-body min-h-0 flex-auto overflow-auto px-[1.15rem] pt-[0.9rem] pb-[1.15rem] overscroll-contain">
                         <slot />
                     </div>
 
-                    <footer v-if="!hideFooter" class="fd-footer">
+                    <footer v-if="!hideFooter" class="fd-footer flex shrink-0 flex-wrap items-center justify-end gap-2 px-[1.15rem] pb-[1.15rem]">
                         <slot name="footer" :cancel="cancel" :ok="ok" :busy="busy">
-                            <button type="button" class="btn" :class="cancelVariant" :disabled="busy" @click="cancel">
+                            <button type="button" class="fd-button inline-flex min-h-[38px] items-center justify-center gap-1 rounded-md border border-transparent bg-secondary px-3 py-1.5 text-secondary-foreground leading-[1.5] cursor-pointer disabled:cursor-not-allowed disabled:opacity-65 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2" :class="buttonVariant(cancelVariant)" :disabled="busy" @click="cancel">
                                 {{ cancelTitle || $t("cancel") }}
                             </button>
-                            <button type="button" class="btn" :class="okVariant" :disabled="okDisabled || busy" @click="ok">
-                                <span v-if="busy" class="spinner-border spinner-border-sm me-1" />
+                            <button type="button" class="fd-button fd-ok inline-flex min-h-[38px] items-center justify-center gap-1 rounded-md border border-transparent bg-secondary px-3 py-1.5 text-secondary-foreground leading-[1.5] cursor-pointer disabled:cursor-not-allowed disabled:opacity-65 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2" :class="buttonVariant(okVariant)" :disabled="okDisabled || busy" @click="ok">
+                                <span v-if="busy" class="fd-spinner h-4 w-4 rounded-full border-[0.2em] border-current border-r-transparent" aria-hidden="true" />
                                 {{ okTitle || $t("ok") }}
                             </button>
                         </slot>
@@ -112,11 +112,11 @@ export default {
         },
         okVariant: {
             type: String,
-            default: "btn-primary",
+            default: "primary",
         },
         cancelVariant: {
             type: String,
-            default: "btn-normal",
+            default: "normal",
         },
         /** `sm`, `md`, `lg`, `xl` or `full`. */
         size: {
@@ -244,8 +244,18 @@ export default {
         function focusDialog() {
             const list = focusables();
             const autofocus = floatingEl.value?.querySelector("[autofocus], .fd-body input, .fd-body textarea, .fd-body select");
-            const primary = floatingEl.value?.querySelector(".fd-footer .btn-primary:not([disabled]), .fd-footer button:last-of-type:not([disabled])");
+            const primary = floatingEl.value?.querySelector(".fd-footer .fd-ok:not([disabled]), .fd-footer button:last-of-type:not([disabled])");
             (autofocus || primary || list[0] || floatingEl.value)?.focus();
+        }
+
+        // Semantic variants map directly to component-owned classes.
+        function buttonVariant(variant) {
+            return {
+                "fd-primary": variant === "primary" || variant === "info",
+                "fd-danger": variant === "danger",
+                "fd-warning": variant === "warning",
+                "fd-secondary": variant === "secondary",
+            };
         }
 
         function lockScroll() {
@@ -377,6 +387,7 @@ export default {
             floatingEl,
             dialogStyle,
             hasHeader,
+            buttonVariant,
             ok,
             cancel,
             onBackdropPointerdown,
@@ -388,31 +399,17 @@ export default {
 </script>
 
 <style lang="scss">
-@import "../../styles/vars.scss";
-
 body.floating-dialog-open {
     overflow: hidden;
 }
 
 .floating-dialog-backdrop {
-    position: fixed;
-    z-index: 1090;
-    background-color: rgba(0, 0, 0, 0.5);
-    inset: 0;
+    background-color: var(--overlay);
 }
 
 .floating-dialog {
-    display: flex;
-    overflow: hidden;
-    flex-direction: column;
     width: min(var(--fd-width, 520px), var(--fd-max-width, calc(100vw - 32px)));
     max-height: var(--fd-max-height, calc(100vh - 32px));
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    border-radius: 12px;
-    background-color: #fff;
-    color: #111;
-    box-shadow: 0 25px 70px rgba(0, 0, 0, 0.25);
-    outline: none;
 
     &.size-sm {
         --fd-width: 400px;
@@ -439,77 +436,55 @@ body.floating-dialog-open {
         height: 100dvh;
         max-height: 100dvh;
     }
-
-    .dark & {
-        border-color: $dark-border-color;
-        background-color: $dark-bg;
-        color: $dark-font-color;
-    }
 }
 
-.fd-header {
-    display: flex;
-    flex: 0 0 auto;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 1.15rem 1.15rem 0;
-}
+.fd-button {
+    appearance: none;
+    font: inherit;
+    line-height: 1.5;
 
-.fd-title {
-    overflow: hidden;
-    margin: 0;
-    font-size: 1.05rem;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.fd-close {
-    display: flex;
-    flex: 0 0 auto;
-    align-items: center;
-    justify-content: center;
-    width: 30px;
-    height: 30px;
-    padding: 0;
-    border: 0;
-    border-radius: 8px;
-    color: inherit;
-    background: transparent;
-    opacity: 0.7;
-
-    &:hover,
-    &:focus-visible {
-        background-color: rgba(0, 0, 0, 0.08);
-        opacity: 1;
-        outline: none;
+    &:hover:not(:disabled) {
+        background-color: var(--secondary-hover);
     }
 
-    .dark & {
+    &.fd-primary {
+        background: var(--gradient-primary);
+        color: var(--primary-foreground);
 
-        &:hover,
-        &:focus-visible {
-            background-color: rgba(255, 255, 255, 0.1);
+        &:hover:not(:disabled) {
+            background: var(--gradient-primary-active);
         }
     }
+
+    &.fd-danger {
+        background: var(--gradient-danger);
+        color: #fff;
+
+        &:hover:not(:disabled) {
+            background: var(--gradient-danger-active);
+        }
+    }
+
+    &.fd-warning {
+        background: var(--gradient-warning);
+        color: var(--primary-foreground);
+
+        &:hover:not(:disabled) {
+            background: var(--gradient-warning-active);
+        }
+    }
+
+    &.fd-secondary {
+        background-color: var(--muted);
+    }
 }
 
-.fd-body {
-    overflow: auto;
-    flex: 1 1 auto;
-    min-height: 0;
-    padding: 0.9rem 1.15rem 1.15rem;
-    overscroll-behavior: contain;
+.fd-spinner {
+    animation: fd-spin 0.75s linear infinite;
 }
 
-.fd-footer {
-    display: flex;
-    flex: 0 0 auto;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 0.5rem;
-    padding: 0 1.15rem 1.15rem;
+@keyframes fd-spin {
+    to { transform: rotate(360deg); }
 }
 
 .floating-dialog-enter-active {

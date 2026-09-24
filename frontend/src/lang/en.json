@@ -38,6 +38,7 @@
     "registry": "Registry",
     "compose": "Compose",
     "addFirstStackMsg": "Compose your first project!",
+    "newProject": "New project",
     "stackName": "Project Name",
     "stackFolder": "Project folder",
     "stackFolderPlaceholder": "my-project",

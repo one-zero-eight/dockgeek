@@ -1,10 +1,10 @@
 <template>
-    <div ref="root" class="action-group" :class="{ 'is-sm': size === 'sm' }" role="group" :aria-label="ariaLabel">
+    <div ref="root" class="action-group action-group--adaptive relative inline-flex min-w-0 flex-nowrap items-stretch overflow-hidden" :class="{ 'is-sm': size === 'sm' }" role="group" :aria-label="ariaLabel">
         <button
             v-for="action in visibleActions"
             :key="action.key"
             type="button"
-            class="btn action-group-btn"
+            class="action-group-btn"
             :class="buttonClass(action)"
             :disabled="isDisabled(action)"
             :title="labelFor(action) ? undefined : titleFor(action)"
@@ -24,7 +24,7 @@
                 <button
                     v-bind="triggerAttrs"
                     type="button"
-                    class="btn btn-normal btn-icon"
+                    class="action-group-btn action-group-more"
                     :disabled="disabled"
                     :aria-label="moreLabel || $t('actions')"
                 >
@@ -40,8 +40,8 @@
                     role="menuitem"
                     class="floating-menu-item"
                     :class="{
-                        'text-danger': isDanger(action),
-                        'text-warning': isWarning(action),
+                        'is-danger': isDanger(action),
+                        'is-warning': isWarning(action),
                     }"
                     :disabled="isDisabled(action)"
                     @click="select(action)"
@@ -53,19 +53,19 @@
         </FloatingMenu>
 
         <!-- Invisible copies used to measure natural widths before deciding what fits -->
-        <div ref="measure" class="action-group-measure" aria-hidden="true">
+        <div ref="measure" class="absolute top-0 left-0 flex w-max flex-nowrap invisible pointer-events-none" aria-hidden="true">
             <button
                 v-for="action in candidates"
                 :key="action.key"
                 type="button"
                 tabindex="-1"
-                class="btn action-group-btn"
+                class="action-group-btn"
                 :class="buttonClass(action)"
             >
                 <font-awesome-icon v-if="action.icon" :icon="action.icon" />
                 <span v-if="labelFor(action)" class="action-group-text">{{ labelFor(action) }}</span>
             </button>
-            <button type="button" tabindex="-1" class="btn btn-normal btn-icon">
+            <button type="button" tabindex="-1" class="action-group-btn action-group-more">
                 <font-awesome-icon icon="ellipsis" />
             </button>
         </div>
@@ -87,7 +87,7 @@ import FloatingMenu from "./floating/FloatingMenu.vue";
  * @property {string}  [icon]             Font Awesome icon name.
  * @property {string}  [label]            Ready to use label, takes precedence over `i18nKey`.
  * @property {string}  [i18nKey]          Translation key of the label.
- * @property {string}  [variant]          Bootstrap button variant, defaults to `btn-normal`.
+ * @property {string}  [variant]          Button variant (`primary`, `warning`, etc.); defaults to neutral.
  * @property {boolean} [danger]           Color the label crimson (row + menu), keep normal chrome.
  * @property {boolean} [warning]          Color the label amber (row + menu), keep normal chrome.
  * @property {boolean} [disabled]         Disable this single action.
@@ -242,25 +242,21 @@ export default {
         },
 
         buttonClass(action) {
-            const iconOnly = { "action-group-icon-only": !this.labelFor(action) };
-            if (this.isDanger(action)) {
-                return [ "btn-normal", "text-danger", iconOnly ];
-            }
-            if (this.isWarning(action)) {
-                return [ "btn-normal", "text-warning", iconOnly ];
-            }
-            return [
-                action.variant || "btn-normal",
-                iconOnly,
-            ];
+            return {
+                "action-group-icon-only": !this.labelFor(action),
+                "is-danger": this.isDanger(action),
+                "is-warning": this.isWarning(action),
+                "is-primary": !this.isDanger(action) && !this.isWarning(action) && action.variant === "primary",
+                "is-info": !this.isDanger(action) && !this.isWarning(action) && action.variant === "info",
+            };
         },
 
         isDanger(action) {
-            return Boolean(action.danger) || action.variant === "btn-danger";
+            return Boolean(action.danger) || action.variant === "danger";
         },
 
         isWarning(action) {
-            return Boolean(action.warning) || action.variant === "btn-warning";
+            return Boolean(action.warning) || action.variant === "warning";
         },
 
         isDisabled(action) {
@@ -282,27 +278,22 @@ export default {
 </script>
 
 <style lang="scss">
-@import "../styles/vars.scss";
-
-.action-group {
-    position: relative;
-    display: inline-flex;
-    overflow: hidden;
-    flex-wrap: nowrap;
-    align-items: stretch;
-    min-width: 0;
-    > .btn:first-of-type {
-        border-start-start-radius: var(--bs-btn-border-radius, 0.375rem);
-        border-end-start-radius: var(--bs-btn-border-radius, 0.375rem);
+.action-group--adaptive {
+    > .action-group-btn:first-of-type {
+        border-start-start-radius: 0.375rem;
+        border-end-start-radius: 0.375rem;
     }
 
-    > .btn:last-of-type {
-        border-start-end-radius: var(--bs-btn-border-radius, 0.375rem);
-        border-end-end-radius: var(--bs-btn-border-radius, 0.375rem);
+    > .action-group-btn:last-of-type,
+    > .floating-menu:last-of-type {
+        border-start-end-radius: 0.375rem;
+        border-end-end-radius: 0.375rem;
     }
 
-    .btn {
+    .action-group-btn {
+        box-sizing: border-box;
         display: inline-flex;
+        flex: 0 0 auto;
         align-items: center;
         justify-content: center;
         gap: 0.4rem;
@@ -310,9 +301,43 @@ export default {
         padding: 0.5rem 0.75rem;
         border: 0;
         border-radius: 0;
-        box-shadow: none;
+        appearance: none;
+        background-color: var(--secondary);
+        color: var(--secondary-foreground);
+        font-family: inherit;
+        font-size: var(--font-size-control);
+        font-weight: var(--font-weight-medium);
         white-space: nowrap;
         line-height: 1;
+        cursor: pointer;
+
+        &:hover:not(:disabled) {
+            background-color: var(--secondary-hover);
+        }
+
+        &.is-primary,
+        &.is-info {
+            color: var(--primary-foreground);
+            background: var(--gradient-primary);
+
+            &:hover:not(:disabled) {
+                background: var(--gradient-primary-active);
+            }
+        }
+
+        &.is-danger {
+            color: var(--destructive);
+        }
+
+        &.is-warning {
+            color: var(--warning);
+        }
+
+        &:disabled {
+            color: var(--muted-foreground);
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
 
         svg {
             display: block;
@@ -323,53 +348,45 @@ export default {
         }
 
         &:focus-visible {
-            outline: 2px solid $primary;
+            outline: 2px solid var(--ring);
             outline-offset: -2px;
-        }
-
-        &.text-danger {
-            color: $danger;
-        }
-
-        &.text-warning {
-            color: $warning;
         }
     }
 
     .floating-menu {
         display: inline-flex;
+        flex: 0 0 auto;
     }
 
-    .btn-icon {
+    .action-group-more {
         width: 38px;
         padding: 0;
     }
 }
 
-.action-group-menu {
+.action-group-menu.floating-menu-panel {
     min-width: 10rem;
     padding: 0;
-    border-radius: var(--bs-btn-border-radius, 0.375rem);
+    border: 0;
+    border-radius: 0.375rem;
     overflow: hidden;
+    background-color: var(--secondary);
+    color: var(--secondary-foreground);
 
     .floating-menu-item {
-        display: flex;
-        width: 100%;
-        align-items: center;
-        justify-content: flex-start;
-        gap: 0.4rem;
         min-height: 38px;
+        width: 100%;
         padding: 0.5rem 0.75rem;
-        border: 0;
         border-radius: 0;
-        background: transparent;
-        color: inherit;
-        font-family: inherit;
-        font-size: 1rem;
-        font-weight: 400;
+        background-color: var(--secondary);
+        font-size: var(--font-size-control);
         line-height: 1;
-        text-align: start;
         white-space: nowrap;
+
+        &:hover:not(:disabled),
+        &:focus-visible {
+            background-color: var(--secondary-hover);
+        }
 
         svg {
             display: block;
@@ -378,72 +395,32 @@ export default {
             height: 1em;
             margin: 0;
         }
-
-        &:hover:not(:disabled),
-        &:focus-visible {
-            background-color: darken(#F5F5F5, 3%);
-            outline: none;
-        }
-
-        &.text-danger {
-            color: $danger;
-        }
-
-        &.text-warning {
-            color: $warning;
-        }
     }
 
     .floating-menu-divider {
         margin: 0;
     }
-
-    .dark & {
-        background-color: $dark-header-bg;
-
-        .floating-menu-item:hover:not(:disabled),
-        .floating-menu-item:focus-visible {
-            background-color: darken($dark-header-bg, 3%);
-        }
-    }
-}
-
-.action-group .btn {
-    font-family: inherit;
-    font-size: 1rem;
-    font-weight: 400;
-}
-
-.action-group-measure {
-    position: absolute;
-    top: 0;
-    left: 0;
-    display: flex;
-    width: max-content;
-    flex-wrap: nowrap;
-    visibility: hidden;
-    pointer-events: none;
 }
 
 @media (max-width: 991.98px) {
-    .action-group:not(.is-sm) .btn {
+    .action-group--adaptive:not(.is-sm) .action-group-btn {
         min-height: 44px;
     }
 
-    .action-group:not(.is-sm) .btn-icon {
+    .action-group--adaptive:not(.is-sm) .action-group-more {
         width: 44px;
     }
 }
 
-.action-group.is-sm {
-    .btn {
+.action-group--adaptive.is-sm {
+    .action-group-btn {
         min-height: 28px;
         padding: 0.2rem 0.65rem;
         font-size: 0.8rem;
         gap: 0.35rem;
     }
 
-    .btn-icon {
+    .action-group-more {
         width: 28px;
         padding: 0;
     }

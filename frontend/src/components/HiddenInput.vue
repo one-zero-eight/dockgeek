@@ -1,10 +1,10 @@
 <template>
-    <div class="input-group mb-3">
+    <div class="mb-[1rem] flex w-full">
         <input
             ref="input"
             v-model="model"
             :type="visibility"
-            class="form-control"
+            class="field-control min-w-0 min-h-[2.375rem] flex-1 rounded-s-[.375rem] border border-border bg-input-surface px-[.75rem] py-[.375rem] text-secondary-foreground text-control read-only:text-muted-foreground max-[575px]:min-h-[44px]"
             :placeholder="placeholder"
             :maxlength="maxlength"
             :autocomplete="autocomplete"
@@ -12,12 +12,9 @@
             :readonly="readonly"
         >
 
-        <a v-if="visibility == 'password'" class="btn btn-outline-primary" @click="showInput()">
-            <font-awesome-icon icon="eye" />
-        </a>
-        <a v-if="visibility == 'text'" class="btn btn-outline-primary" @click="hideInput()">
-            <font-awesome-icon icon="eye-slash" />
-        </a>
+        <button type="button" class="visibility-button inline-flex min-w-[2.75rem] items-center justify-center rounded-e-[.375rem] border border-primary border-l-0 bg-transparent text-link cursor-pointer hover:bg-primary hover:text-primary-foreground max-[575px]:min-h-[44px]" :aria-label="visibility === 'password' ? 'Show password' : 'Hide password'" :aria-pressed="visibility === 'text'" @click="visibility === 'password' ? showInput() : hideInput()">
+            <font-awesome-icon :icon="visibility === 'password' ? 'eye' : 'eye-slash'" />
+        </button>
     </div>
 </template>
 
@@ -85,3 +82,11 @@ export default {
     }
 };
 </script>
+
+<style scoped>
+.field-control:focus-visible, .visibility-button:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    z-index: 1;
+}
+</style>

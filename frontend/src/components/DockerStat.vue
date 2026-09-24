@@ -1,35 +1,35 @@
 <template>
-    <div class="stats-container">
-        <div class="stats-title">
+    <div class="stats-container [container-type:inline-size]">
+        <div class="text-foreground text-body-sm">
             {{ stat.Name }}
         </div>
-        <div class="d-flex justify-content-between stats gap-2 mt-1">
-            <div class="stat">
-                <div class="stat-label">
+        <div class="stats mt-[.25rem] flex justify-between gap-2 [container-type:inline-size] text-muted-foreground text-meta-sm">
+            <div class="stat flex flex-col gap-[4px]">
+                <div class="stat-label font-semibold">
                     {{ $t('CPU') }}
                 </div>
                 <div>
                     {{ stat.CPUPerc }}
                 </div>
             </div>
-            <div class="stat">
-                <div class="stat-label">
+            <div class="stat flex flex-col gap-[4px]">
+                <div class="stat-label font-semibold">
                     {{ $t('memory') }}
                 </div>
                 <div>
                     {{ stat.MemUsage }} ({{ stat.MemPerc }})
                 </div>
             </div>
-            <div class="stat">
-                <div class="stat-label">
+            <div class="stat flex flex-col gap-[4px]">
+                <div class="stat-label font-semibold">
                     {{ $t('networkIO') }}
                 </div>
                 <div>
                     {{ stat.NetIO }}
                 </div>
             </div>
-            <div class="stat">
-                <div class="stat-label">
+            <div class="stat flex flex-col gap-[4px]">
+                <div class="stat-label font-semibold">
                     {{ $t('blockIO') }}
                 </div>
                 <div>
@@ -52,43 +52,12 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.stats-container {
-    container-type: inline-size;
-
-    .stats {
-        container-type: inline-size;
-
-        .stat {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        @container (width < 420px) {
-            flex-direction: column;
-
-            .stat {
-                flex-direction: row;
-            }
-
-            .stat-label::after {
-                content: ':'
-            }
-        }
-    }
-}
-
 .stats {
-    font-size: 0.8rem;
-    color: #6c757d;
-}
+    @container (width < 420px) {
+        flex-direction: column;
 
-.stat-label {
-    font-weight: bold;
-}
-
-.stats-title {
-    font-size: 0.9rem;
-    color: var(--bs-heading-color);
+        .stat { flex-direction: row; }
+        .stat-label::after { content: ':'; }
+    }
 }
 </style>

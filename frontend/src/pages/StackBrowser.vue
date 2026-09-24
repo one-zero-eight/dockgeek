@@ -1,9 +1,9 @@
 <template>
     <transition name="slide-fade" appear>
-        <div class="stack-browser">
-            <div class="stack-browser-heading d-flex align-items-center gap-3 mb-3">
+        <div class="stack-browser flex flex-col flex-1 w-full h-full min-h-0 overflow-hidden">
+            <div class="stack-browser-heading mb-[1rem] flex flex-none items-center gap-4">
                 <h1 class="mb-0">{{ $t("stacks") }}</h1>
-                <router-link to="/compose" class="btn btn-primary btn-sm add-stack" :aria-label="$t('compose')" :title="$t('compose')">
+                <router-link to="/compose" class="add-stack inline-flex flex-none items-center justify-center w-8 h-8 p-0 rounded-full border border-primary bg-primary bg-gradient-primary text-primary-foreground no-underline hover:bg-gradient-primary-active" :aria-label="$t('newProject')" :title="$t('newProject')">
                     <font-awesome-icon icon="plus" />
                 </router-link>
             </div>
@@ -21,29 +21,9 @@ export default {
 </script>
 
 <style scoped lang="scss">
-.stack-browser {
-    display: flex;
-    flex-direction: column;
-    flex: 1 1 0;
-    width: 100%;
-    height: 100%;
-    min-height: 0;
-    overflow: hidden;
-}
-
-.stack-browser-heading {
-    flex: 0 0 auto;
-}
-
 .add-stack {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex: 0 0 auto;
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    border-radius: 50%;
+    &:hover { color: var(--primary-foreground); }
+    &:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 }
 
 .stack-browser :deep(.stack-list-box) {

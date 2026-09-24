@@ -14,7 +14,7 @@
             <div
                 v-if="isOpen"
                 ref="floatingEl"
-                class="floating-menu-panel"
+                class="floating-menu-panel floating-shadow fixed z-[1080] overflow-auto w-max rounded-xl border border-border bg-popover p-[0.35rem] text-popover-foreground overscroll-contain outline-none"
                 :class="panelClass"
                 :style="panelStyle"
                 role="menu"
@@ -143,7 +143,7 @@ export default {
                 ref: setTriggerRef,
                 class: [ "floating-menu", attrsClass, {
                     "is-open": isOpen.value,
-                    "is-disabled": props.disabled,
+                    "is-disabled pointer-events-none opacity-60": props.disabled,
                 }],
                 "aria-expanded": isOpen.value ? "true" : "false",
                 "aria-haspopup": "menu",
@@ -337,37 +337,10 @@ export default {
 </script>
 
 <style lang="scss">
-@import "../../styles/vars.scss";
-
-.floating-menu {
-    &.is-disabled {
-        pointer-events: none;
-        opacity: 0.6;
-    }
-}
-
 .floating-menu-panel {
-    position: fixed;
-    z-index: 1080;
-    overflow: auto;
-    width: max-content;
     min-width: var(--floating-min-width, 10rem);
     max-width: var(--floating-max-width, calc(100vw - 16px));
     max-height: var(--floating-max-height, calc(100vh - 16px));
-    padding: 0.35rem;
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    border-radius: 12px;
-    background-color: #fff;
-    color: #111;
-    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.18);
-    overscroll-behavior: contain;
-    outline: none;
-
-    .dark & {
-        border-color: $dark-border-color;
-        background-color: $dark-header-bg;
-        color: $dark-font-color;
-    }
 }
 
 .floating-menu-item {
@@ -379,58 +352,55 @@ export default {
     border: 0;
     border-radius: 8px;
     color: inherit;
-    font-size: 0.9rem;
+    font-size: var(--font-size-body-sm);
+    font-weight: var(--font-weight-medium);
     background: transparent;
     text-align: start;
     text-decoration: none;
 
-    &:hover,
+    &:hover:not(:disabled),
     &:focus-visible {
-        background-color: rgba(0, 0, 0, 0.06);
+        background-color: var(--hover);
         outline: none;
     }
 
     &.active {
-        background-color: rgba($primary, 0.25);
+        background-color: var(--selected);
     }
 
-    &.text-danger {
-        color: $danger;
+    &.text-danger,
+    &.is-danger {
+        color: var(--destructive);
     }
 
-    &.text-warning {
-        color: $warning;
+    &.text-warning,
+    &.is-warning {
+        color: var(--warning);
+    }
+
+
+    &:disabled {
+        color: var(--muted-foreground);
     }
 
     svg {
         width: 0.9em;
         flex: 0 0 auto;
     }
-
-    .dark & {
-
-        &:hover,
-        &:focus-visible {
-            background-color: rgba(255, 255, 255, 0.08);
-        }
-    }
 }
 
 .floating-menu-divider {
     height: 1px;
     margin: 0.35rem 0.25rem;
-    background-color: rgba(0, 0, 0, 0.1);
-
-    .dark & {
-        background-color: $dark-border-color;
-    }
+    background-color: var(--border);
 }
 
 .floating-menu-text {
     display: block;
     padding: 0.35rem 0.75rem;
-    font-size: 0.85rem;
-    opacity: 0.75;
+    color: var(--muted-foreground);
+    font-size: var(--font-size-meta);
+    opacity: 1;
 }
 
 .floating-menu-enter-active {

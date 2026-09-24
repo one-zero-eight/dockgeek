@@ -1,42 +1,42 @@
 <template>
-    <div class="shadow-box mb-3 stack-list-box">
-        <div class="list-header">
-            <div class="header-top">
+    <div class="panel-box stack-list-box flex h-full min-h-0 w-full flex-col lg:sticky lg:top-0 lg:max-h-full">
+        <div class="list-header -m-[10px] mb-[10px] rounded-t-[10px] border-b border-border bg-card p-[10px] max-[770px]:p-[8px]">
+            <div class="flex items-center justify-between gap-[.5rem]">
                 <!-- TODO -->
                 <button
-                    v-if="false" class="btn btn-outline-normal ms-2" :class="{ 'active': selectMode }" type="button"
+                    v-if="false" class="selection-button ms-[.5rem]" :class="{ 'active': selectMode }" type="button"
                     @click="selectMode = !selectMode"
                 >
                     {{ $t("Select") }}
                 </button>
 
-                <div class="search-wrapper">
-                    <a v-if="searchText == ''" class="search-icon">
+                <div class="relative min-w-0 flex-[1_1_auto]">
+                    <a v-if="searchText == ''" class="search-icon absolute top-0 start-0 flex h-[38px] items-center p-[10px] text-muted-foreground">
                         <font-awesome-icon icon="search" />
                     </a>
-                    <a v-if="searchText != ''" class="search-icon" style="cursor: pointer" @click="clearSearchText">
+                    <a v-if="searchText != ''" class="search-icon absolute top-0 start-0 flex h-[38px] cursor-pointer items-center p-[10px] text-muted-foreground" @click="clearSearchText">
                         <font-awesome-icon icon="times" />
                     </a>
                     <form>
-                        <input v-model="searchText" class="form-control search-input" autocomplete="off" />
+                        <input v-model="searchText" class="search-input h-[38px] w-full rounded-[10px] border border-border bg-input-surface px-[.75rem] py-[.375rem] ps-[2.25rem] text-foreground font-inherit focus-visible:outline-[2px] focus-visible:outline-ring focus-visible:outline-offset-[1px]" autocomplete="off" />
                     </form>
                 </div>
             </div>
 
             <!-- TODO -->
-            <div v-if="false" class="header-filter">
+            <div v-if="false" class="flex items-center">
                 <!--<StackListFilter :filterState="filterState" @update-filter="updateFilter" />-->
             </div>
 
             <!-- TODO: Selection Controls -->
-            <div v-if="selectMode && false" class="selection-controls px-2 pt-2">
-                <input v-model="selectAll" class="form-check-input select-input" type="checkbox" />
+            <div v-if="selectMode && false" class="selection-controls px-[.5rem] pt-[.5rem]">
+                <input v-model="selectAll" class="select-input" type="checkbox" />
 
-                <button class="btn-outline-normal" @click="pauseDialog">
+                <button class="selection-button" @click="pauseDialog">
                     <font-awesome-icon icon="pause" size="sm" /> {{
                         $t("Pause") }}
                 </button>
-                <button class="btn-outline-normal" @click="resumeSelected">
+                <button class="selection-button" @click="resumeSelected">
                     <font-awesome-icon icon="play" size="sm" />
                     {{ $t("Resume") }}
                 </button>
@@ -46,16 +46,16 @@
                 </span>
             </div>
         </div>
-        <div ref="stackList" class="stack-list" :class="{ scrollbar: scrollbar }">
-            <div v-if="agentStackList[0] && agentStackList[0].stacks.length === 0" class="text-center mt-3">
+        <div ref="stackList" class="min-h-0 flex-[1_1_auto]" :class="{ 'overflow-y-auto overscroll-contain': scrollbar }">
+            <div v-if="agentStackList[0] && agentStackList[0].stacks.length === 0" class="mt-[1rem] text-center">
                 <router-link to="/compose">{{ $t("addFirstStackMsg") }}</router-link>
             </div>
             <div v-for="(agent, agentIndex) in agentStackList" :key="agentIndex" class="stack-list-inner">
                 <div
-                    v-if="$root.agentCount > 1" class="p-2 agent-select"
+                    v-if="$root.agentCount > 1" class="agent-select flex cursor-pointer select-none items-center text-muted-foreground text-body-sm font-medium px-[10px] py-[.5rem]"
                     @click="closedAgents.set(agent.endpoint, !closedAgents.get(agent.endpoint))"
                 >
-                    <span class="me-1">
+                    <span class="me-[.25rem]">
                         <font-awesome-icon v-show="closedAgents.get(agent.endpoint)" icon="chevron-circle-right" />
                         <font-awesome-icon v-show="!closedAgents.get(agent.endpoint)" icon="chevron-circle-down" />
                     </span>
@@ -63,7 +63,7 @@
                     <span v-else>{{ agent.endpoint }}</span>
                 </div>
                 <div v-show="$root.agentCount === 1 || !closedAgents.get(agent.endpoint)">
-                    <div v-if="$root.stacksDirectoryPaths[agent.endpoint]" class="directory-heading">
+                    <div v-if="$root.stacksDirectoryPaths[agent.endpoint]" class="directory-heading flex min-h-[34px] items-center gap-[8px] px-[6px] py-[3px] text-foreground text-body font-regular">
                         <font-awesome-icon icon="folder-open" />
                         <span :title="$root.stacksDirectoryPaths[agent.endpoint]"><bdi dir="ltr">{{ $root.stacksDirectoryPaths[agent.endpoint] }}</bdi></span>
                     </div>
@@ -342,56 +342,13 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import "../styles/vars.scss";
-
 .stack-list-box {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    height: 100%;
-    min-height: 0;
     margin-bottom: 0 !important;
-
-    @media (min-width: 992px) {
-        position: sticky;
-        top: 0;
-        max-height: 100%;
-    }
 }
 
-.list-header {
-    flex: 0 0 auto;
-    border-bottom: 1px solid #dee2e6;
-    border-radius: 10px 10px 0 0;
-    margin: -10px;
-    margin-bottom: 10px;
-    padding: 10px;
-
-    .dark & {
-        background-color: $dark-header-bg;
-        border-bottom: 0;
-    }
-}
-
-.stack-list {
-    flex: 1 1 auto;
-    min-height: 0;
-
-    &.scrollbar {
-        overflow-y: auto;
-        overscroll-behavior: contain;
-    }
-}
+.list-header { flex: 0 0 auto; }
 
 .directory-heading {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-height: 34px;
-    padding: 3px 6px;
-    font-size: 1rem;
-    font-weight: normal;
-
     svg {
         flex: 0 0 13px;
         width: 13px;
@@ -407,42 +364,7 @@ export default {
     }
 }
 
-.header-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.header-filter {
-    display: flex;
-    align-items: center;
-}
-
-@media (max-width: 770px) {
-    .list-header {
-        margin: -10px;
-        margin-bottom: 10px;
-        padding: 8px;
-    }
-}
-
-.search-wrapper {
-    position: relative;
-    flex: 1 1 auto;
-    min-width: 0;
-}
-
 .search-icon {
-    position: absolute;
-    inset-inline-start: 0;
-    top: 0;
-    height: 38px;
-    display: flex;
-    align-items: center;
-    padding: 10px;
-    color: #c0c0c0;
-
     // Clear filter button (X)
     svg[data-icon="times"] {
         cursor: pointer;
@@ -452,13 +374,6 @@ export default {
             opacity: 0.5;
         }
     }
-}
-
-.search-input {
-    width: 100%;
-    height: 38px;
-    padding-inline-start: 2.25rem;
-    border-radius: 10px;
 }
 
 .stack-item {
@@ -478,6 +393,9 @@ export default {
     margin-top: 5px;
 }
 
+.selection-button { padding: 0.35rem 0.65rem; border: 1px solid var(--border); border-radius: 0.375rem; color: var(--secondary-foreground); background: var(--secondary); cursor: pointer; }
+.selection-button:hover { background: var(--secondary-hover); }
+.select-input { accent-color: var(--primary); }
 .selection-controls {
     margin-top: 5px;
     display: flex;
@@ -485,15 +403,4 @@ export default {
     gap: 10px;
 }
 
-.agent-select {
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-    color: $dark-font-color3;
-    padding-left: 10px;
-    padding-right: 10px;
-    display: flex;
-    align-items: center;
-    user-select: none;
-}
 </style>

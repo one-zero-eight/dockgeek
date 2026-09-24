@@ -1,15 +1,15 @@
 <template>
-    <div :id="'service-' + encodeURIComponent(name)" class="shadow-box mb-3 service-card">
-        <div class="title-row">
-            <h4 class="title-text">
-                <router-link v-if="serviceStatus.length > 0" class="title-link" :to="containerDetailsRoute(serviceStatus[0])">
+    <div :id="'service-' + encodeURIComponent(name)" class="panel-box mb-[1rem] service-card w-full px-[.75rem] pt-[.55rem] pb-[1.25rem] text-foreground text-body">
+        <div class="flex min-h-[28px] flex-nowrap items-center justify-between gap-[.75rem] mb-[.1rem]">
+            <h4 class="title-text m-0 min-w-0 flex-[1_1_auto] leading-tight">
+                <router-link v-if="serviceStatus.length > 0" class="title-link rounded-[.2rem] text-foreground no-underline [overflow-wrap:anywhere] transition-colors duration-150 hover:text-link focus-visible:text-link focus-visible:outline-[2px] focus-visible:outline-current focus-visible:outline-offset-[3px]" :to="containerDetailsRoute(serviceStatus[0])">
                     <span>{{ name }}</span>
                 </router-link>
                 <span v-else>{{ name }}</span>
-                <span class="entity-label">{{ $t("service") }}</span>
+                <span class="entity-label ms-[.1rem] select-none text-muted-foreground text-[.75rem] font-regular lowercase">{{ $t("service") }}</span>
             </h4>
             <ActionGroup
-                class="title-actions"
+                class="flex-[1_1_140px] min-w-[38px] max-w-[65%] justify-end"
                 size="sm"
                 :actions="serviceActions"
                 :max-visible="3"
@@ -18,69 +18,70 @@
             />
         </div>
         <div v-if="singleContainer" class="container-subtitle">
-            <router-link class="title-link" :to="containerDetailsRoute(singleContainer)">
+            <router-link class="title-link rounded-[.2rem] text-foreground no-underline [overflow-wrap:anywhere] transition-colors duration-150 hover:text-link focus-visible:text-link focus-visible:outline-[2px] focus-visible:outline-current focus-visible:outline-offset-[3px]" :to="containerDetailsRoute(singleContainer)">
                 <span>{{ singleContainer.name }}</span>
             </router-link>
-            <span class="entity-label">{{ $tc("container", 1) }}</span>
+            <span class="entity-label ms-[.1rem] select-none text-muted-foreground text-[.75rem] font-regular lowercase">{{ $tc("container", 1) }}</span>
         </div>
 
-        <div v-if="imageDisplay" class="image mb-2">
-            <span class="tag" :title="imageDisplay">{{ imageDisplay }}</span>
-            <span class="entity-label">{{ $t("image") }}</span>
+        <div v-if="imageDisplay" class="mb-[.5rem] flex flex-wrap items-baseline gap-x-[.1rem] gap-y-[.25rem] break-all text-foreground text-body-sm">
+            <a v-if="imageUrl" class="tag text-inherit no-underline hover:text-link focus-visible:text-link" :href="imageUrl" :title="imageDisplay" target="_blank" rel="noopener noreferrer">{{ imageDisplay }}</a>
+            <span v-else class="tag" :title="imageDisplay">{{ imageDisplay }}</span>
+            <span class="entity-label select-none text-muted-foreground text-[.75rem] font-regular lowercase">{{ $t("image") }}</span>
         </div>
-        <div v-if="singleContainer" class="service-meta">
+        <div v-if="singleContainer" class="flex flex-wrap items-center gap-x-[.375rem] gap-y-[.35rem]">
             <FloatingTooltip v-if="statusDetail" placement="top">
                 <template #trigger="{ triggerAttrs }">
-                    <span v-bind="triggerAttrs" class="badge me-1" :class="bgStyle">{{ status }}</span>
+                    <span v-bind="triggerAttrs" class="status-badge inline-block rounded-[.375rem] bg-muted px-[.65em] py-[.35em] text-foreground text-badge font-medium leading-none tracking-[.01em]" :class="bgStyle">{{ status }}</span>
                 </template>
                 <span class="floating-tooltip-detail">{{ statusDetail }}</span>
             </FloatingTooltip>
-            <span v-else class="badge me-1" :class="bgStyle">{{ status }}</span>
-            <span v-if="exitLabel" class="badge me-1" :class="exitBadgeClass">{{ exitLabel }}</span>
-            <a v-for="port in singleContainerPorts" :key="port.display" class="port-link" :href="port.url" target="_blank">
-                <span class="badge bg-secondary">{{ port.display }} {{ $tc("port", 1).toLowerCase() }}</span>
+            <span v-else class="status-badge inline-block rounded-[.375rem] bg-muted px-[.65em] py-[.35em] text-foreground text-badge font-medium leading-none tracking-[.01em]" :class="bgStyle">{{ status }}</span>
+            <span v-if="exitLabel" class="status-badge inline-block rounded-[.375rem] bg-muted px-[.65em] py-[.35em] text-foreground text-badge font-medium leading-none tracking-[.01em]" :class="exitBadgeClass">{{ exitLabel }}</span>
+            <a v-for="port in singleContainerPorts" :key="port.display" class="port-link no-underline" :href="port.url" target="_blank">
+                <span class="status-badge inline-block rounded-[.375rem] bg-muted px-[.65em] py-[.35em] text-foreground text-badge font-medium leading-none tracking-[.01em] tone-secondary">{{ port.display }} {{ $tc("port", 1).toLowerCase() }}</span>
             </a>
             <template v-if="dockerStats[singleContainer.name]">
-                <span class="stats">{{ $t("CPU") }}: {{ dockerStats[singleContainer.name].CPUPerc }}</span>
-                <span class="stats">{{ $t("memoryAbbreviated") }}: {{ dockerStats[singleContainer.name].MemUsage }}</span>
+                <span class="text-muted-foreground text-[.8rem]">{{ $t("CPU") }}: {{ dockerStats[singleContainer.name].CPUPerc }}</span>
+                <span class="text-muted-foreground text-[.8rem]">{{ $t("memoryAbbreviated") }}: {{ dockerStats[singleContainer.name].MemUsage }}</span>
             </template>
         </div>
-        <div v-else-if="serviceStatus.length === 0" class="service-meta">
-            <span class="badge me-1 bg-secondary">{{ status }}</span>
+        <div v-else-if="serviceStatus.length === 0" class="flex flex-wrap items-center gap-x-[.375rem] gap-y-[.35rem]">
+            <span class="status-badge inline-block rounded-[.375rem] bg-muted px-[.65em] py-[.35em] text-foreground text-badge font-medium leading-none tracking-[.01em] tone-secondary">{{ status }}</span>
         </div>
-        <ContainerError v-if="singleContainer && errorLabel" class="mt-2" :message="errorLabel" />
+        <ContainerError v-if="singleContainer && errorLabel" class="mt-[.5rem]" :message="errorLabel" />
 
-        <div v-if="serviceStatus.length > 1" class="container-instances mt-3">
+        <div v-if="serviceStatus.length > 1" class="mt-[1rem] ps-[1rem]">
             <div v-for="instance in serviceStatus" :key="instance.name" class="instance-row">
-                <div class="title-row">
-                    <div class="instance-name title-text">
+                <div class="flex min-h-[28px] flex-nowrap items-center justify-between gap-[.75rem] mb-[.25rem]">
+                    <div class="instance-name title-text relative m-0 min-w-0 flex-[1_1_auto] leading-tight text-foreground text-body-sm">
                         <span class="instance-branch" aria-hidden="true">↳</span>
-                        <router-link class="title-link" :to="containerDetailsRoute(instance)">
+                        <router-link class="title-link rounded-[.2rem] text-foreground no-underline [overflow-wrap:anywhere] transition-colors duration-150 hover:text-link focus-visible:text-link focus-visible:outline-[2px] focus-visible:outline-current focus-visible:outline-offset-[3px]" :to="containerDetailsRoute(instance)">
                             <span>{{ instance.name }}</span>
                         </router-link>
-                        <span class="entity-label">{{ $tc("container", 1) }}</span>
+                        <span class="entity-label ms-[.1rem] select-none text-muted-foreground text-[.75rem] font-regular lowercase">{{ $tc("container", 1) }}</span>
                     </div>
                 </div>
-                <div class="instance-meta">
+                <div class="mt-[.25rem] flex flex-wrap items-center gap-x-[.375rem] gap-y-[.35rem]">
                     <FloatingTooltip v-if="instanceStatusDetail(instance)" placement="top">
                         <template #trigger="{ triggerAttrs }">
-                            <span v-bind="triggerAttrs" class="badge" :class="instanceStatusClass(instance)">{{ instance.status }}</span>
+                            <span v-bind="triggerAttrs" class="status-badge inline-block rounded-[.375rem] bg-muted px-[.65em] py-[.35em] text-foreground text-badge font-medium leading-none tracking-[.01em]" :class="instanceStatusClass(instance)">{{ instance.status }}</span>
                         </template>
                         <span class="floating-tooltip-detail">{{ instanceStatusDetail(instance) }}</span>
                     </FloatingTooltip>
-                    <span v-else class="badge" :class="instanceStatusClass(instance)">{{ instance.status }}</span>
-                    <span v-if="instanceExitLabel(instance)" class="badge" :class="instanceExitClass(instance)">{{ instanceExitLabel(instance) }}</span>
-                    <a v-for="port in instancePorts(instance)" :key="port.display" class="port-link" :href="port.url" target="_blank">
-                        <span class="badge bg-secondary">{{ port.display }} {{ $tc("port", 1).toLowerCase() }}</span>
+                    <span v-else class="status-badge inline-block rounded-[.375rem] bg-muted px-[.65em] py-[.35em] text-foreground text-badge font-medium leading-none tracking-[.01em]" :class="instanceStatusClass(instance)">{{ instance.status }}</span>
+                    <span v-if="instanceExitLabel(instance)" class="status-badge inline-block rounded-[.375rem] bg-muted px-[.65em] py-[.35em] text-foreground text-badge font-medium leading-none tracking-[.01em]" :class="instanceExitClass(instance)">{{ instanceExitLabel(instance) }}</span>
+                    <a v-for="port in instancePorts(instance)" :key="port.display" class="port-link no-underline" :href="port.url" target="_blank">
+                        <span class="status-badge inline-block rounded-[.375rem] bg-muted px-[.65em] py-[.35em] text-foreground text-badge font-medium leading-none tracking-[.01em] tone-secondary">{{ port.display }} {{ $tc("port", 1).toLowerCase() }}</span>
                     </a>
-                    <span v-if="dockerStats[instance.name]" class="stats">
+                    <span v-if="dockerStats[instance.name]" class="text-muted-foreground text-[.8rem]">
                         {{ $t("CPU") }}: {{ dockerStats[instance.name].CPUPerc }}
                     </span>
-                    <span v-if="dockerStats[instance.name]" class="stats">
+                    <span v-if="dockerStats[instance.name]" class="text-muted-foreground text-[.8rem]">
                         {{ $t("memoryAbbreviated") }}: {{ dockerStats[instance.name].MemUsage }}
                     </span>
                 </div>
-                <ContainerError v-if="instanceError(instance)" class="mt-1" :message="instanceError(instance)" />
+                <ContainerError v-if="instanceError(instance)" class="mt-[.25rem]" :message="instanceError(instance)" />
             </div>
         </div>
 
@@ -95,9 +96,9 @@
             @ok="confirmServiceAction"
             @hidden="clearPendingAction"
         >
-            <p class="mb-2">{{ $t(actionConfirm.message, { name }) }}</p>
-            <div v-if="actionConfirm.commands?.length" class="action-commands">
-                <pre><code v-for="(cmd, i) in actionConfirm.commands" :key="i"><span class="action-command-prompt">$</span> {{ cmd }}</code></pre>
+            <p class="mb-[.5rem]">{{ $t(actionConfirm.message, { name }) }}</p>
+            <div v-if="actionConfirm.commands?.length" class="mt-3">
+                <pre class="m-0 overflow-x-auto rounded-[0.35rem] bg-background px-3 py-[0.65rem]"><code v-for="(cmd, i) in actionConfirm.commands" :key="i" class="mt-[0.15rem] first:mt-0 block rounded-none bg-transparent p-0 font-app-mono text-[0.8rem] leading-[1.45] whitespace-pre text-foreground"><span class="text-[#1a7f37] [.dark_&]:text-[#7ee787]">$</span> {{ cmd }}</code></pre>
             </div>
         </FloatingDialog>
     </div>
@@ -119,7 +120,7 @@ const SERVICE_ACTIONS = {
         title: "startServiceConfirmTitle",
         message: "startServiceConfirmMsg",
         ok: "startStack",
-        variant: "btn-primary",
+        variant: "primary",
         command: "docker compose up -d {service}",
         emit: "start-service",
     },
@@ -127,7 +128,7 @@ const SERVICE_ACTIONS = {
         title: "stopServiceConfirmTitle",
         message: "stopServiceConfirmMsg",
         ok: "stopStack",
-        variant: "btn-warning",
+        variant: "warning",
         command: "docker compose stop {service}",
         emit: "stop-service",
     },
@@ -135,7 +136,7 @@ const SERVICE_ACTIONS = {
         title: "restartServiceConfirmTitle",
         message: "restartServiceConfirmMsg",
         ok: "restartStack",
-        variant: "btn-primary",
+        variant: "primary",
         command: "docker compose restart {service}",
         emit: "restart-service",
     },
@@ -180,7 +181,7 @@ export default defineComponent({
     computed: {
 
         bgStyle() {
-            return `bg-${containerStatusTone(this.serviceStatus[0])}`;
+            return `tone-${containerStatusTone(this.serviceStatus[0])}`;
         },
 
         isRunning() {
@@ -206,15 +207,15 @@ export default defineComponent({
                     { key: "restart",
                         i18nKey: "restartStack",
                         icon: "rotate",
-                        variant: "btn-normal" },
+                        variant: "normal" },
                     { key: "stop",
                         i18nKey: "stopStack",
                         icon: "stop",
-                        variant: "btn-warning" },
+                        variant: "warning" },
                     { key: "bash",
                         label: "Bash",
                         icon: "terminal",
-                        variant: "btn-normal",
+                        variant: "normal",
                         hidden: !this.canOpenBash },
                 ];
             }
@@ -223,7 +224,7 @@ export default defineComponent({
                 { key: "start",
                     i18nKey: "startStack",
                     icon: "play",
-                    variant: "btn-primary" },
+                    variant: "primary" },
             ];
         },
 
@@ -289,6 +290,43 @@ export default defineComponent({
         imageDisplay() {
             return this.envsubstService.image || this.serviceStatus[0]?.image || "";
         },
+        imageUrl() {
+            const image = this.imageDisplay.trim();
+            const reference = image.split("@")[0];
+            const lastSlash = reference.lastIndexOf("/");
+            const tagIndex = reference.indexOf(":", lastSlash + 1);
+            const name = tagIndex === -1 ? reference : reference.slice(0, tagIndex);
+            const segments = name.split("/");
+            const registry = segments[0];
+            const hasRegistry = registry.includes(".") || registry.includes(":") || registry === "localhost";
+            const repository = hasRegistry ? segments.slice(1) : segments;
+
+            if (!repository.length || repository.some(segment => !/^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/.test(segment))) {
+                return "";
+            }
+
+            if (!hasRegistry || [ "docker.io", "index.docker.io", "registry-1.docker.io" ].includes(registry)) {
+                const path = repository.length === 1 || repository[0] === "library" ? "_/" + repository.at(-1) : "r/" + repository.join("/");
+                return `https://hub.docker.com/${path}`;
+            }
+
+            if (registry === "ghcr.io" && repository.length >= 2) {
+                const owner = repository[0];
+                const packageName = repository.at(-1);
+                const project = repository.length > 2 ? repository[1] : packageName;
+                return `https://github.com/${owner}/${project}/pkgs/container/${packageName}`;
+            }
+
+            if (registry === "quay.io" && repository.length >= 2) {
+                return `https://quay.io/repository/${repository.join("/")}`;
+            }
+
+            if (registry === "registry.gitlab.com" && repository.length >= 2) {
+                return `https://gitlab.com/${repository.join("/")}/container_registry`;
+            }
+
+            return "";
+        },
         singleContainer() {
             return this.serviceStatus.length === 1 ? this.serviceStatus[0] : null;
         },
@@ -309,7 +347,7 @@ export default defineComponent({
         },
         exitBadgeClass() {
             const tone = containerExitTone(this.serviceStatus[0]);
-            return tone ? `bg-${tone}` : "bg-secondary";
+            return tone ? `tone-${tone}` : "tone-secondary";
         },
         errorLabel() {
             for (const instance of this.serviceStatus) {
@@ -385,7 +423,7 @@ export default defineComponent({
             return route;
         },
         instanceStatusClass(instance) {
-            return `bg-${containerStatusTone(instance)}`;
+            return `tone-${containerStatusTone(instance)}`;
         },
         instanceStatusDetail(instance) {
             return instance.statusDetail || instance.status;
@@ -395,7 +433,7 @@ export default defineComponent({
         },
         instanceExitClass(instance) {
             const tone = containerExitTone(instance);
-            return tone ? `bg-${tone}` : "bg-secondary";
+            return tone ? `tone-${tone}` : "tone-secondary";
         },
         instanceError(instance) {
             return formatContainerError(instance);
@@ -406,128 +444,43 @@ export default defineComponent({
 </script>
 
 <style scoped lang="scss">
-@import "../styles/vars";
-
+.tone-primary { color: var(--primary-foreground); background: var(--primary); }
+.tone-danger { color: white; background: var(--destructive); }
+.tone-stopped { color: var(--primary-foreground); background: var(--warning); }
+.tone-secondary { color: var(--foreground); background: var(--muted); }
 .service-card {
-    width: 100%;
-    // Match editor-box toolbar padding so the service title sits on the
-    // same line as `compose.yaml`.
-    padding: 0.55rem 0.75rem 1.25rem;
-
-    .title-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 0.75rem;
-        min-height: 28px;
-        margin-bottom: 0.25rem;
-        flex-wrap: nowrap;
-    }
-
-    .title-text {
-        margin: 0;
-        min-width: 0;
-        flex: 1 1 auto;
-        line-height: 1.25;
-    }
-
     h4.title-text {
-        font-size: 1.25rem;
+        font-size: var(--font-size-card-title);
     }
 
-    .title-link {
-        color: inherit;
-        text-decoration: none;
-        overflow-wrap: anywhere;
-        border-radius: 0.2rem;
-        transition: color 0.15s ease;
-
-        &:hover,
-        &:focus-visible {
-            color: $primary;
-            text-decoration: none;
-        }
-
-        &:focus-visible {
-            outline: 2px solid currentColor;
-            outline-offset: 3px;
-        }
-    }
-
-    .title-actions {
-        flex: 1 1 140px;
-        min-width: 38px;
-        max-width: 65%;
-        justify-content: flex-end;
-    }
-
-    .image {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: baseline;
-        gap: 0.25rem;
-        word-break: break-all;
-        font-size: 0.9rem;
-        color: var(--bs-heading-color);
-
-        .tag {
-            opacity: 0.5;
-        }
-    }
-
-    .service-meta {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.35rem 0.5rem;
-        align-items: center;
+    .tag {
+        opacity: 1;
     }
 
     .port-link {
-        text-decoration: none;
-
-        &:hover .badge,
-        &:focus-visible .badge {
-            filter: brightness(1.1);
+        // Hover shifts the foreground only, never the badge surface
+        &:hover .status-badge,
+        &:focus-visible .status-badge {
+            color: var(--link) !important;
         }
     }
 
-    .stats {
-        font-size: 0.8rem;
-        color: $dark-font-color3;
-    }
-
-    .entity-label {
-        margin-inline-start: 0.35rem;
-        font-family: var(--bs-body-font-family);
-        font-size: 0.75rem;
-        font-weight: normal;
-        text-transform: lowercase;
-        opacity: 0.5;
-        user-select: none;
-    }
+    .entity-label { font-family: var(--font-ui); }
 
     h4 .entity-label {
         font-size: 0.875rem;
     }
 
     .container-subtitle {
-        margin: -0.1rem 0 0.35rem;
+        margin: -0.1rem 0 0.1rem;
         min-width: 0;
-        line-height: 1.25;
-        color: var(--bs-heading-color);
-        font-size: 0.9rem;
+        line-height: var(--line-height-tight);
+        color: var(--foreground);
+        font-size: var(--font-size-body-sm);
 
         .entity-label {
             font-size: 0.75rem;
         }
-    }
-
-    .container-instances {
-        padding-inline-start: 1rem;
-    }
-
-    .instance-name {
-        position: relative;
     }
 
     .instance-branch {
@@ -541,48 +494,5 @@ export default defineComponent({
         padding-top: 0.65rem;
     }
 
-    .instance-meta {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.35rem 0.5rem;
-        align-items: center;
-        margin-top: 0.25rem;
-    }
-
-    .instance-row .instance-name {
-        color: var(--bs-heading-color);
-        font-size: 0.9rem;
-    }
-}
-
-.action-commands {
-    margin-top: 0.75rem;
-
-    pre {
-        margin: 0;
-        padding: 0.65rem 0.75rem;
-        border-radius: 0.35rem;
-        background: rgba(0, 0, 0, 0.28);
-        overflow-x: auto;
-    }
-
-    code {
-        display: block;
-        padding: 0;
-        color: $dark-font-color;
-        font-family: "JetBrains Mono", ui-monospace, monospace;
-        font-size: 0.8rem;
-        line-height: 1.45;
-        white-space: pre;
-        background: transparent;
-    }
-
-    code + code {
-        margin-top: 0.15rem;
-    }
-
-    .action-command-prompt {
-        color: #7ee787;
-    }
 }
 </style>

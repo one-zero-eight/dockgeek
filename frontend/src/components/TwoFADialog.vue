@@ -8,63 +8,63 @@
         <template #header>
             <h5 class="fd-title">
                 {{ $t("Setup 2FA") }}
-                <span v-if="twoFAStatus == true" class="badge bg-primary">{{ $t("Active") }}</span>
-                <span v-if="twoFAStatus == false" class="badge bg-primary">{{ $t("Inactive") }}</span>
+                <span v-if="twoFAStatus == true" class="inline-block rounded-[.375rem] bg-primary px-[.65em] py-[.35em] align-baseline text-primary-foreground text-[.75em] font-medium leading-none">{{ $t("Active") }}</span>
+                <span v-if="twoFAStatus == false" class="inline-block rounded-[.375rem] bg-primary px-[.65em] py-[.35em] align-baseline text-primary-foreground text-[.75em] font-medium leading-none">{{ $t("Inactive") }}</span>
             </h5>
         </template>
 
-        <div class="mb-3">
-            <div v-if="uri && twoFAStatus == false" class="mx-auto text-center" style="width: 210px;">
+        <div class="mb-[1rem]">
+            <div v-if="uri && twoFAStatus == false" class="mx-auto w-[210px] text-center">
                 <vue-qrcode :key="uri" :value="uri" type="image/png" :quality="1" :color="{ light: '#ffffffff' }" />
-                <button v-show="!showURI" type="button" class="btn btn-outline-primary btn-sm mt-2" @click="showURI = true">{{ $t("Show URI") }}</button>
+                <button v-show="!showURI" type="button" class="two-fa-button inline-flex min-h-[38px] items-center justify-center rounded-[.375rem] border border-transparent bg-secondary px-[.75rem] py-[.375rem] text-secondary-foreground font-inherit [font-size:inherit] leading-[1.5] cursor-pointer disabled:cursor-not-allowed disabled:opacity-65 focus-visible:outline-[2px] focus-visible:outline-ring focus-visible:outline-offset-[2px] two-fa-outline two-fa-small mt-[0.5rem]" @click="showURI = true">{{ $t("Show URI") }}</button>
             </div>
-            <p v-if="showURI && twoFAStatus == false" class="text-break mt-2">{{ uri }}</p>
+            <p v-if="showURI && twoFAStatus == false" class="break-words mt-[0.5rem]">{{ uri }}</p>
 
-            <div v-if="!(uri && twoFAStatus == false)" class="mb-3">
-                <label for="current-password" class="form-label">
+            <div v-if="!(uri && twoFAStatus == false)" class="mb-[1rem]">
+                <label for="current-password" class="mb-[.5rem] inline-block text-foreground">
                     {{ $t("Current Password") }}
                 </label>
                 <input
                     id="current-password"
                     v-model="currentPassword"
                     type="password"
-                    class="form-control"
+                    class="two-fa-input block w-full min-h-[38px] rounded-[.375rem] border border-border bg-input-surface px-[.75rem] py-[.375rem] text-foreground font-inherit [font-size:inherit] leading-[1.5] focus:border-primary focus:outline-[2px] focus:outline-ring focus:outline-offset-[1px]"
                     autocomplete="current-password"
                     required
                 />
             </div>
 
-            <button v-if="uri == null && twoFAStatus == false" class="btn btn-primary" type="button" @click="prepare2FA()">
+            <button v-if="uri == null && twoFAStatus == false" class="two-fa-button inline-flex min-h-[38px] items-center justify-center rounded-[.375rem] border border-transparent bg-secondary px-[.75rem] py-[.375rem] text-secondary-foreground font-inherit [font-size:inherit] leading-[1.5] cursor-pointer disabled:cursor-not-allowed disabled:opacity-65 focus-visible:outline-[2px] focus-visible:outline-ring focus-visible:outline-offset-[2px] two-fa-primary" type="button" @click="prepare2FA()">
                 {{ $t("Enable 2FA") }}
             </button>
 
-            <button v-if="twoFAStatus == true" class="btn btn-danger" type="button" :disabled="processing" @click="confirmDisableTwoFA()">
+            <button v-if="twoFAStatus == true" class="two-fa-button inline-flex min-h-[38px] items-center justify-center rounded-[.375rem] border border-transparent bg-secondary px-[.75rem] py-[.375rem] text-secondary-foreground font-inherit [font-size:inherit] leading-[1.5] cursor-pointer disabled:cursor-not-allowed disabled:opacity-65 focus-visible:outline-[2px] focus-visible:outline-ring focus-visible:outline-offset-[2px] two-fa-danger" type="button" :disabled="processing" @click="confirmDisableTwoFA()">
                 {{ $t("Disable 2FA") }}
             </button>
 
-            <div v-if="uri && twoFAStatus == false" class="mt-3">
-                <label for="basic-url" class="form-label">{{ $t("twoFAVerifyLabel") }}</label>
-                <div class="input-group">
-                    <input v-model="token" type="text" maxlength="6" class="form-control" autocomplete="one-time-code" required>
-                    <button class="btn btn-outline-primary" type="button" @click="verifyToken()">{{ $t("Verify Token") }}</button>
+            <div v-if="uri && twoFAStatus == false" class="mt-[1rem]">
+                <label for="two-fa-token" class="mb-[.5rem] inline-block text-foreground">{{ $t("twoFAVerifyLabel") }}</label>
+                <div class="two-fa-token-group flex w-full">
+                    <input id="two-fa-token" v-model="token" type="text" maxlength="6" class="two-fa-input block w-full min-h-[38px] rounded-[.375rem] border border-border bg-input-surface px-[.75rem] py-[.375rem] text-foreground font-inherit [font-size:inherit] leading-[1.5] focus:border-primary focus:outline-[2px] focus:outline-ring focus:outline-offset-[1px]" autocomplete="one-time-code" required>
+                    <button class="two-fa-button inline-flex min-h-[38px] items-center justify-center rounded-[.375rem] border border-transparent bg-secondary px-[.75rem] py-[.375rem] text-secondary-foreground font-inherit [font-size:inherit] leading-[1.5] cursor-pointer disabled:cursor-not-allowed disabled:opacity-65 focus-visible:outline-[2px] focus-visible:outline-ring focus-visible:outline-offset-[2px] two-fa-outline" type="button" @click="verifyToken()">{{ $t("Verify Token") }}</button>
                 </div>
-                <p v-show="tokenValid" class="mt-2" style="color: green;">{{ $t("tokenValidSettingsMsg") }}</p>
+                <p v-show="tokenValid" class="mt-[0.5rem]" style="color: green;">{{ $t("tokenValidSettingsMsg") }}</p>
             </div>
         </div>
 
         <template #footer>
-            <button type="button" class="btn btn-primary" :disabled="processing || tokenValid == false" @click="confirmEnableTwoFA()">
-                <div v-if="processing" class="spinner-border spinner-border-sm me-1"></div>
+            <button type="button" class="two-fa-button inline-flex min-h-[38px] items-center justify-center rounded-[.375rem] border border-transparent bg-secondary px-[.75rem] py-[.375rem] text-secondary-foreground font-inherit [font-size:inherit] leading-[1.5] cursor-pointer disabled:cursor-not-allowed disabled:opacity-65 focus-visible:outline-[2px] focus-visible:outline-ring focus-visible:outline-offset-[2px] two-fa-primary" :disabled="processing || tokenValid == false" @click="confirmEnableTwoFA()">
+                <div v-if="processing" class="two-fa-spinner me-[0.25rem] inline-block h-[1rem] w-[1rem] rounded-full border-[.2em] border-current border-r-transparent align-[-.125em]"></div>
                 {{ $t("Save") }}
             </button>
         </template>
     </FloatingDialog>
 
-    <Confirm ref="confirmEnableTwoFA" btn-style="btn-danger" :yes-text="$t('Yes')" :no-text="$t('No')" @yes="save2FA">
+    <Confirm ref="confirmEnableTwoFA" btn-style="danger" :yes-text="$t('Yes')" :no-text="$t('No')" @yes="save2FA">
         {{ $t("confirmEnableTwoFAMsg") }}
     </Confirm>
 
-    <Confirm ref="confirmDisableTwoFA" btn-style="btn-danger" :yes-text="$t('Yes')" :no-text="$t('No')" @yes="disable2FA">
+    <Confirm ref="confirmDisableTwoFA" btn-style="danger" :yes-text="$t('Yes')" :no-text="$t('No')" @yes="disable2FA">
         {{ $t("confirmDisableTwoFAMsg") }}
     </Confirm>
 </template>
@@ -193,3 +193,73 @@ export default {
     },
 };
 </script>
+
+<style lang="scss">
+.two-fa-button {
+    appearance: none;
+
+    &.two-fa-primary {
+        background: var(--gradient-primary);
+        color: var(--primary-foreground);
+
+        &:hover:not(:disabled) {
+            background: var(--gradient-primary-active);
+        }
+    }
+
+    &.two-fa-danger {
+        background: var(--gradient-danger);
+        color: #fff;
+
+        &:hover:not(:disabled) {
+            background: var(--gradient-danger-active);
+        }
+    }
+
+    &.two-fa-outline {
+        border-color: var(--primary);
+        color: var(--link);
+        background-color: transparent;
+
+        &:hover:not(:disabled) {
+            background-color: var(--primary);
+            color: var(--primary-foreground);
+        }
+    }
+
+    &.two-fa-small {
+        min-height: 30px;
+        padding: 0.25rem 0.5rem;
+        border-radius: 25px;
+        font-size: var(--font-size-control-sm);
+    }
+
+}
+
+.two-fa-token-group {
+    display: flex;
+    width: 100%;
+
+    .two-fa-input {
+        min-width: 0;
+        flex: 1 1 auto;
+        border-start-end-radius: 0;
+        border-end-end-radius: 0;
+    }
+
+    .two-fa-button {
+        flex: 0 0 auto;
+        border-start-start-radius: 0;
+        border-end-start-radius: 0;
+        margin-inline-start: -1px;
+    }
+}
+
+.two-fa-spinner {
+    animation: two-fa-spin 0.75s linear infinite;
+}
+
+@keyframes two-fa-spin {
+    to { transform: rotate(360deg); }
+}
+</style>

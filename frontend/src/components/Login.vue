@@ -1,40 +1,40 @@
 <template>
-    <div class="form-container">
-        <div class="form">
+    <div class="flex items-center py-[40px]">
+        <div class="m-auto w-full max-w-[330px] p-[15px] text-center">
             <form @submit.prevent="submit">
-                <h1 class="h3 mb-3 fw-normal" />
+                <h1 class="text-[1.75rem] mb-[1rem] font-normal" />
 
-                <div v-if="!tokenRequired" class="form-floating">
-                    <input id="floatingInput" v-model="username" type="text" class="form-control" placeholder="Username" autocomplete="username" required>
-                    <label for="floatingInput">{{ $t("Username") }}</label>
+                <div v-if="!tokenRequired" class="floating-field relative text-left">
+                    <input id="floatingInput" v-model="username" type="text" class="field-control block w-full min-h-[3.625rem] rounded-[.375rem] border border-border bg-input-surface px-[1.3rem] pt-[1.5rem] pb-[.45rem] text-secondary-foreground text-control placeholder:text-transparent focus-visible:outline-[2px] focus-visible:outline-ring focus-visible:outline-offset-[1px]" placeholder="Username" autocomplete="username" required>
+                    <label for="floatingInput" class="pointer-events-none absolute top-[.35rem] left-[1.3rem] text-muted-foreground text-meta">{{ $t("Username") }}</label>
                 </div>
 
-                <div v-if="!tokenRequired" class="form-floating mt-3">
-                    <input id="floatingPassword" v-model="password" type="password" class="form-control" placeholder="Password" autocomplete="current-password" required>
-                    <label for="floatingPassword">{{ $t("Password") }}</label>
+                <div v-if="!tokenRequired" class="floating-field relative text-left mt-[1rem]">
+                    <input id="floatingPassword" v-model="password" type="password" class="field-control block w-full min-h-[3.625rem] rounded-[.375rem] border border-border bg-input-surface px-[1.3rem] pt-[1.5rem] pb-[.45rem] text-secondary-foreground text-control placeholder:text-transparent focus-visible:outline-[2px] focus-visible:outline-ring focus-visible:outline-offset-[1px]" placeholder="Password" autocomplete="current-password" required>
+                    <label for="floatingPassword" class="pointer-events-none absolute top-[.35rem] left-[1.3rem] text-muted-foreground text-meta">{{ $t("Password") }}</label>
                 </div>
 
                 <div v-if="tokenRequired">
-                    <div class="form-floating mt-3">
-                        <input id="otp" v-model="token" type="text" maxlength="6" class="form-control" placeholder="123456" autocomplete="one-time-code" required>
-                        <label for="otp">{{ $t("Token") }}</label>
+                    <div class="floating-field relative text-left mt-[1rem]">
+                        <input id="otp" v-model="token" type="text" maxlength="6" class="field-control block w-full min-h-[3.625rem] rounded-[.375rem] border border-border bg-input-surface px-[1.3rem] pt-[1.5rem] pb-[.45rem] text-secondary-foreground text-control placeholder:text-transparent focus-visible:outline-[2px] focus-visible:outline-ring focus-visible:outline-offset-[1px]" placeholder="123456" autocomplete="one-time-code" required>
+                        <label for="otp" class="pointer-events-none absolute top-[.35rem] left-[1.3rem] text-muted-foreground text-meta">{{ $t("Token") }}</label>
                     </div>
                 </div>
 
-                <div class="form-check mb-3 mt-3 d-flex justify-content-center pe-4">
-                    <div class="form-check">
-                        <input id="remember" v-model="$root.remember" type="checkbox" value="remember-me" class="form-check-input">
+                <div class="my-[1rem] flex justify-center">
+                    <div class="inline-flex items-center gap-2">
+                        <input id="remember" v-model="$root.remember" type="checkbox" value="remember-me" class="m-0 h-[1rem] w-[1rem] cursor-pointer accent-primary focus-visible:outline-[2px] focus-visible:outline-ring focus-visible:outline-offset-[2px]">
 
-                        <label class="form-check-label" for="remember">
+                        <label for="remember">
                             {{ $t("Remember me") }}
                         </label>
                     </div>
                 </div>
-                <button class="w-100 btn btn-primary" type="submit" :disabled="processing">
+                <button class="w-full min-h-[2.5rem] cursor-pointer rounded-[.375rem] border border-primary bg-primary bg-gradient-primary px-[1.25rem] py-[.375rem] text-primary-foreground text-control hover:enabled:bg-gradient-primary-active disabled:cursor-not-allowed disabled:opacity-65 focus-visible:outline-[2px] focus-visible:outline-ring focus-visible:outline-offset-[2px]" type="submit" :disabled="processing">
                     {{ $t("Login") }}
                 </button>
 
-                <div v-if="res && !res.ok" class="alert alert-danger mt-3" role="alert">
+                <div v-if="res && !res.ok" class="mt-[1rem] rounded-[.375rem] border border-destructive bg-card px-[1rem] py-[.75rem] text-destructive" role="alert">
                     {{ $t(res.msg) }}
                 </div>
             </form>
@@ -85,30 +85,3 @@ export default {
     },
 };
 </script>
-
-<style lang="scss" scoped>
-.form-container {
-    display: flex;
-    align-items: center;
-    padding-top: 40px;
-    padding-bottom: 40px;
-}
-
-.form-floating {
-    > label {
-        padding-left: 1.3rem;
-    }
-
-    > .form-control {
-        padding-left: 1.3rem;
-    }
-}
-
-.form {
-    width: 100%;
-    max-width: 330px;
-    padding: 15px;
-    margin: auto;
-    text-align: center;
-}
-</style>

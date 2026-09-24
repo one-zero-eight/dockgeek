@@ -3,44 +3,46 @@
     <router-view v-if="$root.isCompact" :key="$route.fullPath" />
 
     <!-- Desktop: sticky sidebar + independent content scroll -->
-    <div v-else class="dashboard">
-        <aside v-show="!sidebarCollapsed" id="projects-sidebar" class="dashboard-sidebar">
-            <div class="d-flex align-items-center gap-3 mb-3 sidebar-heading">
-                <h1 class="mb-0">{{ $t("stacks") }}</h1>
-                <router-link to="/compose" class="btn btn-primary btn-sm add-stack" :aria-label="$t('compose')" :title="$t('compose')">
-                    <font-awesome-icon icon="plus" />
-                </router-link>
-            </div>
-            <div class="sidebar-list-wrap">
-                <StackList :scrollbar="true" />
-            </div>
+    <div v-else class="dashboard relative flex gap-4 w-full h-full min-h-0 pl-3" :class="{ 'home-route': showProjectsSidebar }">
+        <template v-if="showProjectsSidebar">
+            <aside v-show="!sidebarCollapsed" id="projects-sidebar" class="dashboard-sidebar sticky top-0 flex flex-col h-full min-h-0 max-w-[360px] min-w-[260px] self-start pt-3 pb-4">
+                <div class="sidebar-heading mb-[1rem] flex flex-none items-center gap-4">
+                    <h1 class="mb-0">{{ $t("stacks") }}</h1>
+                    <router-link to="/compose" class="add-stack inline-flex flex-none items-center justify-center w-8 h-8 p-0 rounded-full border border-primary bg-primary bg-gradient-primary text-primary-foreground no-underline hover:bg-gradient-primary-active" :aria-label="$t('newProject')" :title="$t('newProject')">
+                        <font-awesome-icon icon="plus" />
+                    </router-link>
+                </div>
+                <div class="sidebar-list-wrap relative flex flex-1 flex-col min-h-0">
+                    <StackList :scrollbar="true" />
+                </div>
+                <button
+                    type="button"
+                    class="sidebar-rail-toggle is-collapse"
+                    :aria-label="$t('collapseProjects')"
+                    :title="$t('collapseProjects')"
+                    aria-controls="projects-sidebar"
+                    :aria-expanded="true"
+                    @click="sidebarCollapsed = true"
+                >
+                    <font-awesome-icon icon="chevron-left" />
+                </button>
+            </aside>
+
             <button
+                v-if="sidebarCollapsed"
                 type="button"
-                class="sidebar-rail-toggle is-collapse"
-                :aria-label="$t('collapseProjects')"
-                :title="$t('collapseProjects')"
+                class="sidebar-rail-toggle is-reopen"
+                :aria-label="$t('expandProjects')"
+                :title="$t('expandProjects')"
                 aria-controls="projects-sidebar"
-                :aria-expanded="true"
-                @click="sidebarCollapsed = true"
+                :aria-expanded="false"
+                @click="sidebarCollapsed = false"
             >
-                <font-awesome-icon icon="chevron-left" />
+                <font-awesome-icon icon="chevron-right" />
             </button>
-        </aside>
+        </template>
 
-        <button
-            v-if="sidebarCollapsed"
-            type="button"
-            class="sidebar-rail-toggle is-reopen"
-            :aria-label="$t('expandProjects')"
-            :title="$t('expandProjects')"
-            aria-controls="projects-sidebar"
-            :aria-expanded="false"
-            @click="sidebarCollapsed = false"
-        >
-            <font-awesome-icon icon="chevron-right" />
-        </button>
-
-        <div class="dashboard-content" :class="{ 'main-expanded': sidebarCollapsed }">
+        <div class="dashboard-content flex-1 min-w-0 min-h-0 h-full overflow-y-auto overflow-x-hidden overscroll-contain pt-3 pe-3 pb-4" :class="{ 'main-expanded': !showProjectsSidebar || sidebarCollapsed }">
             <router-view :key="$route.fullPath" />
         </div>
     </div>
@@ -58,58 +60,26 @@ export default {
             sidebarCollapsed: false,
         };
     },
+    computed: {
+        /**
+         * Projects sidebar belongs to Home and its nested views (compose, containers, terminals).
+         * @returns {boolean} Whether the projects sidebar should render.
+         */
+        showProjectsSidebar() {
+            return this.$route.matched.some((record) => record.name === "DashboardHome");
+        },
+    },
 };
 </script>
 
 <style lang="scss" scoped>
-@import "../styles/vars.scss";
-
 .add-stack {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex: 0 0 auto;
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    border-radius: 50%;
-}
-
-.dashboard {
-    position: relative;
-    display: flex;
-    gap: 1rem;
-    width: 100%;
-    height: 100%;
-    min-height: 0;
-    padding-left: 12px;
+    &:hover { color: var(--primary-foreground); }
+    &:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 }
 
 .dashboard-sidebar {
-    display: flex;
-    flex-direction: column;
     flex: 0 0 28%;
-    max-width: 360px;
-    min-width: 260px;
-    height: 100%;
-    min-height: 0;
-    position: sticky;
-    top: 0;
-    align-self: flex-start;
-    padding-top: 12px;
-    padding-bottom: 1rem;
-}
-
-.sidebar-heading {
-    flex: 0 0 auto;
-}
-
-.sidebar-list-wrap {
-    position: relative;
-    display: flex;
-    flex: 1 1 0;
-    flex-direction: column;
-    min-height: 0;
 }
 
 .sidebar-rail-toggle {
@@ -122,21 +92,18 @@ export default {
     padding: 0;
     border: 0;
     border-radius: 999px;
-    color: $dark-font-color;
-    background: $dark-header-bg;
+    color: var(--muted-foreground);
+    background: var(--card);
     font-size: 0.65rem;
     line-height: 1;
-    box-shadow: none;
     appearance: none;
     transition: color 0.15s ease, background 0.15s ease;
 
     &:hover,
     &:focus-visible {
-        color: #000;
-        background: $primary-gradient;
+        color: var(--primary-foreground);
+        background: var(--gradient-primary);
         outline: none;
-        border: 0;
-        box-shadow: none;
     }
 }
 
@@ -155,6 +122,13 @@ export default {
     transform: translateY(-50%);
     // Match full-pill end caps (half of width), not half of height
     border-radius: 0 9px 9px 0;
+    color: var(--primary-foreground);
+    background: var(--gradient-primary);
+
+    &:hover,
+    &:focus-visible {
+        background: var(--gradient-primary-active);
+    }
 }
 
 .dashboard-sidebar > .sidebar-list-wrap > :deep(.stack-list-box) {
@@ -164,17 +138,6 @@ export default {
     max-height: none;
     position: static;
     margin-bottom: 0 !important;
-}
-
-.dashboard-content {
-    flex: 1 1 0;
-    min-width: 0;
-    min-height: 0;
-    height: 100%;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 12px 12px 1rem 0;
-    overscroll-behavior: contain;
 }
 
 .dashboard-content.main-expanded {

@@ -1,25 +1,45 @@
 <template>
-    <div class="d-flex justify-content-center align-items-center">
-        <div class="logo d-flex flex-column justify-content-center align-items-center">
-            <object class="my-4" width="200" height="200" data="/icon.svg" />
-            <div class="fs-4 fw-bold">Dockge</div>
-            <div>{{ $t("Version") }}: {{ $root.info.version }}</div>
-            <div class="frontend-version">{{ $t("Frontend Version") }}: {{ $root.frontendVersion }}</div>
+    <div class="mx-auto flex w-full max-w-[28rem] flex-col items-center gap-4 text-center">
+        <div class="flex flex-col items-center gap-[0.35rem]">
+            <img class="mb-1 h-[72px] w-[72px]" width="72" height="72" src="/icon.svg" alt="" />
+            <div class="text-card-title font-bold tracking-[-0.01em]">Dockge</div>
+            <div class="flex flex-col gap-[0.15rem] text-muted-foreground text-body-sm">
+                <div>{{ $t("Version") }}: {{ $root.info.version }}</div>
+                <div class="text-meta">{{ $t("Frontend Version") }}: {{ $root.frontendVersion }}</div>
+            </div>
+        </div>
 
-            <div v-if="!$root.isFrontendBackendVersionMatched" class="alert alert-warning mt-4" role="alert">
-                ⚠️ {{ $t("Frontend Version do not match backend version!") }}
+        <div v-if="!$root.isFrontendBackendVersionMatched" class="w-full rounded-md border border-[#ffecb5] bg-[#fff3cd] p-4 text-[#664d03]" role="alert">
+            {{ $t("Frontend Version do not match backend version!") }}
+        </div>
+
+        <a
+            class="text-body-sm"
+            href="https://github.com/louislam/dockge/releases"
+            target="_blank"
+            rel="noopener noreferrer"
+        >
+            {{ $t("Check Update On GitHub") }}
+        </a>
+
+        <div class="flex flex-col items-start gap-[0.35rem] text-left">
+            <div class="[&_label]:inline-flex [&_label]:cursor-pointer [&_label]:items-center [&_label]:gap-2 [&_input]:accent-primary">
+                <label>
+                    <input v-model="settings.checkUpdate" type="checkbox" @change="saveSettings()" />
+                    {{ $t("Show update if available") }}
+                </label>
             </div>
 
-            <div class="my-3 update-link"><a href="https://github.com/louislam/dockge/releases" target="_blank" rel="noopener">{{ $t("Check Update On GitHub") }}</a></div>
-
-            <div class="mt-1">
-                <div class="form-check">
-                    <label><input v-model="settings.checkUpdate" type="checkbox" @change="saveSettings()" /> {{ $t("Show update if available") }}</label>
-                </div>
-
-                <div class="form-check">
-                    <label><input v-model="settings.checkBeta" type="checkbox" :disabled="!settings.checkUpdate" @change="saveSettings()" /> {{ $t("Also check beta release") }}</label>
-                </div>
+            <div class="[&_label]:inline-flex [&_label]:cursor-pointer [&_label]:items-center [&_label]:gap-2 [&_input]:accent-primary">
+                <label>
+                    <input
+                        v-model="settings.checkBeta"
+                        type="checkbox"
+                        :disabled="!settings.checkUpdate"
+                        @change="saveSettings()"
+                    />
+                    {{ $t("Also check beta release") }}
+                </label>
             </div>
         </div>
     </div>
@@ -38,29 +58,5 @@ export default {
             return this.$parent.$parent.$parent.settingsLoaded;
         },
     },
-
-    watch: {
-
-    }
 };
 </script>
-
-<style lang="scss" scoped>
-.logo {
-    margin: 4em 1em;
-}
-
-.update-link {
-    font-size: 0.8em;
-}
-
-.frontend-version {
-    font-size: 0.9em;
-    color: #cccccc;
-
-    .dark & {
-        color: #333333;
-    }
-}
-
-</style>

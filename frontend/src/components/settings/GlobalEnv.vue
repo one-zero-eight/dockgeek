@@ -1,26 +1,32 @@
 <template>
     <div>
-        <div v-if="settingsLoaded" class="my-4">
-            <form class="my-4" autocomplete="off" @submit.prevent="saveGeneral">
-                <div class="shadow-box mb-3 editor-box edit-mode">
+        <div v-if="settingsLoaded" class="my-[1.5rem] first:mt-0">
+            <form class="my-[1.5rem] first:mt-0" autocomplete="off" @submit.prevent="saveGeneral">
+                <div class="panel-box editor-box edit-mode mb-4 font-app-mono text-body-sm">
                     <code-mirror
                         ref="editor"
                         v-model="settings.globalENV"
                         :extensions="extensionsEnv"
                         minimal
                         wrap="true"
-                        dark="true"
+                        :dark="$root.isDark"
                         tab="true"
                         :hasFocus="editorFocus"
                         @change="onChange"
                     />
                 </div>
 
-                <div class="my-4">
+                <div class="my-[1.5rem] first:mt-0">
                     <!-- Save Button -->
                     <div>
-                        <button class="btn btn-primary" type="submit">
-                            {{ $t("Save") }}
+                        <button class="inline-grid min-h-[2.375rem] min-w-[5rem] items-center justify-center max-[575px]:min-h-[44px] rounded-md border border-primary bg-primary bg-gradient-primary px-5 py-1.5 text-primary-foreground cursor-pointer hover:bg-gradient-primary-active focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2 disabled:cursor-wait" type="submit" :disabled="saving">
+                            <span class="col-start-1 row-start-1" :class="{ invisible: saving || saved }" :aria-hidden="saving || saved">{{ $t("Save") }}</span>
+                            <span class="col-start-1 row-start-1 inline-flex items-center justify-center gap-2" :class="{ invisible: !saving }" :aria-hidden="!saving">
+                                <font-awesome-icon icon="spinner" :spin="saving" aria-hidden="true" /> {{ $t("Save") }}
+                            </span>
+                            <span class="col-start-1 row-start-1 inline-flex items-center justify-center gap-2" :class="{ invisible: !saved }" :aria-hidden="!saved">
+                                <font-awesome-icon icon="check" aria-hidden="true" /> {{ $t("Saved") }}
+                            </span>
                         </button>
                     </div>
                 </div>
@@ -32,14 +38,22 @@
 <script>
 import CodeMirror from "vue-codemirror6";
 import { python } from "@codemirror/lang-python"; // good enough for .env key=value highlighting
-import { dracula as editorTheme } from "thememirror";
 import { lineNumbers, EditorView } from "@codemirror/view";
+import { getEditorTheme } from "../../editor/editor-theme";
 import { ref } from "vue";
 
 export default {
     name: "GlobalEnv",
     components: {
         CodeMirror,
+    },
+
+    data() {
+        return {
+            saving: false,
+            saved: false,
+            savedTimer: null,
+        };
     },
 
     setup() {
@@ -50,18 +64,23 @@ export default {
             return null;
         };
 
-        const extensionsEnv = [
-            editorTheme,
+        const baseExtensionsEnv = [
             python(),
             lineNumbers(),
             EditorView.focusChangeEffect.of(focusEffectHandler),
         ];
 
         return { editorFocus,
-            extensionsEnv };
+            baseExtensionsEnv };
     },
 
     computed: {
+        extensionsEnv() {
+            return [
+                getEditorTheme(this.$root.isDark),
+                ...this.baseExtensionsEnv,
+            ];
+        },
         settings() {
             return this.$parent.$parent.$parent.settings;
         },
@@ -73,25 +92,45 @@ export default {
         },
     },
 
+    beforeUnmount() {
+        clearTimeout(this.savedTimer);
+    },
+
     methods: {
         /** Save the settings */
         saveGeneral() {
-            this.saveSettings();
+            if (this.saving) {
+                return;
+            }
+            clearTimeout(this.savedTimer);
+            this.saved = false;
+            this.saving = true;
+            this.saveSettings((res) => {
+                this.saving = false;
+                if (res.ok) {
+                    this.saved = true;
+                    this.savedTimer = setTimeout(() => {
+                        this.saved = false;
+                        this.savedTimer = null;
+                    }, 3000);
+                }
+            }, undefined, true);
         },
 
         onChange() {
-            // hook for future live validation if desired
+            clearTimeout(this.savedTimer);
+            this.savedTimer = null;
+            this.saved = false;
         },
     },
 };
 </script>
 
 <style scoped lang="scss">
-.editor-box {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 14px;
+.editor-box.edit-mode {
+    background-color: #f6f8fa !important;
 
-    &.edit-mode {
+    .dark & {
         background-color: #2c2f38 !important;
     }
 }

@@ -1,10 +1,10 @@
 <template>
     <transition name="slide-fade" appear>
         <div>
-            <h1 class="mb-3">{{ $t("terminal") }} - {{ serviceName }} ({{ stackName }})</h1>
+            <h1 class="mb-[1rem]">{{ $t("terminal") }} - {{ serviceName }} ({{ stackName }})</h1>
 
-            <div class="mb-3">
-                <router-link :to="sh" class="btn btn-normal me-2">{{ $t("Switch to sh") }}</router-link>
+            <div class="mb-[1rem]">
+                <router-link :to="sh" class="shell-link me-[.5rem] inline-flex items-center min-h-[38px] px-3 py-[0.375rem] rounded-md border border-secondary bg-secondary text-secondary-foreground no-underline">{{ $t("Switch to sh") }}</router-link>
             </div>
 
             <Terminal class="terminal" :rows="20" mode="interactive" :name="terminalName" :stack-name="stackName" :service-name="serviceName" :shell="shell" :endpoint="endpoint"></Terminal>
@@ -69,6 +69,11 @@ export default {
 </script>
 
 <style scoped lang="scss">
+.shell-link {
+    &:hover { color: var(--secondary-foreground); background: var(--secondary-hover); }
+    &:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+}
+@media (max-width: 767.98px) { .shell-link { min-height: 44px; } }
 .terminal {
     height: 410px;
 }

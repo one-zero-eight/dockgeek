@@ -1,5 +1,5 @@
 <template>
-    <div ref="viewerHost" class="file-log-viewer"></div>
+    <div ref="viewerHost" class="file-log-viewer w-full h-full min-h-0"></div>
 </template>
 
 <script setup>
@@ -7,7 +7,7 @@ import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { Compartment, EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { minimalSetup } from "codemirror";
-import { dracula as editorTheme } from "thememirror";
+import { getEditorTheme } from "../editor/editor-theme";
 
 const MAX_CONTENT_LENGTH = 2 * 1024 * 1024;
 const props = defineProps({
@@ -37,7 +37,7 @@ onMounted(() => {
                 EditorView.editable.of(false),
                 EditorView.lineWrapping,
                 noFocusOutline,
-                themeCompartment.of(props.dark ? editorTheme : []),
+                themeCompartment.of(getEditorTheme(props.dark)),
                 EditorView.updateListener.of(update => {
                     if (update.selectionSet || update.docChanged) {
                         const selection = update.state.selection.main;
@@ -55,7 +55,7 @@ onMounted(() => {
 });
 
 watch(() => props.dark, dark => {
-    editorView?.dispatch({ effects: themeCompartment.reconfigure(dark ? editorTheme : []) });
+    editorView?.dispatch({ effects: themeCompartment.reconfigure(getEditorTheme(dark)) });
 });
 
 watch(() => props.follow, follow => {
@@ -161,12 +161,6 @@ defineExpose({ append,
 </script>
 
 <style scoped>
-.file-log-viewer {
-    width: 100%;
-    height: 100%;
-    min-height: 0;
-}
-
 .file-log-viewer :deep(.cm-editor),
 .file-log-viewer :deep(.cm-scroller) {
     height: 100%;

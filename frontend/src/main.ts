@@ -16,6 +16,7 @@ import "@fontsource/jetbrains-mono";
 import "vue-toastification/dist/index.css";
 import "@xterm/xterm/css/xterm.css";
 import "./styles/main.scss";
+import "virtual:uno.css";
 
 // Minxins
 import socket from "./mixins/socket";
