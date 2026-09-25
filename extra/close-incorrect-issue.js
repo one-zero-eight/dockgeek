@@ -2,15 +2,15 @@ import github from "@actions/github";
 
 (async () => {
     try {
-        const token = process.argv[2];
-        const issueNumber = process.argv[3];
-        const username = process.argv[4];
+        const token = process.env.GITHUB_TOKEN;
+        const issueNumber = Number(process.env.ISSUE_NUMBER);
+        const username = process.env.ISSUE_AUTHOR;
 
         const client = github.getOctokit(token).rest;
 
         const issue = {
-            owner: "louislam",
-            repo: "dockge",
+            owner: github.context.repo.owner,
+            repo: github.context.repo.repo,
             number: issueNumber,
         };
 

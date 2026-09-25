@@ -1,4 +1,5 @@
-FROM node:22-bookworm-slim
+ARG NODE_BASE=node:24.14.1-bookworm-slim
+FROM ${NODE_BASE}
 RUN apt update && apt install --yes --no-install-recommends \
     curl \
     ca-certificates \
@@ -16,5 +17,4 @@ RUN apt update && apt install --yes --no-install-recommends \
     && apt --yes --no-install-recommends install \
          docker-ce-cli \
          docker-compose-plugin \
-    && rm -rf /var/lib/apt/lists/* \
-    && npm install -g tsx
+    && rm -rf /var/lib/apt/lists/*
