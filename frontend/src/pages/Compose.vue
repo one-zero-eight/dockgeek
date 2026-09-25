@@ -101,8 +101,7 @@
                         spellcheck="false"
                         autocomplete="off"
                         :placeholder="$t('stackFolderPlaceholder')"
-                        @input="normalizeStackFolderName"
-                        @blur="finalizeStackFolderName"
+                        @blur="stack.name = stack.name.trim()"
                     >
                 </div>
                 <div class="stack-name-help mt-1 text-muted-foreground text-sm">{{ $t("stackFolderHint") }}</div>
@@ -306,6 +305,7 @@ import { getEditorTheme } from "../editor/editor-theme";
 import {
     envsubstYAML,
     getComposeTerminalName,
+    validateStackFolderName,
     PROGRESS_TERMINAL_ROWS,
     statusColor,
     stackStatusDetail,
@@ -615,7 +615,12 @@ export default {
             if (!this.isAdd) {
                 return true;
             }
-            return /^[a-z0-9_-]+$/.test(this.stack.name || "");
+            try {
+                validateStackFolderName(this.stack.name);
+                return true;
+            } catch {
+                return false;
+            }
         },
 
         /**
@@ -1184,18 +1189,6 @@ export default {
 
         checkYAML() {
 
-        },
-
-        normalizeStackFolderName() {
-            // Keep trailing "-" while typing (e.g. "my-…"); strip only illegal chars.
-            this.stack.name = (this.stack.name || "")
-                .toLowerCase()
-                .replace(/[^a-z0-9_-]/g, "");
-        },
-
-        finalizeStackFolderName() {
-            this.normalizeStackFolderName();
-            this.stack.name = (this.stack.name || "").replace(/^-+|-+$/g, "");
         },
 
         selectAgentPath(endpoint) {

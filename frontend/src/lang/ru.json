@@ -47,7 +47,7 @@
     "stackName": "Имя проекта",
     "stackFolder": "Папка проекта",
     "stackFolderPlaceholder": "my-project",
-    "stackFolderHint": "Создаёт папку в каталоге stacks. Допустимы a–z, 0–9, _ и - (имена проектов Docker Compose — в нижнем регистре).",
+    "stackFolderHint": "Создаёт папку в каталоге stacks.",
     "stacks": "Проекты",
     "collapseProjects": "Свернуть панель проектов",
     "expandProjects": "Развернуть панель проектов",

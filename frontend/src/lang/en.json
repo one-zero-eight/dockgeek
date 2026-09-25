@@ -42,7 +42,7 @@
     "stackName": "Project Name",
     "stackFolder": "Project folder",
     "stackFolderPlaceholder": "my-project",
-    "stackFolderHint": "Creates a folder under the stacks directory. Use a–z, 0–9, _ and - (Docker Compose project names are lowercase).",
+    "stackFolderHint": "Creates a folder under the stacks directory.",
     "deployStack": "Save & Up",
     "deleteStack": "Delete",
     "stopStack": "Stop",
