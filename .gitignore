@@ -3,6 +3,7 @@
 node_modules
 .idea
 data
+managed-files
 stacks
 tmp
 /private

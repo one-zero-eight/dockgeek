@@ -3,6 +3,7 @@
 node_modules
 .idea
 data
+managed-files
 stacks
 tmp
 /private
@@ -11,7 +12,7 @@ tmp
 docker
 frontend
 .editorconfig
-.eslintrc.cjs
+eslint.config.js
 .git
 .gitignore
 README.md

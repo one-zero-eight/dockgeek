@@ -19,12 +19,11 @@ services:
       # Host≡container is still required for relative bind mounts in compose files.
       # (--project-directory does not remove this; host-path mapping is not implemented yet.)
       - /opt/stacks:/opt/stacks
-      # Optional restricted file-manager directory. The host directory can be different,
-      # but it must be explicitly mounted into the container.
-      # - ./managed-files:/managed-files
+      # Restricted file-manager directory; never expose the Docker socket or all host files.
+      - ./managed-files:/managed-files
     environment:
       # Tell Dockge where is your stacks directory
       - DOCKGE_STACKS_DIR=/opt/stacks
-      # Enable the file manager for this directory only:
-      # - DOCKGE_FILE_MANAGER_ROOT=/managed-files
-      # - DOCKGE_FILE_MANAGER_MAX_FILE_SIZE=104857600
+      - DOCKGE_ENABLE_CONSOLE=true
+      - DOCKGE_FILE_MANAGER_ROOT=/managed-files
+      - DOCKGE_FILE_MANAGER_MAX_FILE_SIZE=104857600
