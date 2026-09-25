@@ -26,7 +26,7 @@ import {
     validateStackFolderName,
 } from "../common/util-common";
 import { InteractiveTerminal, Terminal } from "./terminal";
-import childProcessAsync from "promisify-child-process";
+import * as childProcessAsync from "promisify-child-process";
 import { Settings } from "./settings";
 
 interface ComposeLsEntry {
@@ -94,7 +94,7 @@ export class Stack {
                 // Use the endpoint as the primary hostname
                 try {
                     primaryHostname = (new URL("https://" + endpoint).hostname);
-                } catch (e) {
+                } catch {
                     // Just in case if the endpoint is in a incorrect format
                     primaryHostname = "localhost";
                 }
@@ -190,7 +190,7 @@ export class Stack {
         if (this._composeYAML === undefined) {
             try {
                 this._composeYAML = fs.readFileSync(path.join(this.path, this._composeFileName), "utf-8");
-            } catch (e) {
+            } catch {
                 this._composeYAML = "";
             }
         }
@@ -201,7 +201,7 @@ export class Stack {
         if (this._composeENV === undefined) {
             try {
                 this._composeENV = fs.readFileSync(path.join(this.path, ".env"), "utf-8");
-            } catch (e) {
+            } catch {
                 this._composeENV = "";
             }
         }
@@ -493,7 +493,7 @@ export class Stack {
             };
             try {
                 parsed = JSON.parse(line);
-            } catch (e) {
+            } catch {
                 return null;
             }
 
@@ -853,7 +853,7 @@ export class Stack {
                     } else {
                         addLine(obj);
                     }
-                } catch (e) {
+                } catch {
                 }
             }
 

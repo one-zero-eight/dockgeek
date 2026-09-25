@@ -378,7 +378,6 @@ export default {
         color: var(--warning);
     }
 
-
     &:disabled {
         color: var(--muted-foreground);
     }

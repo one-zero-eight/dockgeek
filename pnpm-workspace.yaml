@@ -1,8 +1,0 @@
-allowBuilds:
-  '@fortawesome/fontawesome-common-types': set this to true or false
-  '@fortawesome/fontawesome-svg-core': set this to true or false
-  '@fortawesome/free-solid-svg-icons': set this to true or false
-  '@homebridge/node-pty-prebuilt-multiarch': set this to true or false
-  '@louislam/sqlite3': set this to true or false
-  esbuild: set this to true or false
-  vue-demi: set this to true or false

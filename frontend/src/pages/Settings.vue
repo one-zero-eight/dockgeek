@@ -69,7 +69,6 @@
 </template>
 
 <script>
-import { useRoute } from "vue-router";
 import { ALL_ENDPOINTS } from "../../../common/util-common";
 
 export default {
@@ -82,7 +81,7 @@ export default {
 
     computed: {
         currentPage() {
-            let pathSplit = useRoute().path.split("/");
+            let pathSplit = this.$route.path.split("/");
             let pathEnd = pathSplit[pathSplit.length - 1];
             if (!pathEnd || pathEnd === "settings") {
                 return null;

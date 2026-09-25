@@ -1,8 +1,6 @@
 import dayjs from "dayjs";
-import timezones from "timezones-list";
+import timezones from "timezones-list/dist/timezones.json";
 import { localeDirection, currentLocale } from "./i18n";
-import { POSITION } from "vue-toastification";
-
 /**
  * Returns the offset from UTC in hours for the current locale.
  * @param {string} timeZone Timezone to get offset for
@@ -39,7 +37,7 @@ export function timezoneList() {
                 value: timezone.tzCode,
                 time: getTimezoneOffset(timezone.tzCode),
             });
-        } catch (e) {
+        } catch {
             // Skipping not supported timezone.tzCode by dayjs
         }
     }
@@ -132,7 +130,6 @@ export function getResBaseURL() {
  * @returns {boolean} Running in dev container?
  */
 export function isDevContainer() {
-    // eslint-disable-next-line no-undef
     return (typeof DEVCONTAINER === "string" && DEVCONTAINER === "1");
 }
 
@@ -145,7 +142,6 @@ export function getDevContainerServerHostname() {
         return "";
     }
 
-    // eslint-disable-next-line no-undef
     return CODESPACE_NAME + "-3001." + GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN;
 }
 
@@ -164,26 +160,6 @@ export function hostNameRegexPattern(mqtt = false) {
     const hostNameRegexPattern = `^${mqtt ? mqttSchemeRegexPattern : ""}([a-zA-Z0-9])?(([a-zA-Z0-9_]|[a-zA-Z0-9_][a-zA-Z0-9\\-_]*[a-zA-Z0-9_])\\.)*([A-Za-z0-9_]|[A-Za-z0-9_][A-Za-z0-9\\-_]*[A-Za-z0-9_])(\\.)?$`;
 
     return `${ipRegexPattern}|${hostNameRegexPattern}`;
-}
-
-/**
- * Loads the toast timeout settings from storage.
- * @returns {object} The toast plugin options object.
- */
-export function loadToastSettings() {
-    return {
-        position: POSITION.BOTTOM_RIGHT,
-        containerClassName: "toast-container",
-        showCloseButtonOnHover: true,
-
-        filterBeforeCreate: (toast, toasts) => {
-            if (toast.timeout === 0) {
-                return false;
-            } else {
-                return toast;
-            }
-        },
-    };
 }
 
 /**

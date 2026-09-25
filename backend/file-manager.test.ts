@@ -213,7 +213,7 @@ test("validates sequential upload and download chunks through the agent API", as
     const downloadChunk = await callAgent(agentSocket, "fileDownloadChunk", { transferId: downloadStart.transferId,
         offset: 0 });
     assert.ok(downloadChunk.data instanceof Uint8Array || downloadChunk.data instanceof ArrayBuffer);
-    assert.equal(Buffer.from(downloadChunk.data).toString("utf8"), "abc");
+    assert.equal(Buffer.from(new Uint8Array(downloadChunk.data)).toString("utf8"), "abc");
     assert.equal(downloadChunk.done, true);
     assert.equal((await callAgent(agentSocket, "fileDownloadFinish", { transferId: downloadStart.transferId })).ok, true);
 

@@ -9,7 +9,7 @@
                 <div class="detail-heading min-w-0">
                     <h1 id="container-details-title" class="detail-title mb-0">
                         <span v-if="container" class="status-dot inline-block w-3 h-3 rounded-full align-[0.12em]" :class="`tone-${containerStatusTone(container)}`" aria-hidden="true" /> <span>{{ containerName }}</span>
-                        <span class="entity-label opacity-50 select-none">{{ $tc("container", 1).toLowerCase() }}</span>
+                        <span class="entity-label opacity-50 select-none">{{ $t("container", 1).toLowerCase() }}</span>
                     </h1>
                     <div v-if="container" class="detail-summary flex flex-wrap items-center gap-x-[.375rem] gap-y-[.35rem]">
                         <router-link :to="stackRoute" class="ui-entity-link text-sm">
@@ -29,7 +29,7 @@
                     :actions="containerActions"
                     :disabled="processing"
                     :max-visible="3"
-                    :aria-label="$tc('container', 1)"
+                    :aria-label="$t('container', 1)"
                     @select="performAction"
                 />
             </div>
@@ -239,7 +239,7 @@ export default {
                     wide: true,
                     breakWords: true },
                 { key: "ports",
-                    label: this.$tc("port", 2),
+                    label: this.$t("port", 2),
                     value: this.container.ports || unavailable,
                     breakWords: true },
                 { key: "created",

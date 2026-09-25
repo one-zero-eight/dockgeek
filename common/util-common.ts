@@ -2,7 +2,7 @@
  * Common utilities for backend and frontend
  */
 import yaml from "yaml";
-import { DotenvParseOutput } from "dotenv";
+import type { DotenvParseOutput } from "dotenv";
 
 // Init dayjs
 import dayjs from "dayjs";

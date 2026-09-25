@@ -22,7 +22,7 @@
                 <div class="w-full px-3 md:w-5/12 md:flex-none">
                     <!-- Agent List -->
                     <div class="panel-box p-5">
-                        <h4 class="mb-[1rem]">{{ $tc("dockgeAgent", 2) }} <span class="ui-badge ui-badge-warning">beta</span></h4>
+                        <h4 class="mb-[1rem]">{{ $t("dockgeAgent", 2) }} <span class="ui-badge ui-badge-warning">beta</span></h4>
 
                         <div v-for="(agentItem, endpoint) in $root.agentList" :key="endpoint" class="mb-[1rem] agent">
                             <!-- Agent Status -->

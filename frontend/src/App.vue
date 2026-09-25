@@ -1,9 +1,8 @@
 <template>
     <router-view />
+    <Toaster position="bottom-right" close-button rich-colors />
 </template>
 
-<script>
-export default {
-
-};
+<script setup>
+import { Toaster } from "vue-sonner";
 </script>

@@ -2,16 +2,14 @@ import { SocketHandler } from "../socket-handler.js";
 import { DockgeServer } from "../dockge-server";
 import { log } from "../log";
 import { R } from "redbean-node";
-import { loginRateLimiter, twoFaRateLimiter } from "../rate-limiter";
+import { loginRateLimiter } from "../rate-limiter";
 import { generatePasswordHash, needRehashPassword, shake256, SHAKE256_LENGTH, verifyPassword } from "../password-hash";
 import { User } from "../models/user";
 import {
-    callbackError,
     checkLogin,
     DockgeSocket,
     doubleCheckPassword,
-    JWTDecoded,
-    ValidationError
+    JWTDecoded
 } from "../util-server";
 import { passwordStrength } from "check-password-strength";
 import jwt from "jsonwebtoken";
@@ -27,6 +25,10 @@ export class MainSocketHandler extends SocketHandler {
         // ***************************
 
         // Setup
+        socket.on("needSetup", (callback) => {
+            callback(server.needSetup);
+        });
+
         socket.on("setup", async (username, password, callback) => {
             try {
                 if (passwordStrength(password).value === "Too weak") {

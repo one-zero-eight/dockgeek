@@ -21,7 +21,7 @@
             <router-link class="ui-entity-link" :to="containerDetailsRoute(singleContainer)">
                 <span>{{ singleContainer.name }}</span>
             </router-link>
-            <span class="entity-label ms-[.35rem] select-none opacity-50 text-xs font-normal lowercase">{{ $tc("container", 1) }}</span>
+            <span class="entity-label ms-[.35rem] select-none opacity-50 text-xs font-normal lowercase">{{ $t("container", 1) }}</span>
         </div>
 
         <div v-if="imageDisplay" class="mb-[.5rem] flex flex-wrap items-baseline gap-x-[.35rem] gap-y-[.25rem] break-all text-foreground text-sm">
@@ -39,7 +39,7 @@
             <span v-else class="ui-badge" :class="bgStyle">{{ status }}</span>
             <span v-if="exitLabel" class="ui-badge" :class="exitBadgeClass">{{ exitLabel }}</span>
             <a v-for="port in singleContainerPorts" :key="port.display" class="port-link no-underline" :href="port.url" target="_blank">
-                <span class="ui-badge ui-badge-neutral">{{ port.display }} {{ $tc("port", 1).toLowerCase() }}</span>
+                <span class="ui-badge ui-badge-neutral">{{ port.display }} {{ $t("port", 1).toLowerCase() }}</span>
             </a>
             <template v-if="dockerStats[singleContainer.name]">
                 <span class="text-muted-foreground text-sm">{{ $t("CPU") }}: {{ dockerStats[singleContainer.name].CPUPerc }}</span>
@@ -59,7 +59,7 @@
                         <router-link class="ui-entity-link" :to="containerDetailsRoute(instance)">
                             <span>{{ instance.name }}</span>
                         </router-link>
-                        <span class="entity-label ms-[.35rem] select-none opacity-50 text-xs font-normal lowercase">{{ $tc("container", 1) }}</span>
+                        <span class="entity-label ms-[.35rem] select-none opacity-50 text-xs font-normal lowercase">{{ $t("container", 1) }}</span>
                     </div>
                 </div>
                 <div class="mt-[.25rem] flex flex-wrap items-center gap-x-[.375rem] gap-y-[.35rem]">
@@ -72,7 +72,7 @@
                     <span v-else class="ui-badge" :class="instanceStatusClass(instance)">{{ instance.status }}</span>
                     <span v-if="instanceExitLabel(instance)" class="ui-badge" :class="instanceExitClass(instance)">{{ instanceExitLabel(instance) }}</span>
                     <a v-for="port in instancePorts(instance)" :key="port.display" class="port-link no-underline" :href="port.url" target="_blank">
-                        <span class="ui-badge ui-badge-neutral">{{ port.display }} {{ $tc("port", 1).toLowerCase() }}</span>
+                        <span class="ui-badge ui-badge-neutral">{{ port.display }} {{ $t("port", 1).toLowerCase() }}</span>
                     </a>
                     <span v-if="dockerStats[instance.name]" class="text-muted-foreground text-sm">
                         {{ $t("CPU") }}: {{ dockerStats[instance.name].CPUPerc }}

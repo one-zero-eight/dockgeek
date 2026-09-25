@@ -73,8 +73,7 @@
 import FloatingDialog from "./floating/FloatingDialog.vue";
 import Confirm from "./Confirm.vue";
 import VueQrcode from "vue-qrcode";
-import { useToast } from "vue-toastification";
-const toast = useToast();
+import { toast } from "vue-sonner";
 
 export default {
     components: {

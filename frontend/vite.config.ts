@@ -27,6 +27,7 @@ export default defineConfig({
     },
     build: {
         outDir: "../frontend-dist",
+        emptyOutDir: true,
     },
     plugins: [
         UnoCSS({ configFile: "./frontend/uno.config.ts" }),

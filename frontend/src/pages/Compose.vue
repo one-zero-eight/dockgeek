@@ -157,9 +157,9 @@
                             v-model="stack.composeYAML"
                             :extensions="extensions"
                             minimal
-                            wrap="true"
+                            wrap
                             :dark="$root.isDark"
-                            tab="true"
+                            tab
                             :disabled="!isEditMode"
                             :hasFocus="editorFocus"
                             @change="yamlCodeChange"
@@ -552,7 +552,7 @@ export default {
                         pathname = "";
                     }
                     display = obj.host + pathname + obj.search;
-                } catch (e) {
+                } catch {
                     display = url;
                 }
 

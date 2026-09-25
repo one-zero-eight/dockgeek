@@ -8,9 +8,9 @@
                         v-model="settings.globalENV"
                         :extensions="extensionsEnv"
                         minimal
-                        wrap="true"
+                        wrap
                         :dark="$root.isDark"
-                        tab="true"
+                        tab
                         :hasFocus="editorFocus"
                         @change="onChange"
                     />
@@ -48,14 +48,6 @@ export default {
         CodeMirror,
     },
 
-    data() {
-        return {
-            saving: false,
-            saved: false,
-            savedTimer: null,
-        };
-    },
-
     setup() {
         const editorFocus = ref(false);
 
@@ -72,6 +64,14 @@ export default {
 
         return { editorFocus,
             baseExtensionsEnv };
+    },
+
+    data() {
+        return {
+            saving: false,
+            saved: false,
+            savedTimer: null,
+        };
     },
 
     computed: {
