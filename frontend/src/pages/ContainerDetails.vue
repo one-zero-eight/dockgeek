@@ -2,7 +2,7 @@
     <transition name="slide-fade" appear>
         <div
             class="container-details-page"
-            :class="{ 'logs-active': activeTab === 'logs' }"
+            :class="{ 'logs-active': isDesktop || activeTab === 'logs' }"
             :style="containerDetailsStyle"
         >
             <div class="detail-header mb-0">
@@ -13,7 +13,7 @@
                     </h1>
                     <div v-if="container" class="detail-summary flex flex-wrap items-center gap-x-[.375rem] gap-y-[.35rem]">
                         <router-link :to="stackRoute" class="ui-entity-link text-sm">
-                            {{ stackName }} <span class="select-none opacity-50 text-xs font-normal lowercase">{{ $t("project") }}</span>
+                            {{ stackName }} <span class="select-none opacity-50 text-foreground text-xs font-normal lowercase">{{ $t("project") }}</span>
                         </router-link>
                         <template v-if="serviceName">
                             <span class="text-muted-foreground text-sm">/</span>
@@ -22,16 +22,19 @@
                         <ContainerError v-if="errorLabel" class="w-full" :message="errorLabel" />
                     </div>
                 </div>
-                <ActionGroup
-                    v-if="container"
-                    class="detail-actions"
-                    size="header"
-                    :actions="containerActions"
-                    :disabled="processing"
-                    :max-visible="3"
-                    :aria-label="$t('container', 1)"
-                    @select="performAction"
-                />
+                <div v-if="container" class="detail-actions">
+                    <button v-if="isDesktop" class="ui-btn ui-btn-sm whitespace-nowrap" @click="terminalOpen = true">
+                        <font-awesome-icon icon="terminal" class="me-[.25rem]" /> {{ $t("terminal") }}
+                    </button>
+                    <ActionGroup
+                        size="header"
+                        :actions="containerActions"
+                        :disabled="processing"
+                        :max-visible="3"
+                        :aria-label="$t('container', 1)"
+                        @select="performAction"
+                    />
+                </div>
             </div>
 
             <div v-if="!loaded" class="panel-box big-padding">{{ $t("loadingContainer") }}</div>
@@ -42,7 +45,7 @@
             </div>
 
             <template v-else>
-                <div class="tabs-scroll mb-[1rem] overflow-x-auto">
+                <div v-if="!isDesktop" class="tabs-scroll mb-[1rem] overflow-x-auto">
                     <ul class="detail-tabs flex flex-nowrap list-none m-0 gap-[0.15rem] w-full p-1 rounded-lg bg-card" role="tablist" aria-labelledby="container-details-title" @keydown="onTabKeydown">
                         <li v-for="tab in tabs" :key="tab" class="min-w-0 flex-1">
                             <button
@@ -62,7 +65,8 @@
                     </ul>
                 </div>
 
-                <section v-if="activeTab === 'overview'" id="container-panel-overview" class="overview-grid panel-box grid gap-4 p-3" role="tabpanel" aria-labelledby="container-tab-overview" tabindex="0">
+                <h2 v-if="isDesktop" id="container-overview-heading" class="section-heading">{{ $t("overview") }}</h2>
+                <section v-if="isDesktop || activeTab === 'overview'" id="container-panel-overview" class="overview-grid panel-box grid gap-4 p-3" :role="isDesktop ? undefined : 'tabpanel'" :aria-labelledby="isDesktop ? 'container-overview-heading' : 'container-tab-overview'" :tabindex="isDesktop ? undefined : 0">
                     <article v-for="item in overviewItems" :key="item.key" class="min-w-0" :class="{ 'image-card': item.wide }">
                         <div class="mb-1 text-muted-foreground text-sm">{{ item.label }}</div>
                         <div v-if="item.key === 'status'" class="flex flex-wrap items-center gap-x-[.375rem] gap-y-[.15rem]">
@@ -77,7 +81,8 @@
                     </article>
                 </section>
 
-                <section v-if="activeTab === 'logs'" id="container-panel-logs" class="log-panel" :class="{ fullscreen: logFullscreen }" role="tabpanel" aria-labelledby="container-tab-logs" tabindex="0">
+                <h2 v-if="isDesktop" id="container-logs-heading" class="section-heading logs-heading">{{ $t("logs") }}</h2>
+                <section v-if="isDesktop || activeTab === 'logs'" id="container-panel-logs" class="log-panel" :class="{ fullscreen: logFullscreen }" :role="isDesktop ? undefined : 'tabpanel'" :aria-labelledby="isDesktop ? 'container-logs-heading' : 'container-tab-logs'" :tabindex="isDesktop ? undefined : 0">
                     <div class="log-toolbar flex flex-none flex-wrap gap-2 p-[0.65rem] bg-terminal-bar">
                         <button class="ui-btn ui-btn-sm" :class="{ active: followLogs }" @click="toggleFollow">
                             <font-awesome-icon :icon="followLogs ? 'pause' : 'play'" class="me-[.25rem]" />
@@ -109,7 +114,7 @@
                     </div>
                 </section>
 
-                <section v-if="activeTab === 'terminal'" id="container-panel-terminal" role="tabpanel" aria-labelledby="container-tab-terminal" tabindex="0">
+                <section v-if="!isDesktop && activeTab === 'terminal'" id="container-panel-terminal" role="tabpanel" aria-labelledby="container-tab-terminal" tabindex="0">
                     <div v-if="!isRunning" class="panel-box big-padding empty-state text-muted-foreground">
                         {{ $t("terminalRequiresRunningContainer") }}
                     </div>
@@ -135,6 +140,31 @@
                     </template>
                 </section>
             </template>
+            <FloatingDialog v-if="isDesktop" v-model="terminalOpen" :title="$t('terminal')" size="xl" fill hide-footer dialog-class="container-terminal-dialog">
+                <div v-if="!isRunning" class="panel-box big-padding empty-state text-muted-foreground">
+                    {{ $t("terminalRequiresRunningContainer") }}
+                </div>
+                <template v-else>
+                    <div class="flex items-center gap-2 mb-[1rem]">
+                        <span>{{ $t("shell") }}:</span>
+                        <div class="flex" role="group" :aria-label="$t('shell')">
+                            <button class="ui-btn ui-btn-sm" :class="{ 'ui-btn-primary': shell === 'bash' }" @click="shell = 'bash'">bash</button>
+                            <button class="ui-btn ui-btn-sm" :class="{ 'ui-btn-primary': shell === 'sh' }" @click="shell = 'sh'">sh</button>
+                        </div>
+                    </div>
+                    <Terminal
+                        v-if="terminalOpen"
+                        :key="shell"
+                        class="dialog-terminal terminal"
+                        :name="instanceTerminalName"
+                        :endpoint="endpoint"
+                        :stack-name="stackName"
+                        :container-name="containerName"
+                        :shell="shell"
+                        mode="interactiveContainer"
+                    />
+                </template>
+            </FloatingDialog>
         </div>
     </transition>
 </template>
@@ -150,16 +180,20 @@ import {
 } from "../../../common/util-common";
 import ActionGroup from "../components/ActionGroup.vue";
 import ContainerError from "../components/ContainerError.vue";
+import FloatingDialog from "../components/floating/FloatingDialog.vue";
 import { imageRegistryUrl } from "../util-frontend";
 
 export default {
     components: {
         ActionGroup,
         ContainerError,
+        FloatingDialog,
     },
     data() {
         return {
             activeTab: "overview",
+            isDesktop: window.matchMedia("(min-width: 768px)").matches,
+            terminalOpen: false,
             tabs: [ "overview", "logs", "terminal" ],
             containerStatusList: {},
             dockerStats: {},
@@ -291,6 +325,8 @@ export default {
         }
     },
     mounted() {
+        this.desktopMediaQuery = window.matchMedia("(min-width: 768px)");
+        this.desktopMediaQuery.addEventListener("change", this.onViewportChange);
         this.updateAvailableHeight();
         window.addEventListener("resize", this.updateAvailableHeight);
         this.refresh();
@@ -299,6 +335,7 @@ export default {
     unmounted() {
         window.clearInterval(this.pollInterval);
         window.removeEventListener("resize", this.updateAvailableHeight);
+        this.desktopMediaQuery.removeEventListener("change", this.onViewportChange);
         this.leaveLogs();
     },
     methods: {
@@ -351,11 +388,20 @@ export default {
             });
         },
         setTab(tab) {
-            if (this.activeTab === "logs" && tab !== "logs") {
+            if (this.activeTab === "logs" && tab !== "logs" && !this.isDesktop) {
                 this.leaveLogs();
                 this.logFullscreen = false;
             }
             this.activeTab = tab;
+            this.$nextTick(this.updateAvailableHeight);
+        },
+        onViewportChange(event) {
+            this.isDesktop = event.matches;
+            this.terminalOpen = false;
+            if (!this.isDesktop && this.activeTab !== "logs") {
+                this.leaveLogs();
+                this.logFullscreen = false;
+            }
             this.$nextTick(this.updateAvailableHeight);
         },
         /**
@@ -370,7 +416,7 @@ export default {
             }
             pageTop -= window.scrollY;
             this.availablePageHeight = Math.max(0, window.innerHeight - pageTop - 16);
-            if (this.activeTab === "logs") {
+            if (this.isDesktop || this.activeTab === "logs") {
                 this.$nextTick(() => this.$refs.logTerminal?.fit());
             }
         },
@@ -459,11 +505,24 @@ export default {
 }
 
 .detail-actions {
+    display: flex;
     flex: 1 0 38px;
     min-width: 38px;
     margin-top: 4px;
     align-items: center;
     justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+.section-heading {
+    flex: 0 0 auto;
+    margin: 0.75rem 0 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.logs-heading {
+    margin-top: 1rem;
 }
 
 .detail-tab {
@@ -483,7 +542,8 @@ export default {
 }
 
 .logs-active > .detail-header,
-.logs-active > .tabs-scroll {
+.logs-active > .tabs-scroll,
+.logs-active > .overview-grid {
     flex: 0 0 auto;
 }
 
@@ -508,9 +568,13 @@ export default {
     min-height: 0;
 }
 
+.log-toolbar .ui-btn {
+    flex: 0 0 auto;
+}
+
 .log-toolbar .active {
-    color: var(--primary-foreground);
-    background: var(--gradient-primary);
+    color: var(--secondary-foreground);
+    background: var(--secondary-hover);
 }
 
 // The toolbar is a dark island in both themes, so a disabled control keeps a
@@ -552,6 +616,11 @@ export default {
 
 .log-panel.fullscreen .log-body {
     height: calc(100dvh - 58px);
+}
+
+.dialog-terminal {
+    height: calc(100dvh - 170px);
+    min-height: 0;
 }
 
 @media (max-width: 767.98px) {
