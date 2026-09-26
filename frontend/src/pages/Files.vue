@@ -167,6 +167,8 @@
                         ref="textEditor"
                         :content="editor.content"
                         :language-support="editor.languageSupport"
+                        :schema-origin="{ path: editor.path, documentUri: `file:///editor/${encodeURIComponent(editor.path)}` }"
+                        :emit-schema="requestEditorSchema"
                         :dark="$root.isDark"
                     />
                 </div>
@@ -339,6 +341,9 @@ export default {
         this.stopLogPolling();
     },
     methods: {
+        requestEditorSchema(event, request, callback) {
+            this.$root.emitAgent(this.selectedEndpoint, event, request, callback);
+        },
         entryActions(entry) {
             return [
                 ...(entry.type === "file" ? [{ key: "download",

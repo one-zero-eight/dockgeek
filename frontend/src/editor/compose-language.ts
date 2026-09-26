@@ -20,6 +20,7 @@ import {
     type Position,
 } from "vscode-languageserver-types";
 import { DisposedClientError, StaleResponseError, YamlLanguageClient } from "./yaml-client";
+import type { SchemaLanguageClient } from "./schema-client";
 import { composeCompletionBoost } from "./yaml-service";
 
 function offsetToPosition(doc: Text, offset: number): Position {
@@ -99,6 +100,7 @@ function hoverContentsToText(contents: Hover["contents"]): string {
 
 export function normalizeComposeDocumentation(text: string): string {
     return text
+        .replace(/^#{4}[ \t]+[^\r\n]+(?:\r?\n|$)/, "")
         .replace(/^#{1,6}\s+Compose Specification\s*\n?/i, "")
         .replace(/\\([!"#$%&'()*+,\-./:;<=>?@[\]\\^_`{|}~])/g, "$1")
         .trim();
@@ -124,6 +126,9 @@ function createDocElement(text: string): HTMLElement {
             cursor = index + match[0].length;
         }
         row.append(document.createTextNode(block.slice(cursor)));
+        if (block.startsWith("Default value: ")) {
+            row.classList.add("cm-compose-hover-default");
+        }
         el.append(row);
     }
     return el;
@@ -216,11 +221,11 @@ const documentVersionField = StateField.define<number>({
 });
 
 /** Store the editor-owned client in state so reconfiguration cannot dispose it. */
-const yamlClientFacet = Facet.define<YamlLanguageClient, YamlLanguageClient | null>({
+const yamlClientFacet = Facet.define<YamlLanguageClient | SchemaLanguageClient, YamlLanguageClient | SchemaLanguageClient | null>({
     combine: (clients) => clients[0] ?? null,
 });
 
-function getClient(view: EditorView): YamlLanguageClient | null {
+function getClient(view: EditorView): YamlLanguageClient | SchemaLanguageClient | null {
     return view.state.facet(yamlClientFacet);
 }
 
@@ -260,7 +265,7 @@ export async function formatComposeYaml(view: EditorView): Promise<boolean> {
 /**
  * CodeMirror extensions that provide Compose schema validation, completion, and hover.
  */
-export function composeLanguageSupport(client: YamlLanguageClient): Extension {
+export function composeLanguageSupport(client: YamlLanguageClient | SchemaLanguageClient, language: "yaml" | "json" = "yaml"): Extension {
     const diagnose = linter(async (view) => {
         const client = getClient(view);
         if (!client) {
@@ -356,7 +361,7 @@ export function composeLanguageSupport(client: YamlLanguageClient): Extension {
     });
 
     const hover = hoverTooltip(async (view, pos) => {
-        const key = composeKeyAt(view.state, pos);
+        const key = language === "json" ? (pos < view.state.doc.length ? { from: pos, to: pos + 1 } : null) : composeKeyAt(view.state, pos);
         const client = getClient(view);
         if (!key || !client) {
             return null;

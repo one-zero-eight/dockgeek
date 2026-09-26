@@ -75,16 +75,17 @@ const COMPOSE_CUSTOM_TAGS = [
     "!override scalar",
 ];
 
-export function createComposeLanguageService(): LanguageService {
+export function createComposeLanguageService(
+    schemaRequestService?: (uri: string) => Promise<string>,
+    schema?: { uri: string; content: Record<string, unknown>; documentUri: string },
+    useComposeDefault = true,
+    resolveRelativePath: (relativePath: string, resource: string) => string = (relative, resource) => String(new URL(relative, resource))
+): LanguageService {
     const ls = getLanguageService({
-        // Offline only: never fetch remote schemas.
-        // @ts-expect-error schemaRequestService may be null when disabled
-        schemaRequestService: null,
-        workspaceContext: {
-            resolveRelativePath(relativePath: string, resource: string) {
-                return String(new URL(relativePath, resource));
-            },
-        },
+        schemaRequestService: schemaRequestService ?? (async () => {
+            throw new Error("Schema loading is unavailable");
+        }),
+        workspaceContext: { resolveRelativePath },
         telemetry,
         clientCapabilities: {
             textDocument: {
@@ -112,7 +113,7 @@ export function createComposeLanguageService(): LanguageService {
         schemas: [
             {
                 uri: COMPOSE_SCHEMA_URI,
-                fileMatch: [
+                fileMatch: schema || !useComposeDefault ? [] : [
                     "**/compose.yaml",
                     "**/compose.yml",
                     "**/docker-compose.yaml",
@@ -124,6 +125,7 @@ export function createComposeLanguageService(): LanguageService {
                 ],
                 schema: composeSchema as Record<string, unknown>,
             },
+            ...(schema ? [{ uri: schema.uri, fileMatch: [ schema.documentUri ], schema: schema.content }] : []),
         ],
     });
 
@@ -275,7 +277,8 @@ export function blankLinesBetweenServices(text: string): string {
 
 export async function formatComposeDocument(
     ls: LanguageService,
-    document: TextDocument
+    document: TextDocument,
+    compose = true
 ): Promise<TextEdit[]> {
     const original = document.getText();
     const edits = await ls.doFormat(document, {
@@ -285,7 +288,9 @@ export async function formatComposeDocument(
     });
 
     let formatted = edits.length > 0 ? TextDocument.applyEdits(document, edits) : original;
-    formatted = blankLinesBetweenServices(formatted);
+    if (compose) {
+        formatted = blankLinesBetweenServices(formatted);
+    }
 
     if (formatted === original) {
         return [];

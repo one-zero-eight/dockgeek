@@ -60,6 +60,21 @@ describe("stack .env persistence", () => {
         assert.equal((await handler.listEditableFiles(server, cleared)).includes(".env"), true);
     });
 
+    test("editable files exclude the active Compose file and schema files", async () => {
+        const stack = new Stack(server, "file-tabs", "services:\n  web:\n    image: nginx\n", "");
+        await stack.save(true);
+        for (const filename of [ "settings.yaml", "settings.json", "settings.schema.yaml", "settings.schema.yml", "settings.schema.json" ]) {
+            fs.writeFileSync(path.join(stack.fullPath, filename), "{}\n");
+        }
+        const files = await new DockerSocketHandler().listEditableFiles(server, stack);
+        assert.equal(files.includes("compose.yaml"), false);
+        assert.equal(files.includes("settings.yaml"), true);
+        assert.equal(files.includes("settings.json"), true);
+        for (const filename of [ "settings.schema.yaml", "settings.schema.yml", "settings.schema.json" ]) {
+            assert.equal(files.includes(filename), false, filename);
+        }
+    });
+
     test("save applies PUID/PGID ownership to compose and .env when both are set", async () => {
         if (typeof process.getuid !== "function" || typeof process.getgid !== "function" || process.getuid() !== 0) {
             // Ownership changes require root; verify the write path still succeeds without them.

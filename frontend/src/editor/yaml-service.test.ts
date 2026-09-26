@@ -257,6 +257,12 @@ test("Compose documentation removes markdown punctuation escapes", async () => {
     assert.ok(!normalizeComposeDocumentation(value).includes("Compose Specification"));
 });
 
+test("schema hover hides any generated schema-title heading but keeps descriptions", () => {
+    assert.equal(normalizeComposeDocumentation("#### Settings fixture\n\nWhether the application is enabled."), "Whether the application is enabled.");
+    assert.equal(normalizeComposeDocumentation("#### Another schema title\r\n\r\nThe field description."), "The field description.");
+    assert.equal(normalizeComposeDocumentation("#### Actual description\nFurther details."), "Further details.");
+});
+
 test("schema hints only target mapping key text", () => {
     const text = `services:
   web:

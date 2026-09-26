@@ -9,6 +9,9 @@ import { EditorView, keymap, lineNumbers } from "@codemirror/view";
 import { indentWithTab } from "@codemirror/commands";
 import { minimalSetup } from "codemirror";
 import { getEditorTheme } from "../editor/editor-theme";
+import { composeLanguageSupport } from "../editor/compose-language";
+import { SchemaLanguageClient } from "../editor/schema-client";
+import { schemaLoader, resolveSchemaReference } from "../editor/schema-transport";
 
 const props = defineProps({
     content: { type: String,
@@ -17,6 +20,10 @@ const props = defineProps({
         default: undefined },
     dark: { type: Boolean,
         default: false },
+    schemaOrigin: { type: Object,
+        default: undefined },
+    emitSchema: { type: Function,
+        default: undefined },
 });
 
 const editorHost = ref();
@@ -26,6 +33,7 @@ const noFocusOutline = EditorView.theme({
     ".cm-content:focus-visible": { outline: "none !important" },
 });
 let editorView;
+let schemaClient;
 
 onMounted(() => {
     const extensions = [
@@ -37,6 +45,16 @@ onMounted(() => {
     ];
     if (props.languageSupport) {
         extensions.push(props.languageSupport);
+    }
+    const language = /\.ya?ml$/i.test(props.schemaOrigin?.path ?? "") ? "yaml" : /\.json$/i.test(props.schemaOrigin?.path ?? "") ? "json" : null;
+    if (language && props.emitSchema) {
+        schemaClient = new SchemaLanguageClient({
+            language,
+            documentUri: props.schemaOrigin.documentUri,
+            loadSchema: schemaLoader(props.emitSchema, { source: "files", path: props.schemaOrigin.path }),
+            resolveReference: resolveSchemaReference,
+        });
+        extensions.push(composeLanguageSupport(schemaClient, language));
     }
 
     editorView = new EditorView({
@@ -53,6 +71,7 @@ watch(() => props.dark, dark => {
 });
 
 onBeforeUnmount(() => {
+    schemaClient?.dispose();
     editorView?.destroy();
     editorView = undefined;
 });

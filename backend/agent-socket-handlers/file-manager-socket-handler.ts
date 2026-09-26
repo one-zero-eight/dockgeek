@@ -7,6 +7,7 @@ import { AgentSocket } from "../../common/agent-socket";
 import { checkLogin, DockgeSocket } from "../util-server";
 import { FILE_MANAGER_CHUNK_SIZE, FILE_MANAGER_TEXT_LIMIT, FileManagerError } from "../file-manager";
 import { log } from "../log";
+import { EditorSchemaError, EditorSchemaRequest, readEditorSchema } from "../editor-schema";
 
 interface DownloadSession {
     handle: FileHandle;
@@ -94,6 +95,21 @@ export class FileManagerSocketHandler extends AgentSocketHandler {
             }
             return server.fileManager;
         };
+
+        agentSocket.on("readEditorSchema", async (request : EditorSchemaRequest, callback) => {
+            try {
+                checkLogin(socket);
+                if (typeof callback !== "function") {
+                    return;
+                }
+                callback({ ok: true, ...await readEditorSchema(server, request) });
+            } catch (error) {
+                if (typeof callback === "function") {
+                    callback({ ok: false, code: error instanceof EditorSchemaError ? error.code : "SCHEMA_ERROR",
+                        msg: error instanceof EditorSchemaError ? error.message : "Unable to read schema." });
+                }
+            }
+        });
 
         agentSocket.on("fileManagerInfo", async (callback) => respond(callback, async () => ({
             enabled: Boolean(server.fileManager),

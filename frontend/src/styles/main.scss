@@ -259,6 +259,10 @@ code {
     margin-bottom: 0;
 }
 
+.cm-compose-hover-default {
+    color: var(--muted-foreground);
+}
+
 .cm-compose-hover code {
     padding: 1px 4px;
     border-radius: 3px;
@@ -292,6 +296,10 @@ code {
     color: #1375ab;
     text-decoration: none;
     font-weight: 650;
+}
+
+.cm-tooltip.cm-compose-completions .cm-completionDetail {
+    color: var(--muted-foreground);
 }
 
 .dark .cm-tooltip.cm-tooltip-hover:has(.cm-compose-hover),

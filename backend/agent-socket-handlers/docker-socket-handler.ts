@@ -521,7 +521,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
             return [];
         }
         const files = await fs.readdir(stack.fullPath, { withFileTypes: true });
-        return files.filter(file => file.isFile() && matchesFilePatterns(file.name, server.editableFilePatterns))
+        return files.filter(file => file.isFile() && file.name !== path.basename(stack.composeFilePath) && matchesFilePatterns(file.name, server.editableFilePatterns))
             .map(file => file.name).sort();
     }
 

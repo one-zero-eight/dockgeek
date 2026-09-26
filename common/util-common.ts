@@ -333,7 +333,7 @@ export const COMBINED_TERMINAL_ROWS = 20;
 export const ERROR_TYPE_VALIDATION = 1;
 
 export const DEFAULT_COMPOSE_FILE_PATTERNS = "{,docker-}compose{,.*}.y{a,}ml";
-export const DEFAULT_EDITABLE_FILE_PATTERNS = "{.env{,.*},*.env,settings.yaml,*.settings.yaml}";
+export const DEFAULT_EDITABLE_FILE_PATTERNS = "{.env{,.*},*.env},!(*.schema).{yaml,yml,json}";
 
 export function filePatterns(value : string) : string[] {
     const patterns : string[] = [];

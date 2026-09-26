@@ -64,6 +64,10 @@
                 <label class="mb-2 inline-block text-foreground" for="editableFilePatterns">{{ $t("editableFilePatterns") }}</label>
                 <input id="editableFilePatterns" v-model="settings.editableFilePatterns" class="ui-field w-full" :placeholder="DEFAULT_EDITABLE_FILE_PATTERNS" />
             </div>
+            <div class="mb-[1.5rem]">
+                <label class="mb-2 inline-block text-foreground" for="editorSchemaAllowedPrefixes">{{ $t("editorSchemaAllowedPrefixes") }}</label>
+                <textarea id="editorSchemaAllowedPrefixes" v-model="settings.editorSchemaAllowedPrefixes" class="ui-field w-full min-w-0" rows="4" placeholder="https://raw.githubusercontent.com/"></textarea>
+            </div>
 
             <!-- Save Button -->
             <div>
@@ -143,6 +147,7 @@ export default {
             }
             this.resetSaved();
             this.saving = true;
+            this.settings.editorSchemaAllowedPrefixes ??= "";
             localStorage.timezone = this.$root.userTimezone;
             this.saveSettings((res) => {
                 this.saving = false;

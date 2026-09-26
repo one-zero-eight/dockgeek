@@ -8,6 +8,7 @@ import { randomBytes } from "node:crypto";
 import { secretHash } from "../auth";
 import fs, { promises as fsAsync } from "fs";
 import path from "path";
+import { parseEditorSchemaAllowedPrefixes } from "../editor-schema";
 
 export class MainSocketHandler extends SocketHandler {
     create(socket : DockgeSocket, server : DockgeServer) {
@@ -52,8 +53,10 @@ export class MainSocketHandler extends SocketHandler {
                 checkLogin(socket);
                 const data = await Settings.getSettings("general");
                 delete data.disableAuth;
+                delete data.schemaUrlPatterns;
                 data.composeFilePatterns = (await Settings.get("composeFilePatterns")) || "";
                 data.editableFilePatterns = (await Settings.get("editableFilePatterns")) || "";
+                data.editorSchemaAllowedPrefixes = (await Settings.get("editorSchemaAllowedPrefixes")) || "";
                 data.globalENV = fs.existsSync(path.join(server.stacksDir, "global.env"))
                     ? fs.readFileSync(path.join(server.stacksDir, "global.env"), "utf-8")
                     : "# VARIABLE=value #comment";
@@ -70,6 +73,9 @@ export class MainSocketHandler extends SocketHandler {
                     throw new Error("Unauthorized");
                 }
                 delete data.disableAuth;
+                delete data.schemaUrlPatterns;
+                data.editorSchemaAllowedPrefixes ??= (await Settings.get("editorSchemaAllowedPrefixes")) || "";
+                parseEditorSchemaAllowedPrefixes(data.editorSchemaAllowedPrefixes);
                 if (data.globalENV && data.globalENV !== "# VARIABLE=value #comment") {
                     await fsAsync.writeFile(path.join(server.stacksDir, "global.env"), data.globalENV);
                 } else {
@@ -82,6 +88,7 @@ export class MainSocketHandler extends SocketHandler {
                     }
                     data[key] = data[key].trim();
                 }
+                data.editorSchemaAllowedPrefixes = data.editorSchemaAllowedPrefixes.trim();
                 await Settings.setSettings("general", data);
                 server.composeFilePatterns = data.composeFilePatterns || DEFAULT_COMPOSE_FILE_PATTERNS;
                 server.editableFilePatterns = data.editableFilePatterns || DEFAULT_EDITABLE_FILE_PATTERNS;

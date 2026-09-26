@@ -113,10 +113,10 @@ describe("stack name path traversal", () => {
         for (const filename of [ "compose.yaml", "compose.yml", "docker-compose.yaml", "docker-compose.yml", "compose.dev.yaml", "compose.dev.yml", "docker-compose.dev.yaml", "docker-compose.dev.yml" ]) {
             assert.equal(matchesFilePatterns(filename, DEFAULT_COMPOSE_FILE_PATTERNS), true, filename);
         }
-        for (const filename of [ ".env", ".env.local", "app.env", "app.prod.env", "settings.yaml", "app.settings.yaml" ]) {
+        for (const filename of [ ".env", ".env.local", "app.env", "app.prod.env", "settings.yaml", "settings.yml", "settings.json", "app.settings.yaml" ]) {
             assert.equal(matchesFilePatterns(filename, DEFAULT_EDITABLE_FILE_PATTERNS), true, filename);
         }
-        for (const filename of [ "secret.txt", "env", "config.env.backup", "nested/.env" ]) {
+        for (const filename of [ "secret.txt", "env", "config.env.backup", "nested/.env", "settings.schema.yaml", "settings.schema.yml", "settings.schema.json" ]) {
             assert.equal(matchesFilePatterns(filename, DEFAULT_EDITABLE_FILE_PATTERNS), false, filename);
         }
         assert.equal(matchesFilePatterns("nested/compose.yaml", DEFAULT_COMPOSE_FILE_PATTERNS), false);
