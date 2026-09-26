@@ -1,0 +1,4 @@
+services:
+  nested:
+    image: alpine:3.21
+    command: ["sh", "-c", "echo included-service-started; sleep 3600"]

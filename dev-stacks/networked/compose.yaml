@@ -1,0 +1,11 @@
+services:
+  server:
+    image: nginx:alpine
+    networks: ["internal"]
+  client:
+    image: alpine:3.21
+    networks: ["internal"]
+    depends_on: ["server"]
+    command: ["sh", "-c", "wget -q -O /dev/null http://server/ && echo network-ready; sleep 3600"]
+networks:
+  internal: {}

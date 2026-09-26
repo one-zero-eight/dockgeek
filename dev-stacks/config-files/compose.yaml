@@ -1,0 +1,7 @@
+services:
+  reader:
+    image: alpine:3.21
+    env_file: ./app.env
+    volumes:
+      - ./settings.yaml:/app/settings.yaml:ro
+    command: ["sh", "-c", "cat /app/settings.yaml; echo GREETING=$$GREETING; sleep 3600"]

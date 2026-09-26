@@ -1,0 +1,4 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/prettierrc.json
+printWidth: 100
+tabWidth: 4
+singleQuote: true

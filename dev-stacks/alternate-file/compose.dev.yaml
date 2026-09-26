@@ -1,0 +1,6 @@
+services:
+  app:
+    image: alpine:3.21
+    labels:
+      dockge.message: ${MESSAGE:-hello-without-global-env}
+    command: ["sh", "-c", "echo alternate-compose-filename; sleep 3600"]

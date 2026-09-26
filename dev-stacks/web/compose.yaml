@@ -1,0 +1,13 @@
+services:
+  web:
+    image: nginx:alpine
+    ports:
+      - "80"
+    labels:
+      dockge.fixture: web
+      dockge.message: ${MESSAGE:-hello}
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 3s
+      retries: 3

@@ -1,0 +1,8 @@
+services:
+  primary:
+    image: alpine:3.21
+    command: ["sh", "-c", "echo primary-started; sleep 3600"]
+  optional:
+    image: alpine:3.21
+    profiles: ["extra"]
+    command: ["sh", "-c", "echo optional-started; sleep 3600"]

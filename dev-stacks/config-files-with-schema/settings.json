@@ -1,0 +1,7 @@
+{
+  "$schema": "./settings.schema.json",
+  "app": {
+    "greeting": "hello from settings.json",
+    "enabled": true
+  }
+}

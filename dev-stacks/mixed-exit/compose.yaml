@@ -1,0 +1,7 @@
+services:
+  runner:
+    image: alpine:3.21
+    command: ["sh", "-c", "echo runner-ready; sleep 3600"]
+  completed:
+    image: alpine:3.21
+    command: ["sh", "-c", "echo completed-successfully; exit 0"]

@@ -1,0 +1,6 @@
+services:
+  writer:
+    image: alpine:3.21
+    volumes:
+      - ./data:/data
+    command: ["sh", "-c", "date -u >> /data/starts.log; cat /data/starts.log; sleep 3600"]

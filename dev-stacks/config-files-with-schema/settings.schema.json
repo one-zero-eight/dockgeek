@@ -1,0 +1,24 @@
+{
+  "title": "JSON settings fixture",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["app"],
+  "properties": {
+    "app": {
+      "type": "object",
+      "description": "Application settings for this dev stack.",
+      "additionalProperties": false,
+      "required": ["greeting", "enabled"],
+      "properties": {
+        "greeting": {
+          "type": "string",
+          "description": "Greeting displayed by the application."
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether the application is enabled."
+        }
+      }
+    }
+  }
+}

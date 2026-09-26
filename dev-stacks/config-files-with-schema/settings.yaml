@@ -1,0 +1,4 @@
+# yaml-language-server: $schema=./settings.schema.yaml
+app:
+  greeting: hello from settings.yaml
+  enabled: true

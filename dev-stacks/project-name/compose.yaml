@@ -1,0 +1,7 @@
+# folder actually named as "project-name",
+#  but project appears with "dev-overridden-project-name" in the project list
+name: dev-overridden-project-name
+services:
+  app:
+    image: alpine:3.21
+    command: ["sh", "-c", "echo project-name-override; sleep 3600"]

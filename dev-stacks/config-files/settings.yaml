@@ -1,0 +1,3 @@
+app:
+  greeting: hello from settings.yaml
+  enabled: true
