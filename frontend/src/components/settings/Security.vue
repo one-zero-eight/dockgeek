@@ -2,7 +2,10 @@
     <div class="flex w-full max-w-[28rem] flex-col gap-5">
         <div class="flex items-center gap-3">
             <strong>{{ $root.username }}</strong>
-            <button class="text-destructive cursor-pointer" type="button" @click="$root.logout">{{ $t("Logout") }}</button>
+            <button class="floating-menu-item is-danger !w-auto cursor-pointer" type="button" @click="$root.logout">
+                <font-awesome-icon icon="sign-out-alt" />
+                {{ $t("Logout") }}
+            </button>
         </div>
         <form class="flex flex-col gap-3" @submit.prevent="changePassword">
             <h3>{{ $t("Change Password") }}</h3>
