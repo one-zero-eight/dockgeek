@@ -3,6 +3,7 @@
  */
 import yaml from "yaml";
 import type { DotenvParseOutput } from "dotenv";
+import picomatch from "picomatch";
 
 // Init dayjs
 import dayjs from "dayjs";
@@ -331,12 +332,47 @@ export const COMBINED_TERMINAL_ROWS = 20;
 
 export const ERROR_TYPE_VALIDATION = 1;
 
-export const acceptedComposeFileNames = [
-    "compose.yaml",
-    "docker-compose.yaml",
-    "docker-compose.yml",
-    "compose.yml",
-];
+export const DEFAULT_COMPOSE_FILE_PATTERNS = "{,docker-}compose{,.*}.y{a,}ml";
+export const DEFAULT_EDITABLE_FILE_PATTERNS = "{.env{,.*},*.env,settings.yaml,*.settings.yaml}";
+
+export function filePatterns(value : string) : string[] {
+    const patterns : string[] = [];
+    let start = 0;
+    let depth = 0;
+    for (let i = 0; i < value.length; i++) {
+        if (value[i] === "{") {
+            depth++;
+        } else if (value[i] === "}") {
+            depth--;
+        } else if (depth === 0 && (value[i] === "," || value[i] === "\n")) {
+            patterns.push(value.slice(start, i).trim());
+            start = i + 1;
+        }
+    }
+    patterns.push(value.slice(start).trim());
+    return patterns.filter(Boolean);
+}
+
+/** Match one filename segment only; patterns never grant access to subdirectories. */
+export function matchesFilePatterns(filename : string, patterns : string) : boolean {
+    if (!filename || filename === "." || filename === ".." || /[/\\\0]/.test(filename)) {
+        return false;
+    }
+    return filePatterns(patterns).some(pattern => !/[/\\\0]/.test(pattern) && picomatch.isMatch(filename, pattern, { dot: true }));
+}
+
+/** Respect configured pattern order, preferring base Compose names over variants. */
+export function preferredMatchingFile(filenames : string[], patterns : string) : string | undefined {
+    const sorted = [ ...filenames ].sort((a, b) =>
+        (a.match(/\./g)?.length ?? 0) - (b.match(/\./g)?.length ?? 0) || a.localeCompare(b));
+    for (const pattern of filePatterns(patterns)) {
+        const filename = sorted.find(file => matchesFilePatterns(file, pattern));
+        if (filename) {
+            return filename;
+        }
+    }
+    return undefined;
+}
 
 /**
  * Validate a stacks-directory folder basename (not a Compose project name).

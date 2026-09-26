@@ -18,7 +18,7 @@ import { Settings } from "./settings";
 import checkVersion from "./check-version";
 import dayjs from "dayjs";
 import { R } from "redbean-node";
-import { genSecret, isDev, LooseObject } from "../common/util-common";
+import { DEFAULT_COMPOSE_FILE_PATTERNS, DEFAULT_EDITABLE_FILE_PATTERNS, genSecret, isDev, LooseObject } from "../common/util-common";
 import { generatePasswordHash } from "./password-hash";
 import { Bean } from "redbean-node/dist/bean";
 import { Arguments, Config, DockgeSocket } from "./util-server";
@@ -82,6 +82,8 @@ export class DockgeServer {
     jwtSecret : string = "";
 
     stacksDir : string = "";
+    composeFilePatterns = DEFAULT_COMPOSE_FILE_PATTERNS;
+    editableFilePatterns = DEFAULT_EDITABLE_FILE_PATTERNS;
 
     fileManager? : FileManager;
 
@@ -397,6 +399,9 @@ export class DockgeServer {
         }
 
         this.jwtSecret = jwtSecretBean.value;
+        const patterns = await Settings.filePatterns();
+        this.composeFilePatterns = patterns.compose;
+        this.editableFilePatterns = patterns.editable;
 
         const userCount = (await R.knex("user").count("id as count").first()).count;
 

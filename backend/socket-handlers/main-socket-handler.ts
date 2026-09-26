@@ -2,6 +2,7 @@ import { SocketHandler } from "../socket-handler.js";
 import { DockgeServer } from "../dockge-server";
 import { log } from "../log";
 import { R } from "redbean-node";
+import { DEFAULT_COMPOSE_FILE_PATTERNS, DEFAULT_EDITABLE_FILE_PATTERNS, filePatterns } from "../../common/util-common";
 import { loginRateLimiter } from "../rate-limiter";
 import { generatePasswordHash, needRehashPassword, shake256, SHAKE256_LENGTH, verifyPassword } from "../password-hash";
 import { User } from "../models/user";
@@ -243,6 +244,9 @@ export class MainSocketHandler extends SocketHandler {
             try {
                 checkLogin(socket);
                 const data = await Settings.getSettings("general");
+                // An empty field means "use the default glob"; only show saved overrides.
+                data.composeFilePatterns = (await Settings.get("composeFilePatterns")) || "";
+                data.editableFilePatterns = (await Settings.get("editableFilePatterns")) || "";
 
                 if (fs.existsSync(path.join(server.stacksDir, "global.env"))) {
                     data.globalENV = fs.readFileSync(path.join(server.stacksDir, "global.env"), "utf-8");
@@ -289,7 +293,15 @@ export class MainSocketHandler extends SocketHandler {
                 }
                 delete data.globalENV;
 
+                for (const key of [ "composeFilePatterns", "editableFilePatterns" ]) {
+                    if (typeof data[key] !== "string" || (data[key].trim() && filePatterns(data[key]).some(pattern => /[/\\\0]/.test(pattern)))) {
+                        throw new Error(`Invalid ${key}: use comma-separated filename patterns without paths`);
+                    }
+                    data[key] = data[key].trim();
+                }
                 await Settings.setSettings("general", data);
+                server.composeFilePatterns = data.composeFilePatterns || DEFAULT_COMPOSE_FILE_PATTERNS;
+                server.editableFilePatterns = data.editableFilePatterns || DEFAULT_EDITABLE_FILE_PATTERNS;
 
                 callback({
                     ok: true,

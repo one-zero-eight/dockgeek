@@ -56,6 +56,15 @@
                 </div>
             </div>
 
+            <div class="mb-[1.5rem]">
+                <label class="mb-2 inline-block text-foreground" for="composeFilePatterns">{{ $t("composeFilePatterns") }}</label>
+                <input id="composeFilePatterns" v-model="settings.composeFilePatterns" class="ui-field w-full" :placeholder="DEFAULT_COMPOSE_FILE_PATTERNS" />
+            </div>
+            <div class="mb-[1.5rem]">
+                <label class="mb-2 inline-block text-foreground" for="editableFilePatterns">{{ $t("editableFilePatterns") }}</label>
+                <input id="editableFilePatterns" v-model="settings.editableFilePatterns" class="ui-field w-full" :placeholder="DEFAULT_EDITABLE_FILE_PATTERNS" />
+            </div>
+
             <!-- Save Button -->
             <div>
                 <button class="ui-settings-save" type="submit" :disabled="saving">
@@ -76,6 +85,7 @@
 
 import dayjs from "dayjs";
 import { timezoneList } from "../../util-frontend";
+import { DEFAULT_COMPOSE_FILE_PATTERNS, DEFAULT_EDITABLE_FILE_PATTERNS } from "../../../../common/util-common";
 
 export default {
     components: {
@@ -85,6 +95,8 @@ export default {
     data() {
         return {
             timezoneList: timezoneList(),
+            DEFAULT_COMPOSE_FILE_PATTERNS,
+            DEFAULT_EDITABLE_FILE_PATTERNS,
             saving: false,
             saved: false,
             savedTimer: null,

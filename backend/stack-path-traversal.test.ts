@@ -7,6 +7,7 @@ import { Stack } from "./stack";
 import { Terminal } from "./terminal";
 import { DockgeServer } from "./dockge-server";
 import { DockgeSocket, ValidationError } from "./util-server";
+import { DEFAULT_COMPOSE_FILE_PATTERNS, DEFAULT_EDITABLE_FILE_PATTERNS, filePatterns, matchesFilePatterns, preferredMatchingFile } from "../common/util-common";
 
 const STACK_NAME_ALLOW_LIST = /^[a-z0-9_-]+$/;
 const SECRET_TOKEN = "POC_TOKEN_ff2a7ee07e511fac5e1e03333e298575";
@@ -34,7 +35,7 @@ describe("stack name path traversal", () => {
         outsideDir = path.join(tmpRoot, "outside");
         fs.mkdirSync(stacksDir);
         seedOutsideDir();
-        server = { stacksDir } as DockgeServer;
+        server = { stacksDir, composeFilePatterns: DEFAULT_COMPOSE_FILE_PATTERNS } as DockgeServer;
     });
 
     after(() => {
@@ -106,6 +107,34 @@ describe("stack name path traversal", () => {
             assert.ok(e instanceof ValidationError);
             return true;
         });
+    });
+
+    test("default patterns cover Compose filenames and common env files", () => {
+        for (const filename of [ "compose.yaml", "compose.yml", "docker-compose.yaml", "docker-compose.yml", "compose.dev.yaml", "compose.dev.yml", "docker-compose.dev.yaml", "docker-compose.dev.yml" ]) {
+            assert.equal(matchesFilePatterns(filename, DEFAULT_COMPOSE_FILE_PATTERNS), true, filename);
+        }
+        for (const filename of [ ".env", ".env.local", "app.env", "app.prod.env", "settings.yaml", "app.settings.yaml" ]) {
+            assert.equal(matchesFilePatterns(filename, DEFAULT_EDITABLE_FILE_PATTERNS), true, filename);
+        }
+        for (const filename of [ "secret.txt", "env", "config.env.backup", "nested/.env" ]) {
+            assert.equal(matchesFilePatterns(filename, DEFAULT_EDITABLE_FILE_PATTERNS), false, filename);
+        }
+        assert.equal(matchesFilePatterns("nested/compose.yaml", DEFAULT_COMPOSE_FILE_PATTERNS), false);
+        assert.deepEqual(filePatterns("{,docker-}compose{,.*}.y{a,}ml, .env"), [ "{,docker-}compose{,.*}.y{a,}ml", ".env" ]);
+        assert.equal(matchesFilePatterns("compose.dev.yaml", "{compose,docker-compose}.@(yaml|yml)"), false);
+        assert.equal(matchesFilePatterns("compose.yml", "{compose,docker-compose}.@(yaml|yml)"), true);
+        assert.equal(preferredMatchingFile([ "compose.dev.yaml", "docker-compose.yml", "compose.yaml" ], DEFAULT_COMPOSE_FILE_PATTERNS), "compose.yaml");
+        assert.equal(preferredMatchingFile([ "compose.dev.yaml", "docker-compose.yml" ], DEFAULT_COMPOSE_FILE_PATTERNS), "docker-compose.yml");
+    });
+
+    test("getStack prefers compose.yaml over other matching files", async () => {
+        const dir = path.join(stacksDir, "preferred-compose");
+        fs.mkdirSync(dir);
+        fs.writeFileSync(path.join(dir, "compose.dev.yaml"), "services:\n  dev:\n    image: busybox\n");
+        fs.writeFileSync(path.join(dir, "compose.yaml"), COMPOSE_YAML);
+        const stack = await Stack.getStack(server, "preferred-compose");
+        assert.equal(path.basename(stack.composeFilePath), "compose.yaml");
+        assert.equal(stack.composeYAML, COMPOSE_YAML);
     });
 
     test("getStack still loads a stack whose name is on the allow-list", async () => {

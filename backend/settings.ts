@@ -1,8 +1,14 @@
 import { R } from "redbean-node";
 import { log } from "./log";
-import { LooseObject } from "../common/util-common";
+import { DEFAULT_COMPOSE_FILE_PATTERNS, DEFAULT_EDITABLE_FILE_PATTERNS, LooseObject } from "../common/util-common";
 
 export class Settings {
+    static async filePatterns() : Promise<{ compose: string; editable: string }> {
+        return {
+            compose: (await Settings.get("composeFilePatterns")) || DEFAULT_COMPOSE_FILE_PATTERNS,
+            editable: (await Settings.get("editableFilePatterns")) || DEFAULT_EDITABLE_FILE_PATTERNS,
+        };
+    }
 
     /**
      *  Example:

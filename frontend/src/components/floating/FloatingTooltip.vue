@@ -158,6 +158,14 @@ export default {
             }
         });
 
+        watch(() => props.disabled, disabled => {
+            if (disabled) {
+                close();
+            } else if (referenceEl.value?.matches(":hover") || referenceEl.value?.contains(document.activeElement)) {
+                open();
+            }
+        });
+
         onBeforeUnmount(() => {
             document.removeEventListener("pointerdown", onDocumentPointerDown, true);
             document.removeEventListener("keydown", onDocumentKeydown);

@@ -6,6 +6,8 @@ import path from "node:path";
 import { after, before, describe, test } from "node:test";
 import { Stack } from "./stack";
 import { DockgeServer } from "./dockge-server";
+import { DockerSocketHandler } from "./agent-socket-handlers/docker-socket-handler";
+import { DEFAULT_COMPOSE_FILE_PATTERNS, DEFAULT_EDITABLE_FILE_PATTERNS } from "../common/util-common";
 
 describe("stack .env persistence", () => {
     let tmpRoot: string;
@@ -16,7 +18,7 @@ describe("stack .env persistence", () => {
         tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "dockge-env-persist-"));
         stacksDir = path.join(tmpRoot, "stacks");
         fs.mkdirSync(stacksDir);
-        server = { stacksDir } as DockgeServer;
+        server = { stacksDir, composeFilePatterns: DEFAULT_COMPOSE_FILE_PATTERNS, editableFilePatterns: DEFAULT_EDITABLE_FILE_PATTERNS } as DockgeServer;
     });
 
     after(() => {
@@ -52,6 +54,10 @@ describe("stack .env persistence", () => {
         await missing.save(true);
         assert.equal(fs.existsSync(path.join(stacksDir, missingName, ".env")), false);
         assert.equal(fs.existsSync(path.join(stacksDir, missingName, "compose.yaml")), true);
+
+        const handler = new DockerSocketHandler();
+        assert.equal((await handler.listEditableFiles(server, missing)).includes(".env"), false);
+        assert.equal((await handler.listEditableFiles(server, cleared)).includes(".env"), true);
     });
 
     test("save applies PUID/PGID ownership to compose and .env when both are set", async () => {

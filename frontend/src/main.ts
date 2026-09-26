@@ -8,11 +8,11 @@ import { FontAwesomeIcon } from "./icon.js";
 import { i18n } from "./i18n";
 
 // Dependencies
-import { toast } from "vue-sonner";
+import Toast, { POSITION, useToast } from "vue-toastification";
 
 // CSS
 import "@fontsource/jetbrains-mono";
-import "vue-sonner/style.css";
+import "vue-toastification/dist/index.css";
 import "@xterm/xterm/css/xterm.css";
 import "./styles/main.scss";
 import "virtual:uno.css";
@@ -27,6 +27,10 @@ document.title = document.title + " - " + location.host;
 
 const app = createApp(rootApp());
 
+app.use(Toast, {
+    position: POSITION.BOTTOM_RIGHT,
+    showCloseButtonOnHover: true,
+});
 app.use(router);
 app.use(i18n);
 app.component("FontAwesomeIcon", FontAwesomeIcon);
@@ -36,6 +40,8 @@ app.mount("#app");
  * Root Vue component
  */
 function rootApp() {
+    const toast = useToast();
+
     return defineComponent({
         mixins: [
             socket,

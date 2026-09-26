@@ -92,17 +92,22 @@
                             <span v-if="opt.agentLabel" class="stack-path-option-agent">{{ opt.agentLabel }}</span>
                         </button>
                     </FloatingMenu>
-                    <input
-                        id="name"
-                        v-model="stack.name"
-                        type="text"
-                        class="ui-field placeholder:opacity-50"
-                        required
-                        spellcheck="false"
-                        autocomplete="off"
-                        :placeholder="$t('stackFolderPlaceholder')"
-                        @blur="stack.name = stack.name.trim()"
-                    >
+                    <div class="stack-name-input">
+                        <input
+                            id="name"
+                            v-model="stack.name"
+                            type="text"
+                            class="ui-field"
+                            required
+                            spellcheck="false"
+                            autocomplete="off"
+                            :placeholder="$t('stackFolderPlaceholder')"
+                            @blur="stack.name = stack.name.trim()"
+                        >
+                        <span v-if="!stack.name" class="stack-name-placeholder" aria-hidden="true">
+                            <span class="stack-name-placeholder-text">{{ $t("stackFolderPlaceholder") }}</span><span class="stack-name-required"> *</span>
+                        </span>
+                    </div>
                 </div>
                 <div class="stack-name-help mt-1 text-muted-foreground text-sm">{{ $t("stackFolderHint") }}</div>
             </div>
@@ -127,7 +132,60 @@
                     <!-- YAML editor -->
                     <div v-show="isFullPageEditor || !$root.isCompact || compactTab === 'compose'" class="panel-box mb-[1rem] editor-box" :class="{'edit-mode' : isEditMode}">
                         <div class="editor-toolbar">
-                            <span class="editor-filename">{{ stack.composeFileName || "compose.yaml" }}</span>
+                            <div class="editor-file-tabs" role="tablist" :aria-label="$t('projectFiles')">
+                                <div v-for="file in [stack.composeFileName, ...editableFiles]" :key="file" class="editor-file-tab" :class="{ active: selectedFile === file, 'pending-delete': stagedDeletedFiles.includes(file) }">
+                                    <span v-if="renamingFile === file && !stagedDeletedFiles.includes(file)" class="editor-file-rename">
+                                        <font-awesome-icon :icon="file === stack.composeFileName ? faDocker : 'gear'" class="editor-file-icon" aria-hidden="true" />
+                                        <FloatingTooltip placement="bottom-start" :disabled="validFilenameDraft" panel-class="text-destructive">
+                                            <template #trigger="{ triggerAttrs }">
+                                                <span class="editor-filename-wrap" v-bind="triggerAttrs">
+                                                    <span class="editor-filename-measure" aria-hidden="true">{{ filenameDraft || ' ' }}</span>
+                                                    <input
+                                                        ref="filenameInput"
+                                                        v-model="filenameDraft"
+                                                        class="editor-filename-input"
+                                                        :aria-label="$t('composeFilename')"
+                                                        :aria-invalid="!validFilenameDraft"
+                                                        spellcheck="false"
+                                                        @keydown.enter.prevent="$event.target.blur()"
+                                                        @keydown.esc.prevent="resetFilename"
+                                                        @blur="commitFilename"
+                                                    />
+                                                </span>
+                                            </template>
+                                            {{ $t('filenamePatternInvalid', { patterns: file === stack.composeFileName ? composeFilePatterns : editableFilePatterns }) }}
+                                        </FloatingTooltip>
+                                    </span>
+                                    <button v-else type="button" role="tab" class="editor-file-name" :aria-selected="selectedFile === file" @click="chooseFile(file)">
+                                        <font-awesome-icon :icon="file === stack.composeFileName ? faDocker : 'gear'" class="editor-file-icon" aria-hidden="true" />
+                                        <span>{{ file }}</span>
+                                    </button>
+                                    <button v-if="selectedFile === file && file !== stack.composeFileName" type="button" class="editor-tab-close" :aria-label="$t(stagedDeletedFiles.includes(file) ? 'undoDeleteEditableFile' : 'deleteEditableFile')" :title="$t(stagedDeletedFiles.includes(file) ? 'undoDeleteEditableFile' : 'deleteEditableFile')" @click="toggleDeleteEditableFile(file)">{{ stagedDeletedFiles.includes(file) ? '↶' : '×' }}</button>
+                                </div>
+                                <span v-if="addingFile" class="editor-file-tab editor-file-new" @focusout="cancelNewFile">
+                                    <font-awesome-icon icon="gear" class="editor-file-icon" aria-hidden="true" />
+                                    <FloatingTooltip placement="bottom-start" :disabled="!newFileName || validNewFileName" panel-class="text-destructive">
+                                        <template #trigger="{ triggerAttrs }">
+                                            <span class="editor-filename-wrap" v-bind="triggerAttrs">
+                                                <span class="editor-filename-measure" aria-hidden="true">{{ newFileName || $t('newEditableFile') }}</span>
+                                                <input
+                                                    ref="newFileInput"
+                                                    v-model="newFileName"
+                                                    class="editor-filename-input"
+                                                    :aria-label="$t('editableFileNamePrompt')"
+                                                    :aria-invalid="!!newFileName && !validNewFileName"
+                                                    :placeholder="$t('newEditableFile')"
+                                                    spellcheck="false"
+                                                    @keydown.enter.prevent="createEditableFile"
+                                                    @keydown.esc.prevent="cancelNewFile"
+                                                />
+                                            </span>
+                                        </template>
+                                        {{ $t('filenamePatternInvalid', { patterns: editableFilePatterns }) }}
+                                    </FloatingTooltip>
+                                </span>
+                                <button type="button" class="editor-tab-add" :aria-label="$t('newEditableFile')" :title="$t('newEditableFile')" @click="startNewFile">+</button>
+                            </div>
                             <button
                                 v-if="!isFullPageEditor && stack.isManagedByDockge"
                                 type="button"
@@ -153,17 +211,30 @@
 
                         <code-mirror
                             ref="editor"
-                            v-model="stack.composeYAML"
-                            :extensions="extensions"
+                            v-model="editorContent"
+                            :extensions="selectedFile === stack.composeFileName ? extensions : envExtensions"
                             minimal
                             wrap
                             :dark="$root.isDark"
                             tab
                             :disabled="!isEditMode"
                             :hasFocus="editorFocus"
-                            @change="yamlCodeChange"
+                            @change="onEditorChange"
                             @destroy="disposeYamlClient"
                         />
+                        <div v-if="diffPopup" ref="diffPopup" class="editor-diff-popup" :style="diffPopupStyle" role="dialog" :aria-label="$t('fileChange')">
+                            <div class="editor-diff-popup-header">
+                                <span>{{ $t('fileChange') }}</span>
+                                <div class="editor-diff-popup-actions">
+                                    <button type="button" :aria-label="$t('revertFileChange')" :title="$t('revertFileChange')" :disabled="!isEditMode || processing" @click="revertDiffChange">
+                                        <font-awesome-icon icon="undo" />
+                                    </button>
+                                    <button type="button" :aria-label="$t('close')" @click="diffPopup = null"><font-awesome-icon icon="times" /></button>
+                                </div>
+                            </div>
+                            <pre v-if="diffPopup.before" class="editor-diff-removed"><span class="editor-diff-prefix">− </span>{{ diffPopup.before }}</pre>
+                            <pre v-if="diffPopup.after" class="editor-diff-added"><span class="editor-diff-prefix">+ </span>{{ diffPopup.after }}</pre>
+                        </div>
 
                         <!-- Editor actions -->
                         <div v-if="isFullPageEditor" class="editor-actions">
@@ -171,7 +242,7 @@
                                 <button
                                     type="button"
                                     class="ui-btn ui-btn-gradient-primary !rounded-none"
-                                    :disabled="processing || !canSaveStack"
+                                    :disabled="processing || saveStatus === 'saved' || !canSaveStack || !validFilenameDraft"
                                     @click="requestDeployStack"
                                 >
                                     <font-awesome-icon icon="rocket" />
@@ -180,11 +251,11 @@
                                 <button
                                     type="button"
                                     class="ui-btn !rounded-none"
-                                    :disabled="processing || !canSaveStack"
-                                    @click="saveStack"
+                                    :disabled="processing || saveStatus === 'saved' || !canSaveStack || !validFilenameDraft"
+                                    @click="saveCurrentFile"
                                 >
-                                    <font-awesome-icon icon="save" />
-                                    <span class="action-group-text">{{ $t("saveStackDraft") }}</span>
+                                    <font-awesome-icon :icon="saveStatus === 'saving' ? 'spinner' : saveStatus === 'saved' ? 'check' : 'save'" :spin="saveStatus === 'saving'" />
+                                    <span class="action-group-text">{{ $t(saveStatus === 'saved' ? 'Saved' : 'saveStackDraft') }}</span>
                                 </button>
                             </div>
                             <button
@@ -200,7 +271,7 @@
                                 <button
                                     type="button"
                                     class="ui-btn"
-                                    :disabled="processing || formattingYaml"
+                                    :disabled="processing || formattingYaml || selectedFile !== stack.composeFileName"
                                     :title="$t('formatYaml')"
                                     @click="formatYaml"
                                 >
@@ -232,6 +303,22 @@
                 <div v-if="actionConfirm.commands?.length" class="mt-3">
                     <pre class="m-0 overflow-x-auto rounded-[0.35rem] bg-background px-3 py-[0.65rem]"><code v-for="(cmd, i) in actionConfirm.commands" :key="i" class="mt-[0.15rem] first:mt-0 block rounded-none bg-transparent p-0 font-app-mono text-sm leading-[1.45] whitespace-pre text-foreground"><span class="text-[#1a7f37] [.dark_&]:text-[#7ee787]">$</span> {{ cmd }}</code></pre>
                 </div>
+            </FloatingDialog>
+
+            <FloatingDialog
+                v-model="showDeleteFileDialog"
+                size="sm"
+                :title="$t('confirmDelete')"
+                :ok-title="$t('deleteEditableFile')"
+                ok-variant="danger"
+                :cancel-title="$t('cancel')"
+                :busy="processing"
+                @update:model-value="onDeletionDialogVisibilityChange"
+                @ok="confirmStagedDeletions"
+                @cancel="pendingDeletionAction = null"
+                @hidden="clearPendingDeletionAction"
+            >
+                {{ $t('confirmDeleteEditableFiles', { names: stagedDeletedFiles.join(', ') }) }}
             </FloatingDialog>
 
             <FloatingDialog
@@ -295,14 +382,22 @@
 <script>
 import CodeMirror from "vue-codemirror6";
 import { yaml } from "@codemirror/lang-yaml";
-import { lineNumbers, EditorView } from "@codemirror/view";
+import { python } from "@codemirror/lang-python";
+import { lineNumbers, EditorView, gutter, GutterMarker, keymap } from "@codemirror/view";
+import { EditorState, StateField, RangeSetBuilder, Prec } from "@codemirror/state";
+import { redo } from "@codemirror/commands";
+import { Chunk } from "@codemirror/merge";
 import { parseDocument } from "yaml";
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { faDocker } from "@fortawesome/free-brands-svg-icons";
 import { composeLanguageSupport, formatComposeYaml } from "../editor/compose-language";
 import { YamlLanguageClient } from "../editor/yaml-client";
 import { getEditorTheme } from "../editor/editor-theme";
 import {
+    DEFAULT_COMPOSE_FILE_PATTERNS,
+    DEFAULT_EDITABLE_FILE_PATTERNS,
+    matchesFilePatterns,
     envsubstYAML,
     getComposeTerminalName,
     validateStackFolderName,
@@ -318,6 +413,84 @@ import ActionGroup from "../components/ActionGroup.vue";
 import dotenv from "dotenv";
 import { markRaw, ref } from "vue";
 
+class ChangeMarker extends GutterMarker {
+    constructor(kind) {
+        super();
+        this.kind = kind;
+        this.elementClass = `cm-diff-marker cm-diff-${kind}`;
+    }
+}
+
+const addedMarker = new ChangeMarker("added");
+const deletedMarker = new ChangeMarker("deleted");
+const redoShortcut = Prec.highest(keymap.of([{ key: "Ctrl-Shift-z", run: redo, preventDefault: true }]));
+
+/** Diff the saved version against the current document without changing editor content. */
+function changeGutter(original, onClick) {
+    const saved = EditorState.create({ doc: original }).doc;
+    const chunks = StateField.define({
+        create(state) {
+            return Chunk.build(saved, state.doc);
+        },
+        update(value, transaction) {
+            return transaction.docChanged ? Chunk.updateB(value, saved, transaction.state.doc, transaction.changes) : value;
+        },
+    });
+    const markers = StateField.define({
+        create(state) {
+            return buildMarkers(state, state.field(chunks));
+        },
+        update(value, transaction) {
+            return transaction.docChanged ? buildMarkers(transaction.state, transaction.state.field(chunks)) : value;
+        },
+    });
+    function buildMarkers(state, changes) {
+        const builder = new RangeSetBuilder();
+        const positions = new Map();
+        for (const chunk of changes) {
+            if (chunk.toB > chunk.fromB) {
+                const start = state.doc.lineAt(Math.min(chunk.fromB, state.doc.length)).number;
+                const end = state.doc.lineAt(Math.min(Math.max(chunk.fromB, chunk.toB - 1), state.doc.length)).number;
+                for (let number = start; number <= end; number++) {
+                    positions.set(state.doc.line(number).from, addedMarker);
+                }
+            } else {
+                const position = state.doc.lineAt(Math.min(chunk.fromB, state.doc.length)).from;
+                positions.set(position, deletedMarker);
+            }
+        }
+        for (const [ position, marker ] of [ ...positions ].sort(([ a ], [ b ]) => a - b)) {
+            builder.add(position, position, marker);
+        }
+        return builder.finish();
+    }
+    return [
+        chunks,
+        markers,
+        gutter({
+            class: "cm-diff-gutter",
+            markers: view => view.state.field(markers),
+            domEventHandlers: {
+                mousedown(view, line, event) {
+                    if (!event.target.closest(".cm-diff-marker")) {
+                        return false;
+                    }
+                    const chunk = view.state.field(chunks).find(change =>
+                        change.toB > change.fromB
+                            ? line.from >= view.state.doc.lineAt(Math.min(change.fromB, view.state.doc.length)).from
+                                && line.from <= view.state.doc.lineAt(Math.min(Math.max(change.fromB, change.toB - 1), view.state.doc.length)).from
+                            : line.from === view.state.doc.lineAt(Math.min(change.fromB, view.state.doc.length)).from);
+                    if (chunk) {
+                        event.preventDefault();
+                        onClick(view, chunk, saved);
+                    }
+                    return true;
+                },
+            },
+        }),
+    ];
+}
+
 const template = `services:
   nginx:
     image: nginx:latest
@@ -325,8 +498,6 @@ const template = `services:
     ports:
       - "8080:80"
 `;
-const envDefault = "# VARIABLE=value #comment";
-
 /**
  * Copy shown in the confirmation dialog of each project action.
  * `ok` uses the action label, `message` is the sentence rendered inside the dialog,
@@ -419,11 +590,14 @@ export default {
             yaml(),
             composeLanguageSupport(yamlClient),
             lineNumbers(),
+            redoShortcut,
             EditorView.focusChangeEffect.of(focusEffectHandler)
         ];
 
         return {
+            faDocker,
             baseExtensions,
+            envBaseExtensions: [ python(), lineNumbers(), redoShortcut, EditorView.focusChangeEffect.of(focusEffectHandler) ],
             editorFocus,
             disposeYamlClient: () => yamlClient.dispose(),
         };
@@ -436,9 +610,30 @@ export default {
             stack: {
 
             },
+            selectedFile: "compose.yaml",
+            filenameDraft: "compose.yaml",
+            renamingFile: null,
+            addingFile: false,
+            newFileName: "",
+            editableFiles: [],
+            editableFilesOnDisk: [],
+            fileContents: {},
+            savedFileContents: {},
+            savedComposeContent: "",
+            diffPopup: null,
+            diffPopupStyle: {},
+            otherFileContent: "",
+            savedOtherFileContent: "",
+            draftFiles: {},
+            composeFilePatterns: DEFAULT_COMPOSE_FILE_PATTERNS,
+            editableFilePatterns: DEFAULT_EDITABLE_FILE_PATTERNS,
             serviceStatusList: {},
             dockerStats: {},
             isEditMode: false,
+            saveStatus: "idle",
+            showDeleteFileDialog: false,
+            stagedDeletedFiles: [],
+            pendingDeletionAction: null,
             submitted: false,
             formattingYaml: false,
             showActionDialog: false,
@@ -458,11 +653,52 @@ export default {
         };
     },
     computed: {
+        editorContent: {
+            get() {
+                return this.selectedFile === this.stack.composeFileName ? this.stack.composeYAML : (this.isAdd ? this.draftFiles[this.selectedFile] ?? "" : this.fileContents[this.selectedFile] ?? "");
+            },
+            set(value) {
+                if (this.selectedFile === this.stack.composeFileName) {
+                    this.stack.composeYAML = value;
+                } else if (this.isAdd) {
+                    this.draftFiles[this.selectedFile] = value;
+                    if (this.selectedFile === ".env") {
+                        this.stack.composeENV = value;
+                    }
+                } else {
+                    this.fileContents[this.selectedFile] = value;
+                    this.otherFileContent = value;
+                }
+            },
+        },
+        validComposeFileName() {
+            return matchesFilePatterns(this.stack.composeFileName, this.composeFilePatterns);
+        },
+        validFilenameDraft() {
+            if (!this.renamingFile) {
+                return true;
+            }
+            const patterns = this.renamingFile === this.stack.composeFileName ? this.composeFilePatterns : this.editableFilePatterns;
+            return matchesFilePatterns(this.filenameDraft, patterns);
+        },
+        validNewFileName() {
+            return matchesFilePatterns(this.newFileName.trim(), this.editableFilePatterns)
+                && this.newFileName.trim() !== this.stack.composeFileName
+                && !this.editableFiles.includes(this.newFileName.trim());
+        },
+        diffExtensions() {
+            if (this.isAdd) {
+                return [];
+            }
+            const original = this.selectedFile === this.stack.composeFileName
+                ? this.savedComposeContent : this.savedFileContents[this.selectedFile];
+            return original === undefined ? [] : changeGutter(original, (view, chunk, saved) => this.openDiffPopup(view, chunk, saved));
+        },
+        envExtensions() {
+            return [ getEditorTheme(this.$root.isDark), ...this.envBaseExtensions, ...this.diffExtensions ];
+        },
         extensions() {
-            return [
-                getEditorTheme(this.$root.isDark),
-                ...this.baseExtensions,
-            ];
+            return [ getEditorTheme(this.$root.isDark), ...this.baseExtensions, ...this.diffExtensions ];
         },
 
         endpointDisplay() {
@@ -612,6 +848,9 @@ export default {
         },
 
         canSaveStack() {
+            if (!this.validComposeFileName) {
+                return false;
+            }
             if (!this.isAdd) {
                 return true;
             }
@@ -709,19 +948,15 @@ export default {
         }
     },
     mounted() {
+        document.addEventListener("keydown", this.onEditorEscape);
+        document.addEventListener("pointerdown", this.onOutsideDiffClick);
         if (this.isAdd) {
             this.processing = false;
             this.isEditMode = true;
 
             let composeYAML = template;
-            let composeENV;
-
-            if (this.$root.envTemplate) {
-                composeENV = this.$root.envTemplate;
-                this.$root.envTemplate = "";
-            } else {
-                composeENV = envDefault;
-            }
+            let composeENV = this.$root.envTemplate || "";
+            this.$root.envTemplate = "";
 
             // Default Values
             this.stack = {
@@ -733,6 +968,10 @@ export default {
                 endpoint: "",
             };
 
+            this.selectedFile = this.stack.composeFileName;
+            this.filenameDraft = this.selectedFile;
+            this.editableFiles = [ ".env" ];
+            this.draftFiles = { ".env": composeENV };
             this.yamlCodeChange();
 
         } else {
@@ -743,8 +982,66 @@ export default {
         this.requestServiceStatus();
         this.requestDockerStats();
     },
+    beforeUnmount() {
+        document.removeEventListener("keydown", this.onEditorEscape);
+        document.removeEventListener("pointerdown", this.onOutsideDiffClick);
+    },
     methods: {
         statusColor,
+
+        openDiffPopup(view, chunk, saved) {
+            const before = saved.sliceString(chunk.fromA, chunk.endA);
+            const after = view.state.doc.sliceString(chunk.fromB, chunk.endB);
+            const editor = view.dom.closest(".editor-box");
+            const rect = editor.getBoundingClientRect();
+            const marker = view.coordsAtPos(Math.min(chunk.fromB, view.state.doc.length));
+            this.diffPopup = {
+                before,
+                after,
+                file: this.selectedFile,
+                from: chunk.fromB,
+                to: Math.min(chunk.toB, view.state.doc.length),
+                replacement: saved.sliceString(chunk.fromA, Math.min(chunk.toA, saved.length)),
+            };
+            this.diffPopupStyle = {
+                top: `${Math.max(34, Math.min((marker?.bottom ?? rect.top) - rect.top, rect.height - 160))}px`,
+                left: `${Math.max(40, Math.min((marker?.left ?? rect.left) - rect.left, rect.width - 420))}px`,
+            };
+        },
+
+        revertDiffChange() {
+            const change = this.diffPopup;
+            const view = this.$refs.editor?.view;
+            if (!change || !view || !this.isEditMode || this.processing || change.file !== this.selectedFile) {
+                return;
+            }
+            view.dispatch({
+                changes: { from: change.from, to: change.to, insert: change.replacement },
+            });
+            this.diffPopup = null;
+        },
+
+        onEditorEscape(event) {
+            if (event.key !== "Escape" || !this.$refs.editor?.view?.hasFocus) {
+                return;
+            }
+            this.diffPopup = null;
+            this.$refs.editor.view.contentDOM.blur();
+            event.preventDefault();
+        },
+
+        onOutsideDiffClick(event) {
+            if (this.diffPopup && !event.target.closest(".cm-diff-gutter, .editor-diff-popup")) {
+                this.diffPopup = null;
+            }
+        },
+
+        onEditorChange() {
+            this.diffPopup = null;
+            if (this.selectedFile === this.stack.composeFileName) {
+                this.yamlCodeChange();
+            }
+        },
 
         /**
          * Localize the status detail line under the project title tooltip.
@@ -954,7 +1251,18 @@ export default {
             this.processing = true;
             this.$root.emitAgent(this.endpoint, "getStack", this.stack.name, (res) => {
                 if (res.ok) {
+                    this.diffPopup = null;
                     this.stack = res.stack;
+                    this.savedComposeContent = res.stack.composeYAML;
+                    this.selectedFile = res.stack.composeFileName;
+                    this.filenameDraft = this.selectedFile;
+                    this.editableFilesOnDisk = res.files;
+                    this.editableFiles = res.files;
+                    this.stagedDeletedFiles = [];
+                    this.fileContents = {};
+                    this.savedFileContents = {};
+                    this.composeFilePatterns = res.composeFilePatterns;
+                    this.editableFilePatterns = res.editableFilePatterns;
                     this.yamlCodeChange();
                     this.processing = false;
                 } else {
@@ -963,29 +1271,109 @@ export default {
             });
         },
 
-        deployStack() {
-            this.runWithProgress("deployStack", () => {
-                this.$root.emitAgent(this.stack.endpoint, "deployStack", this.stack.name, this.composeEditorContent(), this.stack.composeENV, this.isAdd, (res) => {
-                    this.finishProgress(res);
+        /** Save changed additional files before saving Compose and .env. */
+        saveEditedFiles(onSaved, onError) {
+            if (this.isAdd) {
+                onSaved();
+                return;
+            }
 
-                    if (res.ok) {
-                        this.stack.name = res.name;
-                        this.isEditMode = false;
-                        this.clearProgressCloseTimer();
-                        this.showProgressDialog = false;
-                        this.$router.push(this.url);
+            const pendingFiles = Object.entries(this.fileContents).filter(([ file, content ]) =>
+                file !== ".env" && !this.stagedDeletedFiles.includes(file) && content !== this.savedFileContents[file]);
+            const saveNextFile = () => {
+                const next = pendingFiles.shift();
+                if (!next) {
+                    if (!this.stagedDeletedFiles.includes(".env") && Object.hasOwn(this.fileContents, ".env")) {
+                        this.stack.composeENV = this.fileContents[".env"];
                     }
+                    onSaved();
+                    return;
+                }
+                const [ file, content ] = next;
+                this.$root.emitAgent(this.endpoint, "writeStackFile", this.stack.name, file, content, false, (res) => {
+                    if (!res?.ok) {
+                        onError(res);
+                        return;
+                    }
+                    this.savedFileContents[file] = content;
+                    saveNextFile();
                 });
+            };
+            saveNextFile();
+        },
+
+        /** Apply confirmed removals before saving or deploying; retain failed removals for retry. */
+        applyStagedDeletions(onDone, onError) {
+            const pending = [ ...this.stagedDeletedFiles ];
+            const removeNext = () => {
+                const file = pending.shift();
+                if (!file) {
+                    onDone();
+                    return;
+                }
+                if (this.isAdd) {
+                    delete this.draftFiles[file];
+                    this.finishDeletedFile(file);
+                    removeNext();
+                    return;
+                }
+                this.$root.emitAgent(this.endpoint, "deleteStackFile", this.stack.name, file, (res) => {
+                    if (!res?.ok) {
+                        onError(res);
+                        return;
+                    }
+                    this.editableFilesOnDisk = res.files;
+                    this.finishDeletedFile(file);
+                    removeNext();
+                });
+            };
+            removeNext();
+        },
+
+        finishDeletedFile(file) {
+            this.stagedDeletedFiles = this.stagedDeletedFiles.filter(name => name !== file);
+            this.editableFiles = this.editableFiles.filter(name => name !== file);
+            delete this.fileContents[file];
+            delete this.savedFileContents[file];
+            if (file === ".env") {
+                this.stack.composeENV = "";
+            }
+            if (this.selectedFile === file) {
+                this.selectedFile = this.stack.composeFileName;
+                this.filenameDraft = this.selectedFile;
+                this.otherFileContent = "";
+            }
+        },
+
+        deployStack() {
+            const draftFiles = this.isAdd ? Object.fromEntries(Object.entries(this.draftFiles).filter(([ file ]) => file !== ".env" && !this.stagedDeletedFiles.includes(file))) : {};
+            this.runWithProgress("deployStack", () => {
+                this.saveEditedFiles(() => {
+                    this.applyStagedDeletions(() => {
+                        this.$root.emitAgent(this.stack.endpoint, "deployStack", this.stack.name, this.composeEditorContent(), this.stack.composeENV, this.isAdd, this.stack.composeFileName, draftFiles, (res) => {
+                            this.finishProgress(res);
+
+                            if (res.ok) {
+                                this.stack.name = res.name;
+                                this.savedComposeContent = this.stack.composeYAML;
+                                this.isEditMode = false;
+                                this.clearProgressCloseTimer();
+                                this.showProgressDialog = false;
+                                this.$router.push(this.url);
+                            }
+                        });
+                    }, res => this.finishProgress(res));
+                }, res => this.finishProgress(res));
             }, [ "docker compose up -d --remove-orphans" ]);
         },
 
         /**
          * Validate the compose file, then open the deploy confirmation dialog.
-         * Deploy saves compose.yaml / .env and runs `docker compose up -d --remove-orphans`.
+         * Deploy saves compose YAML, .env, and edited additional files before running Compose.
          * @returns {void}
          */
         requestDeployStack() {
-            if (!this.canSaveStack || this.processing) {
+            if (!this.canSaveStack || !this.validFilenameDraft || this.filenameDraft !== this.selectedFile || this.processing || this.saveStatus === "saved") {
                 return;
             }
 
@@ -1013,33 +1401,295 @@ export default {
                 }
             }
 
-            this.requestProjectAction("deployStack");
+            if (this.stagedDeletedFiles.length) {
+                this.pendingDeletionAction = "deployStack";
+                this.showDeleteFileDialog = true;
+            } else {
+                this.requestProjectAction("deployStack");
+            }
         },
 
         /** Return the editor document verbatim, including comments and trailing newline. */
         composeEditorContent() {
-            return this.$refs.editor?.view?.state.doc.toString() ?? this.stack.composeYAML;
+            return this.stack.composeYAML;
+        },
+
+        saveCurrentFile() {
+            if (this.processing || this.saveStatus === "saved") {
+                return;
+            }
+            if (this.filenameDraft !== this.selectedFile) {
+                this.$root.toastError(this.$t("saveFilenameFirst"));
+                return;
+            }
+            if (this.stagedDeletedFiles.length) {
+                this.pendingDeletionAction = "saveStack";
+                this.showDeleteFileDialog = true;
+            } else {
+                this.saveStack();
+            }
+        },
+
+        beginRename(file) {
+            if (this.stagedDeletedFiles.includes(file)) {
+                return;
+            }
+            this.renamingFile = file;
+            this.filenameDraft = file;
+            this.$nextTick(() => this.$refs.filenameInput?.[0]?.focus());
+        },
+
+        resetFilename() {
+            this.filenameDraft = this.selectedFile;
+            this.renamingFile = null;
+        },
+
+        commitFilename() {
+            if (!this.renamingFile) {
+                return;
+            }
+            const oldFilename = this.renamingFile;
+            const filename = this.filenameDraft.trim();
+            if (!matchesFilePatterns(filename, oldFilename === this.stack.composeFileName ? this.composeFilePatterns : this.editableFilePatterns)) {
+                this.resetFilename();
+                return;
+            }
+            if (filename === oldFilename) {
+                this.filenameDraft = filename;
+                this.renamingFile = null;
+                return;
+            }
+            if (this.isAdd) {
+                if (filename === this.stack.composeFileName || this.editableFiles.includes(filename)) {
+                    this.$root.toastError("File already exists");
+                    this.resetFilename();
+                    return;
+                }
+                if (this.selectedFile === this.stack.composeFileName) {
+                    this.stack.composeFileName = filename;
+                } else {
+                    if (oldFilename === ".env") {
+                        this.stack.composeENV = "";
+                    }
+                    if (filename === ".env") {
+                        this.stack.composeENV = this.draftFiles[this.selectedFile];
+                    }
+                    this.draftFiles[filename] = this.draftFiles[this.selectedFile];
+                    delete this.draftFiles[this.selectedFile];
+                    this.editableFiles = this.editableFiles.map(file => file === this.selectedFile ? filename : file);
+                }
+                this.selectedFile = filename;
+                this.filenameDraft = filename;
+                this.renamingFile = null;
+                return;
+            }
+            if (this.processing) {
+                return;
+            }
+            this.processing = true;
+            this.$root.emitAgent(this.endpoint, "renameStackFile", this.stack.name, this.selectedFile, filename, (res) => {
+                this.processing = false;
+                if (!res.ok) {
+                    this.$root.toastRes(res);
+                    this.resetFilename();
+                    return;
+                }
+                if (this.selectedFile === this.stack.composeFileName) {
+                    this.stack.composeFileName = filename;
+                } else {
+                    this.editableFilesOnDisk = res.files;
+                    this.editableFiles = res.files;
+                    this.fileContents[filename] = this.fileContents[oldFilename] ?? "";
+                    this.savedFileContents[filename] = this.savedFileContents[oldFilename] ?? "";
+                    if (oldFilename === ".env") {
+                        this.stack.composeENV = "";
+                    }
+                    if (filename === ".env") {
+                        this.stack.composeENV = this.savedFileContents[filename];
+                    }
+                    delete this.fileContents[oldFilename];
+                    delete this.savedFileContents[oldFilename];
+                }
+                this.selectedFile = filename;
+                this.filenameDraft = filename;
+                this.renamingFile = null;
+            });
+        },
+
+        chooseFile(filename) {
+            this.diffPopup = null;
+            if (filename === this.selectedFile) {
+                this.beginRename(filename);
+                return;
+            }
+            this.renamingFile = null;
+            this.selectedFile = filename;
+            this.filenameDraft = filename;
+            this.selectProjectFile();
+        },
+
+        selectProjectFile() {
+            if (this.selectedFile === this.stack.composeFileName) {
+                return;
+            }
+            if (this.isAdd) {
+                return;
+            }
+            if (Object.hasOwn(this.fileContents, this.selectedFile)) {
+                this.otherFileContent = this.fileContents[this.selectedFile];
+                this.savedOtherFileContent = this.savedFileContents[this.selectedFile] ?? "";
+                return;
+            }
+            const file = this.selectedFile;
+            this.$root.emitAgent(this.endpoint, "readStackFile", this.stack.name, file, (res) => {
+                if (res.ok) {
+                    if (Object.hasOwn(this.fileContents, file)) {
+                        return;
+                    }
+                    this.fileContents[file] = res.content;
+                    this.savedFileContents[file] = res.content;
+                    if (file === ".env") {
+                        this.stack.composeENV = res.content;
+                    }
+                    if (this.selectedFile === file) {
+                        this.otherFileContent = res.content;
+                        this.savedOtherFileContent = res.content;
+                    }
+                } else {
+                    this.$root.toastRes(res);
+                    if (this.selectedFile === file) {
+                        this.selectedFile = this.stack.composeFileName;
+                        this.filenameDraft = this.selectedFile;
+                    }
+                }
+            });
+        },
+
+        startNewFile() {
+            if (this.addingFile) {
+                this.$refs.newFileInput?.focus();
+                return;
+            }
+            this.addingFile = true;
+            this.newFileName = "";
+            this.$nextTick(() => this.$refs.newFileInput?.focus());
+        },
+
+        cancelNewFile() {
+            this.addingFile = false;
+            this.newFileName = "";
+        },
+
+        createEditableFile() {
+            const filename = this.newFileName.trim();
+            if (!filename) {
+                this.cancelNewFile();
+                return;
+            }
+            if (!this.validNewFileName) {
+                this.$root.toastError(this.$t("filenamePatternInvalid", { patterns: this.editableFilePatterns }));
+                this.$refs.newFileInput?.focus();
+                return;
+            }
+            if (this.isAdd) {
+                this.draftFiles[filename] = "";
+                this.editableFiles.push(filename);
+                this.selectedFile = filename;
+                this.filenameDraft = filename;
+                this.cancelNewFile();
+                return;
+            }
+            this.$root.emitAgent(this.endpoint, "writeStackFile", this.stack.name, filename, "", true, (res) => {
+                if (res.ok) {
+                    this.editableFilesOnDisk = res.files;
+                    this.editableFiles = res.files;
+                    this.selectedFile = filename;
+                    this.filenameDraft = filename;
+                    this.otherFileContent = "";
+                    this.fileContents[filename] = "";
+                    this.savedFileContents[filename] = "";
+                    this.isEditMode = true;
+                    this.cancelNewFile();
+                } else {
+                    this.$root.toastRes(res);
+                }
+            });
+        },
+
+        toggleDeleteEditableFile(file) {
+            if (this.processing) {
+                return;
+            }
+            this.resetFilename();
+            if (this.stagedDeletedFiles.includes(file)) {
+                this.stagedDeletedFiles = this.stagedDeletedFiles.filter(name => name !== file);
+            } else {
+                this.stagedDeletedFiles.push(file);
+            }
+        },
+
+        confirmStagedDeletions() {
+            this.showDeleteFileDialog = false;
+            if (this.pendingDeletionAction === "saveStack") {
+                this.pendingDeletionAction = null;
+                this.saveStack();
+            }
+        },
+
+        onDeletionDialogVisibilityChange(visible) {
+            if (!visible) {
+                this.pendingDeletionAction = null;
+            }
+        },
+
+        clearPendingDeletionAction() {
+            const action = this.pendingDeletionAction;
+            this.pendingDeletionAction = null;
+            if (action === "deployStack") {
+                this.requestProjectAction(action);
+            }
+        },
+
+        finishSave() {
+            this.processing = false;
+            this.saveStatus = "saved";
+            setTimeout(() => {
+                this.isEditMode = false;
+                this.saveStatus = "idle";
+                if (this.$route.path !== this.url) {
+                    this.$router.push(this.url);
+                }
+            }, 750);
         },
 
         saveStack() {
-            if (!this.canSaveStack) {
+            if (!this.canSaveStack || this.processing) {
                 return;
             }
 
             this.processing = true;
+            this.saveStatus = "saving";
 
-            this.$root.emitAgent(this.stack.endpoint, "saveStack", this.stack.name, this.composeEditorContent(), this.stack.composeENV, this.isAdd, (res) => {
+            const fail = (res) => {
                 this.processing = false;
-                if (!res.ok) {
-                    this.$root.toastRes(res);
-                }
+                this.saveStatus = "idle";
+                this.$root.toastRes(res);
+            };
+            this.saveEditedFiles(() => {
+                this.applyStagedDeletions(() => {
+                    this.$root.emitAgent(this.stack.endpoint, "saveStack", this.stack.name, this.composeEditorContent(), this.stack.composeENV, this.isAdd, this.stack.composeFileName, this.isAdd ? Object.fromEntries(Object.entries(this.draftFiles).filter(([ file ]) => file !== ".env")) : {}, (res) => {
+                        if (!res?.ok) {
+                            fail(res);
+                            return;
+                        }
 
-                if (res.ok) {
-                    this.stack.name = res.name;
-                    this.isEditMode = false;
-                    this.$router.push(this.url);
-                }
-            });
+                        this.stack.name = res.name;
+                        this.savedComposeContent = this.stack.composeYAML;
+                        this.submitted = this.submitted || this.isAdd;
+                        this.finishSave();
+                    });
+                }, fail);
+            }, fail);
         },
 
         requestProjectAction(action) {
@@ -1122,7 +1772,26 @@ export default {
         },
 
         discardStack() {
-            this.loadStack();
+            this.stagedDeletedFiles = [];
+            if (this.selectedFile !== this.stack.composeFileName) {
+                const file = this.selectedFile;
+                this.resetFilename();
+                if (this.editableFilesOnDisk.includes(file)) {
+                    delete this.fileContents[file];
+                    delete this.savedFileContents[file];
+                    this.selectProjectFile();
+                } else {
+                    this.fileContents[file] = "";
+                    this.savedFileContents[file] = "";
+                    if (file === ".env") {
+                        this.stack.composeENV = "";
+                    }
+                    this.otherFileContent = "";
+                    this.savedOtherFileContent = "";
+                }
+            } else {
+                this.loadStack();
+            }
             this.isEditMode = false;
         },
 
@@ -1257,7 +1926,7 @@ export default {
         padding: 0.45rem 0.7rem;
         border: 1px solid var(--border);
         border-radius: 0.375rem;
-        background-color: var(--background);
+        background-color: var(--secondary);
         color: var(--muted-foreground);
         font-family: var(--font-mono);
         font-size: var(--text-sm-fontSize);
@@ -1299,8 +1968,35 @@ export default {
         opacity: 0.75;
     }
 
+    .stack-name-input {
+        position: relative;
+    }
+
     .ui-field {
         font-family: var(--font-mono);
+
+        &::placeholder {
+            color: transparent;
+        }
+    }
+
+    .stack-name-placeholder {
+        position: absolute;
+        top: 50%;
+        left: 0.75rem;
+        transform: translateY(-50%);
+        pointer-events: none;
+        font-family: var(--font-mono);
+    }
+
+    .stack-name-placeholder-text {
+        color: var(--muted-foreground);
+        opacity: 0.5;
+    }
+
+    .stack-name-required {
+        color: var(--destructive);
+        opacity: 0.5;
     }
 }
 
@@ -1309,6 +2005,7 @@ export default {
     overflow: hidden;
     flex-direction: column;
     padding: 0;
+    position: relative;
     font-family: var(--font-mono);
     font-size: var(--text-sm-fontSize);
 
@@ -1321,6 +2018,38 @@ export default {
     :deep(.cm-editor) {
         height: 100%;
         min-height: 0;
+        background-color: var(--card);
+    }
+
+    :deep(.cm-gutters) {
+        background-color: var(--card);
+    }
+
+    :deep(.cm-diff-gutter) {
+        width: 7px;
+    }
+
+    :deep(.cm-diff-marker) {
+        position: relative;
+        cursor: pointer;
+
+        &::before {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 1px;
+            width: 4px;
+            border-radius: 2px;
+            background: #2da44e;
+            content: "";
+        }
+    }
+
+    :deep(.cm-diff-deleted::before) {
+        top: 0;
+        bottom: auto;
+        height: 3px;
+        background: #e05252;
     }
 
     :deep(.cm-scroller) {
@@ -1343,22 +2072,249 @@ export default {
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
+    min-height: 34px;
     margin: 0;
-    padding: 0.55rem 0.75rem;
-    border-bottom: 1px solid var(--border);
+    padding: 0 0.5rem 0 0;
+    background: var(--secondary);
+    box-shadow: inset 0 -1px 0 var(--border);
 }
 
-.editor-filename {
-    overflow: hidden;
-    min-width: 0;
-    margin-right: auto;
-    color: var(--muted-foreground);
-    font-family: inherit;
+.editor-diff-popup {
+    position: absolute;
+    z-index: 20;
+    width: min(420px, calc(100% - 48px));
+    max-height: 280px;
+    overflow: auto;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--card);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 20%);
+    font-family: var(--font-mono);
     font-size: var(--text-sm-fontSize);
-    font-weight: var(--fontWeight-medium);
-    letter-spacing: 0.01em;
-    text-overflow: ellipsis;
+}
+
+.editor-diff-popup-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.35rem 0.65rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--muted-foreground);
+
+    button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        padding: 0;
+        border: 0;
+        border-radius: 4px;
+        background: none;
+        color: inherit;
+        cursor: pointer;
+
+        &:hover:not(:disabled), &:focus-visible {
+            background: var(--hover);
+            color: var(--foreground);
+        }
+
+        &:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+    }
+}
+
+.editor-diff-popup-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+
+    svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    svg[data-icon="xmark"] {
+        width: 18px;
+        height: 18px;
+    }
+}
+
+.editor-diff-popup pre {
+    margin: 0;
+    overflow-x: auto;
+    padding: 0.4rem 0.65rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.editor-diff-prefix {
+    font-weight: bold;
+    user-select: none;
+}
+
+.editor-diff-removed {
+    background: rgb(224 82 82 / 16%);
+}
+
+.editor-diff-added {
+    background: rgb(45 164 78 / 16%);
+}
+
+.editor-file-tabs {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: stretch;
+    min-width: 0;
+    min-height: 34px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+.editor-file-tab {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 0.1rem;
+    min-height: 34px;
+    padding: 0 0.55rem;
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    color: var(--muted-foreground);
+
+    &.active {
+        position: relative;
+        z-index: 1;
+        border-bottom: 0;
+        background: var(--card);
+        color: var(--foreground);
+    }
+
+    &:hover:not(.active) {
+        background: var(--hover);
+    }
+
+    &.pending-delete .editor-file-name span {
+        color: var(--muted-foreground);
+        text-decoration: line-through;
+        text-decoration-color: var(--destructive);
+    }
+}
+
+.editor-file-icon {
+    flex: none;
+    font-size: 0.85rem;
+}
+
+.editor-file-rename {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.editor-file-name, .editor-tab-close, .editor-tab-add {
+    flex: none;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+}
+
+.editor-file-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0;
+    font: inherit;
+    font-size: var(--text-sm-fontSize);
     white-space: nowrap;
+}
+
+.editor-file-tab.active .editor-file-name:hover span {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.editor-tab-close, .editor-tab-add {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border-radius: 3px;
+    font-size: 1.1rem;
+    line-height: 1;
+
+    &:hover, &:focus-visible {
+        background: var(--hover);
+        color: var(--foreground);
+    }
+}
+
+.editor-tab-close {
+    margin-left: 0.15rem;
+}
+
+.editor-tab-add {
+    align-self: center;
+    margin-left: 0.5rem;
+}
+
+.editor-filename-wrap {
+    display: inline-grid;
+    flex: none;
+    align-items: center;
+    min-width: 2ch;
+
+    .editor-filename-measure, .editor-filename-input {
+        grid-area: 1 / 1;
+        font: inherit;
+        font-size: var(--text-sm-fontSize);
+        line-height: inherit;
+        letter-spacing: inherit;
+        box-sizing: border-box;
+    }
+}
+
+.editor-filename-measure {
+    visibility: hidden;
+    white-space: pre;
+    padding: 0.3rem 0;
+}
+
+.editor-filename-input {
+    width: 100%;
+    min-width: 0;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: inherit;
+    outline: none;
+    box-shadow: none;
+    appearance: none;
+
+    &:focus, &:focus-visible {
+        border: 0;
+        background: transparent;
+        color: inherit;
+        outline: none;
+        box-shadow: none;
+    }
+
+    &[aria-invalid="true"] {
+        color: var(--destructive);
+    }
 }
 
 .editor-edit {

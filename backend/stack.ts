@@ -5,7 +5,8 @@ import yaml from "yaml";
 import { DockgeSocket, fileExists, ValidationError } from "./util-server";
 import path from "path";
 import {
-    acceptedComposeFileNames,
+    matchesFilePatterns,
+    preferredMatchingFile,
     COMBINED_TERMINAL_COLS,
     COMBINED_TERMINAL_ROWS,
     CREATED_FILE,
@@ -62,13 +63,11 @@ export class Stack {
         this._composeYAML = composeYAML;
         this._composeENV = composeENV;
 
-        if (!skipFSOperations) {
-            // Check if compose file name is different from compose.yaml
-            for (const filename of acceptedComposeFileNames) {
-                if (fs.existsSync(path.join(this.path, filename))) {
-                    this._composeFileName = filename;
-                    break;
-                }
+        if (!skipFSOperations && fs.existsSync(this.path)) {
+            const filename = preferredMatchingFile(fs.readdirSync(this.path).filter(file =>
+                fs.lstatSync(path.join(this.path, file)).isFile()), server.composeFilePatterns);
+            if (filename) {
+                this._composeFileName = filename;
             }
         }
     }
@@ -144,7 +143,7 @@ export class Stack {
             return false;
         }
         return Stack.isPathInside(this.server.stacksDir, projectDir)
-            && acceptedComposeFileNames.includes(this._composeFileName)
+            && matchesFilePatterns(this._composeFileName, this.server.composeFilePatterns)
             && fs.existsSync(this.composeFilePath);
     }
 
@@ -179,6 +178,16 @@ export class Stack {
         if (lines.length === 1 && !lines[0].includes("=") && lines[0].length > 0) {
             throw new ValidationError("Invalid .env format");
         }
+    }
+
+    setComposeFileName(filename : string) {
+        if (!matchesFilePatterns(filename, this.server.composeFilePatterns)) {
+            throw new ValidationError("Compose filename is not allowed by the configured pattern");
+        }
+        if (filename !== this._composeFileName && fs.existsSync(this.path)) {
+            throw new ValidationError("Rename the existing Compose file separately");
+        }
+        this._composeFileName = filename;
     }
 
     setComposeContent(composeYAML : string, composeENV : string) {
@@ -246,6 +255,9 @@ export class Stack {
      */
     async save(isAdd : boolean) {
         let dir = this.path;
+        if (!matchesFilePatterns(this._composeFileName, this.server.composeFilePatterns)) {
+            throw new ValidationError("Compose filename is not allowed by the configured pattern");
+        }
 
         // Check if the name is used if isAdd
         if (isAdd) {
@@ -285,8 +297,12 @@ export class Stack {
             }
         }
 
-        // Write or overwrite the compose.yaml
-        fs.writeFileSync(path.join(dir, this._composeFileName), this.composeYAML);
+        // Never follow a symlink when writing an allowed file.
+        const composePath = path.join(dir, this._composeFileName);
+        if (fs.existsSync(composePath) && !fs.lstatSync(composePath).isFile()) {
+            throw new ValidationError("Compose file must be a regular file");
+        }
+        fs.writeFileSync(composePath, this.composeYAML);
         if (process.env.PUID && process.env.PGID) {
             const uid = Number(process.env.PUID);
             const gid = Number(process.env.PGID);
@@ -354,10 +370,12 @@ export class Stack {
         for (const folder of await fsAsync.readdir(server.stacksDir)) {
             try {
                 const projectDir = path.resolve(server.stacksDir, folder);
-                if (!(await fsAsync.stat(projectDir)).isDirectory()) {
+                if (!(await fsAsync.lstat(projectDir)).isDirectory()) {
                     continue;
                 }
-                const composeFile = acceptedComposeFileNames.find(filename => fs.existsSync(path.join(projectDir, filename)));
+                const files = await fsAsync.readdir(projectDir);
+                const composeFile = preferredMatchingFile(files.filter(filename =>
+                    fs.lstatSync(path.join(projectDir, filename)).isFile()), server.composeFilePatterns);
                 if (!composeFile) {
                     continue;
                 }
