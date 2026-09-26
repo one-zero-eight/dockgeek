@@ -314,7 +314,7 @@ export default {
 <style lang="scss" scoped>
 .field-label { display: inline-block; margin-bottom: 0.5rem; color: var(--foreground); }
 @media (max-width: 575px) {
-    .ui-field, .ui-btn { min-height: 44px; }
+    .ui-field { min-height: 44px; }
 }
 
 table {

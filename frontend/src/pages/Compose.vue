@@ -2451,8 +2451,8 @@ export default {
     align-items: center;
     justify-content: center;
     gap: 0.4rem;
-    min-height: 28px;
-    padding: 0.2rem 0.65rem;
+    min-height: 32px;
+    padding: 0.35rem 0.6rem;
     border: 0;
     border-radius: 6px;
     background: transparent;
@@ -2503,7 +2503,6 @@ export default {
     font-weight: var(--fontWeight-normal);
 
     .ui-btn, .editor-edit {
-        min-height: 32px;
         padding: 0.35rem 0.6rem;
         gap: 0.35rem;
         font-size: var(--text-sm-fontSize);
@@ -2768,9 +2767,7 @@ export default {
             display: inline-flex;
             align-items: center;
             gap: 0.35rem;
-            min-height: 24px !important;
-            height: 24px;
-            padding: 0 0.45rem !important;
+            padding: 0 0.6rem !important;
             border-radius: 4px;
             color: var(--terminal-muted) !important;
             font-size: var(--text-xs-fontSize);

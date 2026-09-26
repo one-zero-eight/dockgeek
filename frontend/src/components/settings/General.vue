@@ -50,7 +50,7 @@
                         class="ui-field min-w-0 flex-1 max-[575px]:min-h-[44px] rounded-e-none text-secondary-foreground text-base"
                         :placeholder="$t(`CurrentHostname`)"
                     />
-                    <button class="min-h-[2.375rem] max-[575px]:min-h-[44px] shrink-0 rounded-r-md bg-transparent px-5 py-1.5 text-link cursor-pointer hover:bg-primary-hover hover:text-primary-foreground focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2" type="button" @click="autoGetPrimaryHostname">
+                    <button class="ui-btn shrink-0 rounded-l-none rounded-r-md bg-transparent px-5 text-link hover:bg-primary-hover hover:text-primary-foreground" type="button" @click="autoGetPrimaryHostname">
                         {{ $t("autoGet") }}
                     </button>
                 </div>
@@ -71,7 +71,7 @@
 
             <!-- Save Button -->
             <div>
-                <button class="ui-settings-save" type="submit" :disabled="saving">
+                <button class="ui-btn ui-btn-primary ui-settings-save" type="submit" :disabled="saving">
                     <span class="col-start-1 row-start-1" :class="{ invisible: saving || saved }" :aria-hidden="saving || saved">{{ $t("Save") }}</span>
                     <span class="col-start-1 row-start-1 inline-flex items-center justify-center gap-2" :class="{ invisible: !saving }" :aria-hidden="!saving">
                         <font-awesome-icon icon="spinner" :spin="saving" aria-hidden="true" /> {{ $t("Save") }}

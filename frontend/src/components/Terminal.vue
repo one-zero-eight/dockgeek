@@ -6,7 +6,7 @@
                     <button
                         v-for="action in toolbarActions"
                         :key="action.key"
-                        class="ui-btn ui-btn-sm terminal-button flex-none gap-[.35rem] px-3 max-[991.98px]:min-h-[44px]"
+                        class="ui-btn ui-btn-sm terminal-button flex-none gap-[.35rem] px-3"
                         :disabled="action.disabled"
                         @click="runToolbarAction(action.key)"
                     >

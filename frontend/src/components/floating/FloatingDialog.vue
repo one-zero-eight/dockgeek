@@ -33,10 +33,10 @@
 
                     <footer v-if="!hideFooter" class="fd-footer flex shrink-0 flex-wrap items-center justify-end gap-2 px-[1.15rem] pb-[1.15rem]">
                         <slot name="footer" :cancel="cancel" :ok="ok" :busy="busy">
-                            <button type="button" class="fd-button inline-flex min-h-[38px] items-center justify-center gap-1 rounded-md bg-secondary px-3 py-1.5 text-secondary-foreground leading-[1.5] cursor-pointer disabled:cursor-not-allowed disabled:opacity-65 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2" :class="buttonVariant(cancelVariant)" :disabled="busy" @click="cancel">
+                            <button type="button" class="ui-btn fd-button" :class="buttonVariant(cancelVariant)" :disabled="busy" @click="cancel">
                                 {{ cancelTitle || $t("cancel") }}
                             </button>
-                            <button type="button" class="fd-button fd-ok inline-flex min-h-[38px] items-center justify-center gap-1 rounded-md bg-secondary px-3 py-1.5 text-secondary-foreground leading-[1.5] cursor-pointer disabled:cursor-not-allowed disabled:opacity-65 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2" :class="buttonVariant(okVariant)" :disabled="okDisabled || busy" @click="ok">
+                            <button type="button" class="ui-btn fd-button fd-ok" :class="buttonVariant(okVariant)" :disabled="okDisabled || busy" @click="ok">
                                 <span v-if="busy" class="fd-spinner h-4 w-4 rounded-full border-[0.2em] border-current border-r-transparent" aria-hidden="true" />
                                 {{ okTitle || $t("ok") }}
                             </button>

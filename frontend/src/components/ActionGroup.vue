@@ -4,7 +4,7 @@
             v-for="action in visibleActions"
             :key="action.key"
             type="button"
-            class="action-group-btn"
+            class="ui-btn action-group-btn"
             :class="buttonClass(action)"
             :disabled="isDisabled(action)"
             :title="labelFor(action) ? undefined : titleFor(action)"
@@ -24,7 +24,7 @@
                 <button
                     v-bind="triggerAttrs"
                     type="button"
-                    class="action-group-btn action-group-more"
+                    class="ui-btn action-group-btn action-group-more"
                     :disabled="disabled"
                     :aria-label="moreLabel || $t('actions')"
                 >
@@ -38,7 +38,7 @@
                 <button
                     type="button"
                     role="menuitem"
-                    class="floating-menu-item"
+                    class="ui-btn floating-menu-item"
                     :class="{
                         'is-danger': isDanger(action),
                         'is-warning': isWarning(action),
@@ -59,13 +59,13 @@
                 :key="action.key"
                 type="button"
                 tabindex="-1"
-                class="action-group-btn"
+                class="ui-btn action-group-btn"
                 :class="buttonClass(action)"
             >
                 <font-awesome-icon v-if="action.icon" :icon="action.icon" />
                 <span v-if="labelFor(action)" class="action-group-text">{{ labelFor(action) }}</span>
             </button>
-            <button type="button" tabindex="-1" class="action-group-btn action-group-more">
+            <button type="button" tabindex="-1" class="ui-btn action-group-btn action-group-more">
                 <font-awesome-icon icon="ellipsis" />
             </button>
         </div>
@@ -292,24 +292,17 @@ export default {
 
     .action-group-btn {
         box-sizing: border-box;
-        display: inline-flex;
         flex: 0 0 auto;
-        align-items: center;
-        justify-content: center;
+        padding: 0.35rem 0.6rem;
         gap: 0.4rem;
-        min-height: 38px;
-        padding: 0.5rem 0.75rem;
         border: 0;
         border-radius: 0;
         appearance: none;
-        background-color: var(--secondary);
-        color: var(--secondary-foreground);
         font-family: inherit;
         font-size: var(--text-base-fontSize);
         font-weight: var(--fontWeight-medium);
         white-space: nowrap;
         line-height: 1;
-        cursor: pointer;
 
         &:hover:not(:disabled) {
             background-color: var(--secondary-hover);
@@ -359,7 +352,7 @@ export default {
     }
 
     .action-group-more {
-        width: 38px;
+        width: 32px;
         padding: 0;
     }
 }
@@ -374,9 +367,9 @@ export default {
     color: var(--secondary-foreground);
 
     .floating-menu-item {
-        min-height: 38px;
         width: 100%;
-        padding: 0.5rem 0.75rem;
+        padding: 0.35rem 0.6rem;
+        border: 0;
         border-radius: 0;
         background-color: var(--secondary);
         font-size: var(--text-base-fontSize);
@@ -402,55 +395,19 @@ export default {
     }
 }
 
-.action-group--adaptive.is-header {
-    .action-group-btn {
-        min-height: 32px;
-        padding: 0.35rem 0.6rem;
-        font-size: var(--text-sm-fontSize);
-        gap: 0.35rem;
-    }
-
-    .action-group-more {
-        width: 32px;
-        padding: 0;
-    }
-}
-
-.action-group-menu.is-header .floating-menu-item {
-    min-height: 32px;
-    padding: 0.35rem 0.6rem;
-    font-size: var(--text-sm-fontSize);
-}
-
-@media (max-width: 991.98px) {
-    .action-group--adaptive:not(.is-sm):not(.is-header) .action-group-btn {
-        min-height: 44px;
-    }
-
-    .action-group--adaptive:not(.is-sm):not(.is-header) .action-group-more {
-        width: 44px;
-    }
-
-}
-
+.action-group--adaptive.is-header,
 .action-group--adaptive.is-sm {
     .action-group-btn {
-        min-height: 28px;
-        padding: 0.2rem 0.65rem;
         font-size: var(--text-sm-fontSize);
         gap: 0.35rem;
     }
-
-    .action-group-more {
-        width: 28px;
-        padding: 0;
-    }
 }
 
-.action-group-menu.is-sm .floating-menu-item {
-    min-height: 28px;
-    padding: 0.2rem 0.65rem;
-    font-size: var(--text-sm-fontSize);
-    gap: 0.35rem;
+.action-group-menu.is-header,
+.action-group-menu.is-sm {
+    .floating-menu-item {
+        font-size: var(--text-sm-fontSize);
+        gap: 0.35rem;
+    }
 }
 </style>

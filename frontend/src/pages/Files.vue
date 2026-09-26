@@ -887,8 +887,6 @@ export default {
     .transfer-panel { bottom: calc(70px + env(safe-area-inset-bottom)); }
     .text-editor { font-size: var(--text-base-fontSize); }
     .log-viewer-body { font-size: var(--text-base-fontSize); }
-    .log-viewer-toolbar .ui-btn { min-height: 44px; }
-    .ui-btn, .ui-field { min-height: 44px; }
-    .ui-field { font-size: var(--text-base-fontSize); }
+    .ui-field { min-height: 44px; font-size: var(--text-base-fontSize); }
 }
 </style>

@@ -11,7 +11,7 @@
                     <label for="login-password" class="mb-1 block text-foreground">{{ $t("Password") }}</label>
                     <input id="login-password" v-model="password" type="password" class="ui-field" autocomplete="current-password" required>
                 </div>
-                <button class="ui-btn ui-btn-gradient-primary w-full min-h-[40px] px-5 text-base mt-4" type="submit" :disabled="processing">{{ $t("Login") }}</button>
+                <button class="ui-btn ui-btn-gradient-primary w-full px-5 text-base mt-4" type="submit" :disabled="processing">{{ $t("Login") }}</button>
                 <p v-if="error" role="alert" class="mt-4 text-destructive">{{ error }}</p>
             </form>
         </div>
