@@ -152,19 +152,11 @@ export default defineComponent({
             }
 
             this.socketIO.initedSocketIO = true;
-            let url : string;
-            const env = process.env.NODE_ENV || "production";
-            if (env === "development" || localStorage.dev === "dev") {
-                url = location.protocol + "//" + location.hostname + ":" + (import.meta.env.VITE_BACKEND_PORT || "5001");
-            } else {
-                url = location.protocol + "//" + location.host;
-            }
-
             let connectingMsgTimeout = setTimeout(() => {
                 this.socketIO.connecting = true;
             }, 1500);
 
-            socket = io(url);
+            socket = io();
 
             // Handling events from agents
             let agentSocket = new AgentSocket();

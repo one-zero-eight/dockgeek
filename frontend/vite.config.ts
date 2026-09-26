@@ -16,6 +16,10 @@ export default defineConfig({
                 target: `http://localhost:${process.env.VITE_BACKEND_PORT || "5001"}`,
                 changeOrigin: true,
             },
+            "/socket.io": {
+                target: `http://localhost:${process.env.VITE_BACKEND_PORT || "5001"}`,
+                ws: true,
+            },
         },
     },
     define: {

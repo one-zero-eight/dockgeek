@@ -176,11 +176,10 @@ export class DockgeServer {
 
         this.packageJSON = packageJSON as PackageJson;
 
-        try {
-            this.indexHTML = fs.readFileSync("./frontend-dist/index.html").toString();
-        } catch {
-            // "dist/index.html" is not necessary for development
-            if (process.env.NODE_ENV !== "development") {
+        if (!isDev) {
+            try {
+                this.indexHTML = fs.readFileSync("./frontend-dist/index.html", "utf-8");
+            } catch {
                 log.error("server", "Error: Cannot find 'frontend-dist/index.html', did you install correctly?");
                 process.exit(1);
             }
@@ -222,15 +221,17 @@ export class DockgeServer {
             this.app.use(router.create(this.app, this));
         }
 
-        // Static files
-        this.app.use("/", expressStaticGzip("frontend-dist", {
-            enableBrotli: true,
-        }));
+        // Vite serves the frontend in development; this server only handles APIs and sockets.
+        if (!isDev) {
+            this.app.use("/", expressStaticGzip("frontend-dist", {
+                enableBrotli: true,
+            }));
 
-        // Universal Route Handler, must be at the end of all express routes.
-        this.app.get("/{*splat}", async (_request, response) => {
-            response.send(this.indexHTML);
-        });
+            // Universal Route Handler, must be at the end of all express routes.
+            this.app.get("/{*splat}", (_request, response) => {
+                response.send(this.indexHTML);
+            });
+        }
 
         // Allow all CORS origins in development
         let cors = undefined;
