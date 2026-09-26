@@ -32,10 +32,15 @@
         "reset-password": "tsx ./extra/reset-password.ts"
     },
     "dependencies": {
+        "@better-auth/api-key": "1.7.6",
+        "@better-auth/oauth-provider": "1.7.6",
+        "@better-auth/sso": "1.7.6",
         "@homebridge/node-pty-prebuilt-multiarch": "^0.14.1",
         "@inventage/envsubst": "^0.17.0",
         "@louislam/sqlite3": "~15.1.6",
         "bcryptjs": "^3.0.3",
+        "better-auth": "1.7.6",
+        "better-sqlite3": "13.0.3",
         "check-password-strength": "^3.0.0",
         "command-exists": "~1.2.9",
         "compare-versions": "~6.1.1",
@@ -80,6 +85,7 @@
         "@fortawesome/free-solid-svg-icons": "^7.3.1",
         "@fortawesome/vue-fontawesome": "^3.3.3",
         "@stylistic/eslint-plugin": "^5.10.0",
+        "@types/better-sqlite3": "^9.6.0",
         "@types/command-exists": "~1.2.3",
         "@types/express": "^5.0.6",
         "@types/jsonwebtoken": "^9.0.10",

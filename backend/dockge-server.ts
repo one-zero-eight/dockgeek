@@ -17,11 +17,8 @@ import { SocketHandler } from "./socket-handler";
 import { Settings } from "./settings";
 import checkVersion from "./check-version";
 import dayjs from "dayjs";
-import { R } from "redbean-node";
-import { DEFAULT_COMPOSE_FILE_PATTERNS, DEFAULT_EDITABLE_FILE_PATTERNS, genSecret, isDev, LooseObject } from "../common/util-common";
-import { generatePasswordHash } from "./password-hash";
-import { Bean } from "redbean-node/dist/bean";
-import { Arguments, Config, DockgeSocket } from "./util-server";
+import { DEFAULT_COMPOSE_FILE_PATTERNS, DEFAULT_EDITABLE_FILE_PATTERNS, isDev, LooseObject } from "../common/util-common";
+import { Arguments, Config, DockgeSocket, SocketPrincipal } from "./util-server";
 import { DockerSocketHandler } from "./agent-socket-handlers/docker-socket-handler";
 import expressStaticGzip from "express-static-gzip";
 import path from "path";
@@ -29,7 +26,6 @@ import { TerminalSocketHandler } from "./agent-socket-handlers/terminal-socket-h
 import { Stack } from "./stack";
 import { Cron } from "croner";
 import gracefulShutdown from "http-graceful-shutdown";
-import User from "./models/user";
 import * as childProcessAsync from "promisify-child-process";
 import { AgentManager } from "./agent-manager";
 import { AgentProxySocketHandler } from "./socket-handlers/agent-proxy-socket-handler";
@@ -39,6 +35,8 @@ import { ManageAgentSocketHandler } from "./socket-handlers/manage-agent-socket-
 import { Terminal } from "./terminal";
 import { FileManager } from "./file-manager";
 import { FileManagerSocketHandler } from "./agent-socket-handlers/file-manager-socket-handler";
+import { toNodeHandler } from "better-auth/node";
+import { claimAdmin, getAuth, initAuth, isAdmin, secretHash, sessionUser, verifyAgentKey } from "./auth";
 
 export class DockgeServer {
     app : Express;
@@ -73,13 +71,6 @@ export class DockgeServer {
         new TerminalSocketHandler(),
         new FileManagerSocketHandler(),
     ];
-
-    /**
-     * Show Setup Page
-     */
-    needSetup = false;
-
-    jwtSecret : string = "";
 
     stacksDir : string = "";
     composeFilePatterns = DEFAULT_COMPOSE_FILE_PATTERNS;
@@ -168,6 +159,7 @@ export class DockgeServer {
         this.config.port = args.port || Number(process.env.DOCKGE_PORT) || 5001;
         this.config.hostname = args.hostname || process.env.DOCKGE_HOSTNAME || undefined;
         this.config.dataDir = args.dataDir || process.env.DOCKGE_DATA_DIR || "./data/";
+        process.env.DOCKGE_DATA_DIR = this.config.dataDir;
         this.config.stacksDir = args.stacksDir || process.env.DOCKGE_STACKS_DIR || defaultStacksDir;
         this.config.enableConsole = args.enableConsole || process.env.DOCKGE_ENABLE_CONSOLE === "true" || false;
         this.config.fileManagerRoot = args.fileManagerRoot || process.env.DOCKGE_FILE_MANAGER_ROOT || undefined;
@@ -209,6 +201,21 @@ export class DockgeServer {
             log.info("server", "Server Type: HTTP");
             this.httpServer = http.createServer(this.app);
         }
+
+        // Better Auth and claim endpoints are registered before the SPA fallback.
+        this.app.all("/api/auth/*splat", (req, res) => toNodeHandler(getAuth())(req, res));
+        this.app.get("/api/dockge/session", async (req, res) => {
+            const userId = await sessionUser(req.headers);
+            res.json({ admin: !!userId && await isAdmin(userId), userId });
+        });
+        this.app.post("/api/dockge/claim", express.json(), async (req, res) => {
+            const userId = await sessionUser(req.headers);
+            if (!userId || !await claimAdmin(userId, req.body?.token)) {
+                res.status(403).json({ ok: false });
+                return;
+            }
+            res.json({ ok: true });
+        });
 
         // Binding Routers
         for (const router of this.routerList) {
@@ -271,6 +278,20 @@ export class DockgeServer {
             }
         });
 
+        this.io.use(async (socket, next) => {
+            const key = socket.handshake.auth.agentKey;
+            if (!key) {
+                next();
+                return;
+            }
+            const endpoint = socket.handshake.auth.endpoint;
+            if (typeof key !== "string" || typeof endpoint !== "string" || !await verifyAgentKey(key, endpoint)) {
+                next(new Error("Invalid agent key"));
+                return;
+            }
+            next();
+        });
+
         this.io.on("connection", async (socket: Socket) => {
             let dockgeSocket = socket as DockgeSocket;
             dockgeSocket.instanceManager = new AgentManager(dockgeSocket);
@@ -283,11 +304,59 @@ export class DockgeServer {
                 dockgeSocket.emit("agent", event, ...args);
             };
 
-            if (typeof(socket.request.headers.endpoint) === "string") {
-                dockgeSocket.endpoint = socket.request.headers.endpoint;
-            } else {
-                dockgeSocket.endpoint = "";
+            dockgeSocket.endpoint = typeof socket.handshake.auth.endpoint === "string" ? socket.handshake.auth.endpoint : "";
+            const agentKey = typeof socket.handshake.auth.agentKey === "string" ? socket.handshake.auth.agentKey : "";
+            if (agentKey && !dockgeSocket.endpoint) {
+                dockgeSocket.disconnect();
+                return;
             }
+            const authorize = async () => {
+                let principal : SocketPrincipal | undefined;
+                if (agentKey && await verifyAgentKey(agentKey, dockgeSocket.endpoint)) {
+                    principal = { kind: "agent", keyHash: secretHash(agentKey), endpoint: dockgeSocket.endpoint };
+                } else if (!agentKey && !dockgeSocket.endpoint) {
+                    const userId = await sessionUser(socket.request.headers);
+                    if (userId && await isAdmin(userId)) {
+                        principal = { kind: "admin", userId };
+                    }
+                }
+
+                if (!principal) {
+                    if (dockgeSocket.principal) {
+                        dockgeSocket.principal = undefined;
+                        dockgeSocket.disconnect();
+                    }
+                    return false;
+                }
+
+                const current = dockgeSocket.principal;
+                const changed = !current || (principal.kind === "admin"
+                    ? current.kind !== "admin" || current.userId !== principal.userId
+                    : current.kind !== "agent" || current.keyHash !== principal.keyHash);
+                if (changed) {
+                    if (dockgeSocket.principal) {
+                        dockgeSocket.instanceManager.disconnectAll();
+                        dockgeSocket.instanceManager = new AgentManager(dockgeSocket);
+                    }
+                    await this.afterLogin(dockgeSocket, principal);
+                }
+                return true;
+            };
+            dockgeSocket.use(async (packet, next) => {
+                try {
+                    if (agentKey && packet[0] !== "agent") {
+                        next(new Error("Agent keys may only use agent events"));
+                        return;
+                    }
+                    if (!await authorize()) {
+                        next(new Error("Unauthorized"));
+                        return;
+                    }
+                    next();
+                } catch (error) {
+                    next(error instanceof Error ? error : new Error("Unauthorized"));
+                }
+            });
 
             if (dockgeSocket.endpoint) {
                 log.info("server", "Socket connected (agent), as endpoint " + dockgeSocket.endpoint);
@@ -296,11 +365,6 @@ export class DockgeServer {
             }
 
             this.sendInfo(dockgeSocket, true);
-
-            if (this.needSetup) {
-                log.info("server", "Redirect to setup page");
-                dockgeSocket.emit("setup");
-            }
 
             // Create socket handlers (original, no agent support)
             for (const socketHandler of this.socketHandlerList) {
@@ -322,13 +386,15 @@ export class DockgeServer {
             // Better do anything after added all socket handlers here
             // ***************************
 
-            log.debug("auth", "check auto login");
-            if (await Settings.get("disableAuth")) {
-                log.info("auth", "Disabled Auth: auto login to admin");
-                this.afterLogin(dockgeSocket, await R.findOne("user") as User);
-                dockgeSocket.emit("autoLogin");
-            } else {
-                log.debug("auth", "need auth");
+            try {
+                if (await authorize()) {
+                    dockgeSocket.emit("authenticated");
+                } else {
+                    dockgeSocket.emit("unauthenticated");
+                }
+            } catch (error) {
+                log.error("auth", error);
+                dockgeSocket.disconnect();
             }
 
             // Socket disconnect
@@ -350,9 +416,9 @@ export class DockgeServer {
         }
     }
 
-    async afterLogin(socket : DockgeSocket, user : User) {
-        socket.userID = user.id;
-        socket.join(user.id.toString());
+    async afterLogin(socket : DockgeSocket, principal : SocketPrincipal) {
+        socket.principal = principal;
+        socket.join(principal.kind === "admin" ? `user:${principal.userId}` : `agent:${principal.keyHash}`);
 
         this.sendInfo(socket);
 
@@ -362,10 +428,10 @@ export class DockgeServer {
             log.error("server", e);
         }
 
-        socket.instanceManager.sendAgentList();
-
-        // Also connect to other dockge instances
-        socket.instanceManager.connectAll();
+        if (principal.kind === "admin") {
+            socket.instanceManager.sendAgentList();
+            socket.instanceManager.connectAll();
+        }
     }
 
     /**
@@ -385,33 +451,10 @@ export class DockgeServer {
             process.exit(1);
         }
 
-        // First time setup if needed
-        let jwtSecretBean = await R.findOne("setting", " `key` = ? ", [
-            "jwtSecret",
-        ]);
-
-        if (! jwtSecretBean) {
-            log.info("server", "JWT secret is not found, generate one.");
-            jwtSecretBean = await this.initJWTSecret();
-            log.info("server", "Stored JWT secret into database");
-        } else {
-            log.debug("server", "Load JWT secret from database.");
-        }
-
-        this.jwtSecret = jwtSecretBean.value;
+        await initAuth(`http://localhost:${this.config.port}`);
         const patterns = await Settings.filePatterns();
         this.composeFilePatterns = patterns.compose;
         this.editableFilePatterns = patterns.editable;
-
-        const userCount = (await R.knex("user").count("id as count").first()).count;
-
-        log.debug("server", "User count: " + userCount);
-
-        // If there is no record in user table, it is a new Dockge instance, need to setup
-        if (userCount == 0) {
-            log.info("server", "No user, need setup");
-            this.needSetup = true;
-        }
 
         // Listen
         this.httpServer.listen(this.config.port, this.config.hostname, () => {
@@ -599,25 +642,6 @@ export class DockgeServer {
     }
 
     /**
-     * Init or reset JWT secret
-     * @returns  JWT secret
-     */
-    async initJWTSecret() : Promise<Bean> {
-        let jwtSecretBean = await R.findOne("setting", " `key` = ? ", [
-            "jwtSecret",
-        ]);
-
-        if (!jwtSecretBean) {
-            jwtSecretBean = R.dispense("setting");
-            jwtSecretBean.key = "jwtSecret";
-        }
-
-        jwtSecretBean.value = generatePasswordHash(genSecret());
-        await R.store(jwtSecretBean);
-        return jwtSecretBean;
-    }
-
-    /**
      * Send stack list to all connected sockets.
      */
     async sendStackList() {
@@ -628,10 +652,9 @@ export class DockgeServer {
         for (let socket of socketList) {
             let dockgeSocket = socket as DockgeSocket;
 
-            // Check if the room is a number (user id)
-            if (dockgeSocket.userID) {
+            if (dockgeSocket.principal) {
 
-                // Get the list only if there is a logged in user
+                // Get the list only if there is a logged in principal
                 if (!stackList) {
                     stackList = await Stack.getStackList(this);
                 }
@@ -728,16 +751,15 @@ export class DockgeServer {
         log.info("server", "Graceful shutdown successful!");
     }
 
-    /**
-     * Force connected sockets of a user to refresh and disconnect.
-     * Used for resetting password.
-     * @param {string} userID
-     * @param {string?} currentSocketID
-     */
-    disconnectAllSocketClients(userID: number | undefined, currentSocketID? : string) {
+    /** Refresh other sockets, optionally restricted to one authenticated principal. */
+    disconnectAllSocketClients(principal? : SocketPrincipal, currentSocketID? : string) {
         for (const rawSocket of this.io.sockets.sockets.values()) {
-            let socket = rawSocket as DockgeSocket;
-            if ((!userID || socket.userID === userID) && socket.id !== currentSocketID) {
+            const socket = rawSocket as DockgeSocket;
+            const current = socket.principal;
+            const samePrincipal = !principal || (principal.kind === "admin"
+                ? current?.kind === "admin" && current.userId === principal.userId
+                : current?.kind === "agent" && current.keyHash === principal.keyHash);
+            if (samePrincipal && socket.id !== currentSocketID) {
                 try {
                     socket.emit("refresh");
                     socket.disconnect();

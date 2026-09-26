@@ -83,13 +83,8 @@
                             </div>
 
                             <div class="mb-[1rem]">
-                                <label for="username" class="field-label">{{ $t("Username") }}</label>
-                                <input id="username" v-model="agent.username" type="text" class="ui-field" required>
-                            </div>
-
-                            <div class="mb-[1rem]">
-                                <label for="password" class="field-label">{{ $t("Password") }}</label>
-                                <input id="password" v-model="agent.password" type="password" class="ui-field" required autocomplete="new-password">
+                                <label for="username" class="field-label">Agent key (create it in the target instance's Security settings)</label>
+                                <input id="username" v-model="agent.key" type="password" class="ui-field" required autocomplete="off">
                             </div>
 
                             <div class="mb-[1rem]">
@@ -141,8 +136,7 @@ export default {
             connectingAgent: false,
             agent: {
                 url: "http://",
-                username: "",
-                password: "",
+                key: "",
                 name: "",
                 updatedName: "",
             }
@@ -208,8 +202,7 @@ export default {
                     this.showAgentForm = false;
                     this.agent = {
                         url: "http://",
-                        username: "",
-                        password: "",
+                        key: "",
                     };
                 }
 

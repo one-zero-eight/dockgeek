@@ -7,12 +7,7 @@ import semver from "semver";
 import { R } from "redbean-node";
 import dayjs, { Dayjs } from "dayjs";
 
-/**
- * Dockge Instance Manager
- * One AgentManager per Socket connection
- */
 export class AgentManager {
-
     protected socket : DockgeSocket;
     protected agentSocketList : Record<string, SocketClient> = {};
     protected agentLoggedInList : Record<string, boolean> = {};
@@ -26,289 +21,136 @@ export class AgentManager {
         return this._firstConnectTime;
     }
 
-    test(url : string, username : string, password : string) : Promise<void> {
+    test(url : string, key : string) : Promise<void> {
         return new Promise((resolve, reject) => {
-            let obj = new URL(url);
-            let endpoint = obj.host;
-
-            if (!endpoint) {
-                reject(new Error("Invalid Dockge URL"));
-            }
-
-            if (this.agentSocketList[endpoint]) {
-                reject(new Error("The Dockge URL already exists"));
-            }
-
-            let client = io(url, {
-                reconnection: false,
-                extraHeaders: {
-                    endpoint,
-                }
-            });
-
+            const endpoint = new URL(url).host;
+            const client = io(url, { reconnection: false, auth: { endpoint, agentKey: key } });
             client.on("connect", () => {
-                client.emit("login", {
-                    username: username,
-                    password: password,
-                }, (res : LooseObject) => {
-                    if (res.ok) {
-                        resolve();
-                    } else {
-                        reject(new Error(res.msg));
-                    }
-                    client.disconnect();
-                });
+                resolve();
+                client.disconnect();
             });
-
             client.on("connect_error", (err) => {
-                if (err.message === "xhr poll error") {
-                    reject(new Error("Unable to connect to the Dockge instance"));
-                } else {
-                    reject(err);
-                }
+                reject(err);
                 client.disconnect();
             });
         });
     }
 
-    /**
-     *
-     * @param url
-     * @param username
-     * @param password
-     * @param name
-     */
-    async add(url: string, username: string, password: string, name: string): Promise<Agent> {
-        let bean = R.dispense("agent") as Agent;
+    async add(url: string, key: string, name: string): Promise<Agent> {
+        const bean = R.dispense("agent") as Agent;
         bean.url = url;
-        bean.username = username;
-        bean.password = password;
+        bean.username = "agent-key";
+        bean.password = key;
         bean.name = name;
         await R.store(bean);
         return bean;
     }
 
-    /**
-     *
-     * @param url
-     */
     async remove(url : string) {
-        let bean = await R.findOne("agent", " url = ? ", [
-            url,
-        ]);
-
-        if (bean) {
-            await R.trash(bean);
-            let endpoint = bean.endpoint;
-            this.disconnect(endpoint);
-            this.sendAgentList();
-            delete this.agentSocketList[endpoint];
-        } else {
+        const bean = await R.findOne("agent", " url = ? ", [ url ]);
+        if (!bean) {
             throw new Error("Agent not found");
         }
+        const endpoint = bean.endpoint;
+        await R.trash(bean);
+        this.disconnect(endpoint);
+        this.sendAgentList();
+        delete this.agentSocketList[endpoint];
     }
 
-    /**
-     *
-     * @param url
-     * @param updatedName
-     */
     async update(url: string, updatedName: string) {
-        const agent = await R.findOne("agent", " url = ? ", [
-            url,
-        ]);
-        if (agent) {
-            agent.name = updatedName;
-            await R.store(agent);
-        } else {
+        const agent = await R.findOne("agent", " url = ? ", [ url ]);
+        if (!agent) {
             throw new Error("Agent not found");
         }
+        agent.name = updatedName;
+        await R.store(agent);
     }
 
-    connect(url : string, username : string, password : string) {
-        let obj = new URL(url);
-        let endpoint = obj.host;
-
-        this.socket.emit("agentStatus", {
-            endpoint: endpoint,
-            status: "connecting",
-        });
-
-        if (!endpoint) {
-            log.error("agent-manager", "Invalid endpoint: " + endpoint + " URL: " + url);
-            return;
-        }
-
+    connect(url : string, key : string) {
+        const endpoint = new URL(url).host;
+        this.socket.emit("agentStatus", { endpoint, status: "connecting" });
         if (this.agentSocketList[endpoint]) {
-            log.debug("agent-manager", "Already connected to the socket server: " + endpoint);
             return;
         }
-
-        log.info("agent-manager", "Connecting to the socket server: " + endpoint);
-        let client = io(url, {
-            extraHeaders: {
-                endpoint,
-            }
-        });
-
+        const client = io(url, { auth: { endpoint, agentKey: key } });
         client.on("connect", () => {
-            log.info("agent-manager", "Connected to the socket server: " + endpoint);
-
-            client.emit("login", {
-                username: username,
-                password: password,
-            }, (res : LooseObject) => {
-                if (res.ok) {
-                    log.info("agent-manager", "Logged in to the socket server: " + endpoint);
-                    this.agentLoggedInList[endpoint] = true;
-                    this.socket.emit("agentStatus", {
-                        endpoint: endpoint,
-                        status: "online",
-                    });
-                } else {
-                    log.error("agent-manager", "Failed to login to the socket server: " + endpoint);
-                    this.agentLoggedInList[endpoint] = false;
-                    this.socket.emit("agentStatus", {
-                        endpoint: endpoint,
-                        status: "offline",
-                    });
-                }
-            });
+            this.agentLoggedInList[endpoint] = true;
+            this.socket.emit("agentStatus", { endpoint, status: "online" });
         });
-
         client.on("connect_error", (err) => {
-            log.error("agent-manager", "Error from the socket server: " + endpoint);
-            this.socket.emit("agentStatus", {
-                endpoint: endpoint,
-                status: "offline",
-            });
+            log.error("agent-manager", `Unable to authenticate agent ${endpoint}: ${err.message}`);
+            this.agentLoggedInList[endpoint] = false;
+            this.socket.emit("agentStatus", { endpoint, status: "offline" });
         });
-
         client.on("disconnect", () => {
-            log.info("agent-manager", "Disconnected from the socket server: " + endpoint);
-            this.socket.emit("agentStatus", {
-                endpoint: endpoint,
-                status: "offline",
-            });
+            this.agentLoggedInList[endpoint] = false;
+            this.socket.emit("agentStatus", { endpoint, status: "offline" });
         });
-
-        client.on("agent", (...args : unknown[]) => {
-            this.socket.emit("agent", ...args);
-        });
-
+        client.on("agent", (...args : unknown[]) => this.socket.emit("agent", ...args));
         client.on("info", (res) => {
-            log.debug("agent-manager", res);
-
-            // Disconnect if the version is lower than 1.4.0
-            if (!isDev && semver.satisfies(res.version, "< 1.4.0")) {
-                this.socket.emit("agentStatus", {
-                    endpoint: endpoint,
-                    status: "offline",
-                    msg: `${endpoint}: Unsupported version: ` + res.version,
-                });
+            if (!isDev && res.version && semver.satisfies(res.version, "< 1.4.0")) {
+                this.socket.emit("agentStatus", { endpoint, status: "offline", msg: `Unsupported version: ${res.version}` });
                 client.disconnect();
             }
         });
-
         this.agentSocketList[endpoint] = client;
     }
 
     disconnect(endpoint : string) {
-        let client = this.agentSocketList[endpoint];
-        client?.disconnect();
+        this.agentSocketList[endpoint]?.disconnect();
     }
 
     async connectAll() {
         this._firstConnectTime = dayjs();
-
         if (this.socket.endpoint) {
-            log.info("agent-manager", "This connection is connected as an agent, skip connectAll()");
             return;
         }
-
-        let list : Record<string, Agent> = await Agent.getAgentList();
-
-        if (Object.keys(list).length !== 0) {
-            log.info("agent-manager", "Connecting to all instance socket server(s)...");
-        }
-
-        for (let endpoint in list) {
-            let agent = list[endpoint];
-            this.connect(agent.url, agent.username, agent.password);
+        const list = await Agent.getAgentList();
+        for (const endpoint in list) {
+            const agent = list[endpoint];
+            if (agent.username === "agent-key") {
+                this.connect(agent.url, agent.password);
+            }
         }
     }
 
     disconnectAll() {
-        for (let endpoint in this.agentSocketList) {
+        for (const endpoint in this.agentSocketList) {
             this.disconnect(endpoint);
         }
     }
 
     async emitToEndpoint(endpoint: string, eventName: string, ...args : unknown[]) {
-        log.debug("agent-manager", "Emitting event to endpoint: " + endpoint);
-        let client = this.agentSocketList[endpoint];
-
+        const client = this.agentSocketList[endpoint];
         if (!client) {
-            log.error("agent-manager", "Socket client not found for endpoint: " + endpoint);
             throw new Error("Socket client not found for endpoint: " + endpoint);
         }
-
         if (!client.connected || !this.agentLoggedInList[endpoint]) {
-            // Maybe the request is too quick, the socket is not connected yet, check firstConnectTime
-            // If it is within 10 seconds, we should apply retry logic here
             let diff = dayjs().diff(this.firstConnectTime, "second");
-            log.debug("agent-manager", endpoint + ": diff: " + diff);
-            let ok = false;
-            while (diff < 10) {
-                if (client.connected && this.agentLoggedInList[endpoint]) {
-                    log.debug("agent-manager", `${endpoint}: Connected & Logged in`);
-                    ok = true;
-                    break;
-                }
-                log.debug("agent-manager", endpoint + ": not ready yet, retrying in 1 second...");
+            while (diff < 10 && (!client.connected || !this.agentLoggedInList[endpoint])) {
                 await sleep(1000);
                 diff = dayjs().diff(this.firstConnectTime, "second");
             }
-
-            if (!ok) {
-                log.error("agent-manager", `${endpoint}: Socket client not connected`);
+            if (!client.connected || !this.agentLoggedInList[endpoint]) {
                 throw new Error("Socket client not connected for endpoint: " + endpoint);
             }
         }
-
         client.emit("agent", endpoint, eventName, ...args);
     }
 
     emitToAllEndpoints(eventName: string, ...args : unknown[]) {
-        log.debug("agent-manager", "Emitting event to all endpoints");
-        for (let endpoint in this.agentSocketList) {
-            this.emitToEndpoint(endpoint, eventName, ...args).catch((e) => {
-                log.warn("agent-manager", e.message);
-            });
+        for (const endpoint in this.agentSocketList) {
+            this.emitToEndpoint(endpoint, eventName, ...args).catch((e) => log.warn("agent-manager", e.message));
         }
     }
 
     async sendAgentList() {
-        let list = await Agent.getAgentList();
-        let result : Record<string, LooseObject> = {};
-
-        // Myself
-        result[""] = {
-            url: "",
-            username: "",
-            endpoint: "",
-            name: "",
-            updatedName: "",
-        };
-
-        for (let endpoint in list) {
-            let agent = list[endpoint];
-            result[endpoint] = agent.toJSON();
+        const list = await Agent.getAgentList();
+        const result : Record<string, LooseObject> = { "": { url: "", username: "", endpoint: "", name: "", updatedName: "" } };
+        for (const endpoint in list) {
+            result[endpoint] = list[endpoint].toJSON();
         }
-
-        this.socket.emit("agentList", {
-            ok: true,
-            agentList: result,
-        });
+        this.socket.emit("agentList", { ok: true, agentList: result });
     }
 }

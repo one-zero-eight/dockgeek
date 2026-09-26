@@ -1,242 +1,49 @@
 import { SocketHandler } from "../socket-handler.js";
 import { DockgeServer } from "../dockge-server";
-import { log } from "../log";
 import { R } from "redbean-node";
 import { DEFAULT_COMPOSE_FILE_PATTERNS, DEFAULT_EDITABLE_FILE_PATTERNS, filePatterns } from "../../common/util-common";
-import { loginRateLimiter } from "../rate-limiter";
-import { generatePasswordHash, needRehashPassword, shake256, SHAKE256_LENGTH, verifyPassword } from "../password-hash";
-import { User } from "../models/user";
-import {
-    checkLogin,
-    DockgeSocket,
-    doubleCheckPassword,
-    JWTDecoded
-} from "../util-server";
-import { passwordStrength } from "check-password-strength";
-import jwt from "jsonwebtoken";
+import { checkAdmin, checkLogin, DockgeSocket } from "../util-server";
 import { Settings } from "../settings";
+import { randomBytes } from "node:crypto";
+import { secretHash } from "../auth";
 import fs, { promises as fsAsync } from "fs";
 import path from "path";
 
 export class MainSocketHandler extends SocketHandler {
     create(socket : DockgeSocket, server : DockgeServer) {
-
-        // ***************************
-        // Public Socket API
-        // ***************************
-
-        // Setup
-        socket.on("needSetup", (callback) => {
-            callback(server.needSetup);
-        });
-
-        socket.on("setup", async (username, password, callback) => {
+        socket.on("createAgentKey", async (label, endpoint, callback) => {
             try {
-                if (passwordStrength(password).value === "Too weak") {
-                    throw new Error("Password is too weak. It should contain alphabetic and numeric characters. It must be at least 6 characters in length.");
+                checkAdmin(socket);
+                if (typeof label !== "string" || typeof endpoint !== "string" || !label.trim() || !endpoint.trim()) {
+                    throw new Error("Invalid agent key request");
                 }
-
-                if ((await R.knex("user").count("id as count").first()).count !== 0) {
-                    throw new Error("Dockge has been initialized. If you want to run setup again, please delete the database.");
-                }
-
-                const user = R.dispense("user");
-                user.username = username;
-                user.password = generatePasswordHash(password);
-                await R.store(user);
-
-                server.needSetup = false;
-
-                callback({
-                    ok: true,
-                    msg: "successAdded",
-                    msgi18n: true,
-                });
-
+                const key = randomBytes(32).toString("base64url");
+                await R.knex("dockge_agent_key").insert({ hash: secretHash(key), label, endpoint, revoked: false });
+                callback({ ok: true, key });
             } catch (e) {
-                if (e instanceof Error) {
-                    callback({
-                        ok: false,
-                        msg: e.message,
-                    });
-                }
+                callback({ ok: false, msg: e instanceof Error ? e.message : "Invalid key" });
             }
         });
 
-        // Login by token
-        socket.on("loginByToken", async (token, callback) => {
-            const clientIP = await server.getClientIP(socket);
-
-            log.info("auth", `Login by token. IP=${clientIP}`);
-
+        socket.on("listAgentKeys", async (callback) => {
             try {
-                const decoded = jwt.verify(token, server.jwtSecret) as JWTDecoded;
-
-                log.info("auth", "Username from JWT: " + decoded.username);
-
-                const user = await R.findOne("user", " username = ? AND active = 1 ", [
-                    decoded.username,
-                ]) as User;
-
-                if (user) {
-                    // Check if the password changed
-                    if (decoded.h !== shake256(user.password, SHAKE256_LENGTH)) {
-                        throw new Error("The token is invalid due to password change or old token");
-                    }
-
-                    log.debug("auth", "afterLogin");
-                    await server.afterLogin(socket, user);
-                    log.debug("auth", "afterLogin ok");
-
-                    log.info("auth", `Successfully logged in user ${decoded.username}. IP=${clientIP}`);
-
-                    callback({
-                        ok: true,
-                    });
-                } else {
-
-                    log.info("auth", `Inactive or deleted user ${decoded.username}. IP=${clientIP}`);
-
-                    callback({
-                        ok: false,
-                        msg: "authUserInactiveOrDeleted",
-                        msgi18n: true,
-                    });
-                }
-            } catch (error) {
-                if (!(error instanceof Error)) {
-                    console.error("Unknown error:", error);
-                    return;
-                }
-                log.error("auth", `Invalid token. IP=${clientIP}`);
-                if (error.message) {
-                    log.error("auth", error.message + ` IP=${clientIP}`);
-                }
-                callback({
-                    ok: false,
-                    msg: "authInvalidToken",
-                    msgi18n: true,
-                });
-            }
-
-        });
-
-        // Login
-        socket.on("login", async (data, callback) => {
-            const clientIP = await server.getClientIP(socket);
-
-            log.info("auth", `Login by username + password. IP=${clientIP}`);
-
-            // Checking
-            if (typeof callback !== "function") {
-                return;
-            }
-
-            if (!data) {
-                return;
-            }
-
-            // Login Rate Limit
-            if (!await loginRateLimiter.pass(callback)) {
-                log.info("auth", `Too many failed requests for user ${data.username}. IP=${clientIP}`);
-                return;
-            }
-
-            const user = await this.login(data.username, data.password);
-
-            if (user) {
-                if (user.twofa_status === 0) {
-                    server.afterLogin(socket, user);
-
-                    log.info("auth", `Successfully logged in user ${data.username}. IP=${clientIP}`);
-
-                    callback({
-                        ok: true,
-                        token: User.createJWT(user, server.jwtSecret),
-                    });
-                }
-
-                if (user.twofa_status === 1 && !data.token) {
-
-                    log.info("auth", `2FA token required for user ${data.username}. IP=${clientIP}`);
-
-                    callback({
-                        tokenRequired: true,
-                    });
-                }
-
-                if (data.token) {
-                    // @ts-ignore
-                    const verify = notp.totp.verify(data.token, user.twofa_secret, twoFAVerifyOptions);
-
-                    if (user.twofa_last_token !== data.token && verify) {
-                        server.afterLogin(socket, user);
-
-                        await R.exec("UPDATE `user` SET twofa_last_token = ? WHERE id = ? ", [
-                            data.token,
-                            socket.userID,
-                        ]);
-
-                        log.info("auth", `Successfully logged in user ${data.username}. IP=${clientIP}`);
-
-                        callback({
-                            ok: true,
-                            token: User.createJWT(user, server.jwtSecret),
-                        });
-                    } else {
-
-                        log.warn("auth", `Invalid token provided for user ${data.username}. IP=${clientIP}`);
-
-                        callback({
-                            ok: false,
-                            msg: "authInvalidToken",
-                            msgi18n: true,
-                        });
-                    }
-                }
-            } else {
-
-                log.warn("auth", `Incorrect username or password for user ${data.username}. IP=${clientIP}`);
-
-                callback({
-                    ok: false,
-                    msg: "authIncorrectCreds",
-                    msgi18n: true,
-                });
-            }
-
-        });
-
-        // Change Password
-        socket.on("changePassword", async (password, callback) => {
-            try {
-                checkLogin(socket);
-
-                if (! password.newPassword) {
-                    throw new Error("Invalid new password");
-                }
-
-                if (passwordStrength(password.newPassword).value === "Too weak") {
-                    throw new Error("Password is too weak. It should contain alphabetic and numeric characters. It must be at least 6 characters in length.");
-                }
-
-                let user = await doubleCheckPassword(socket, password.currentPassword);
-                await user.resetPassword(password.newPassword);
-
-                server.disconnectAllSocketClients(user.id, socket.id);
-
-                callback({
-                    ok: true,
-                    msg: "Password has been updated successfully.",
-                });
-
+                checkAdmin(socket);
+                callback({ ok: true, keys: await R.knex("dockge_agent_key").select("hash", "label", "endpoint", "revoked") });
             } catch (e) {
-                if (e instanceof Error) {
-                    callback({
-                        ok: false,
-                        msg: e.message,
-                    });
+                callback({ ok: false, msg: e instanceof Error ? e.message : "Unauthorized" });
+            }
+        });
+
+        socket.on("revokeAgentKey", async (hash, callback) => {
+            try {
+                checkAdmin(socket);
+                if (typeof hash !== "string") {
+                    throw new Error("Unauthorized");
                 }
+                await R.knex("dockge_agent_key").where("hash", hash).update({ revoked: true });
+                callback({ ok: true });
+            } catch (e) {
+                callback({ ok: false, msg: e instanceof Error ? e.message : "Unauthorized" });
             }
         });
 
@@ -244,55 +51,31 @@ export class MainSocketHandler extends SocketHandler {
             try {
                 checkLogin(socket);
                 const data = await Settings.getSettings("general");
-                // An empty field means "use the default glob"; only show saved overrides.
+                delete data.disableAuth;
                 data.composeFilePatterns = (await Settings.get("composeFilePatterns")) || "";
                 data.editableFilePatterns = (await Settings.get("editableFilePatterns")) || "";
-
-                if (fs.existsSync(path.join(server.stacksDir, "global.env"))) {
-                    data.globalENV = fs.readFileSync(path.join(server.stacksDir, "global.env"), "utf-8");
-                } else {
-                    data.globalENV = "# VARIABLE=value #comment";
-                }
-
-                callback({
-                    ok: true,
-                    data: data,
-                });
-
+                data.globalENV = fs.existsSync(path.join(server.stacksDir, "global.env"))
+                    ? fs.readFileSync(path.join(server.stacksDir, "global.env"), "utf-8")
+                    : "# VARIABLE=value #comment";
+                callback({ ok: true, data });
             } catch (e) {
-                if (e instanceof Error) {
-                    callback({
-                        ok: false,
-                        msg: e.message,
-                    });
-                }
+                callback({ ok: false, msg: e instanceof Error ? e.message : "Unable to read settings" });
             }
         });
 
-        socket.on("setSettings", async (data, currentPassword, callback) => {
+        socket.on("setSettings", async (data, _currentPassword, callback) => {
             try {
-                checkLogin(socket);
-
-                // If currently is disabled auth, don't need to check
-                // Disabled Auth + Want to Disable Auth => No Check
-                // Disabled Auth + Want to Enable Auth => No Check
-                // Enabled Auth + Want to Disable Auth => Check!!
-                // Enabled Auth + Want to Enable Auth => No Check
-                const currentDisabledAuth = await Settings.get("disableAuth");
-                if (!currentDisabledAuth && data.disableAuth) {
-                    await doubleCheckPassword(socket, currentPassword);
+                checkAdmin(socket);
+                if (!data || typeof data !== "object") {
+                    throw new Error("Unauthorized");
                 }
-                // Handle global.env
-                if (data.globalENV && data.globalENV != "# VARIABLE=value #comment") {
+                delete data.disableAuth;
+                if (data.globalENV && data.globalENV !== "# VARIABLE=value #comment") {
                     await fsAsync.writeFile(path.join(server.stacksDir, "global.env"), data.globalENV);
                 } else {
-                    await fsAsync.rm(path.join(server.stacksDir, "global.env"), {
-                        recursive: true,
-                        force: true
-                    });
+                    await fsAsync.rm(path.join(server.stacksDir, "global.env"), { force: true });
                 }
                 delete data.globalENV;
-
                 for (const key of [ "composeFilePatterns", "editableFilePatterns" ]) {
                     if (typeof data[key] !== "string" || (data[key].trim() && filePatterns(data[key]).some(pattern => /[/\\\0]/.test(pattern)))) {
                         throw new Error(`Invalid ${key}: use comma-separated filename patterns without paths`);
@@ -302,57 +85,16 @@ export class MainSocketHandler extends SocketHandler {
                 await Settings.setSettings("general", data);
                 server.composeFilePatterns = data.composeFilePatterns || DEFAULT_COMPOSE_FILE_PATTERNS;
                 server.editableFilePatterns = data.editableFilePatterns || DEFAULT_EDITABLE_FILE_PATTERNS;
-
-                callback({
-                    ok: true,
-                    msg: "Saved"
-                });
-
+                callback({ ok: true, msg: "Saved" });
                 server.sendInfo(socket);
-
             } catch (e) {
-                if (e instanceof Error) {
-                    callback({
-                        ok: false,
-                        msg: e.message,
-                    });
-                }
+                callback({ ok: false, msg: e instanceof Error ? e.message : "Unable to save settings" });
             }
         });
 
-        // Disconnect all other socket clients of the user
-        socket.on("disconnectOtherSocketClients", async () => {
-            try {
-                checkLogin(socket);
-                server.disconnectAllSocketClients(socket.userID, socket.id);
-            } catch (e) {
-                if (e instanceof Error) {
-                    log.warn("disconnectOtherSocketClients", e.message);
-                }
-            }
+        socket.on("disconnectOtherSocketClients", () => {
+            checkAdmin(socket);
+            server.disconnectAllSocketClients(socket.principal, socket.id);
         });
-    }
-
-    async login(username : string, password : string) : Promise<User | null> {
-        if (typeof username !== "string" || typeof password !== "string") {
-            return null;
-        }
-
-        const user = await R.findOne("user", " username = ? AND active = 1 ", [
-            username,
-        ]) as User;
-
-        if (user && verifyPassword(password, user.password)) {
-            // Upgrade the hash to bcrypt
-            if (needRehashPassword(user.password)) {
-                await R.exec("UPDATE `user` SET password = ? WHERE id = ? ", [
-                    generatePasswordHash(password),
-                    user.id,
-                ]);
-            }
-            return user;
-        }
-
-        return null;
     }
 }

@@ -2,18 +2,15 @@ import { Socket } from "socket.io";
 import { Terminal } from "./terminal";
 import { log } from "./log";
 import { ERROR_TYPE_VALIDATION } from "../common/util-common";
-import { R } from "redbean-node";
-import { verifyPassword } from "./password-hash";
 import fs from "fs";
 import { AgentManager } from "./agent-manager";
 
-export interface JWTDecoded {
-    username : string;
-    h? : string;
-}
+export type SocketPrincipal =
+    | { kind: "admin"; userId: string }
+    | { kind: "agent"; keyHash: string; endpoint: string };
 
 export interface DockgeSocket extends Socket {
-    userID: number;
+    principal?: SocketPrincipal;
     consoleTerminal? : Terminal;
     instanceManager : AgentManager;
     endpoint : string;
@@ -42,8 +39,14 @@ export interface Config extends Arguments {
 }
 
 export function checkLogin(socket : DockgeSocket) {
-    if (!socket.userID) {
+    if (!socket.principal) {
         throw new Error("You are not logged in.");
+    }
+}
+
+export function checkAdmin(socket : DockgeSocket) {
+    if (socket.principal?.kind !== "admin") {
+        throw new Error("Administrator access required.");
     }
 }
 
@@ -83,22 +86,6 @@ export function callbackResult(result : unknown, callback : unknown) {
         return;
     }
     callback(result);
-}
-
-export async function doubleCheckPassword(socket : DockgeSocket, currentPassword : unknown) {
-    if (typeof currentPassword !== "string") {
-        throw new Error("Wrong data type?");
-    }
-
-    let user = await R.findOne("user", " id = ? AND active = 1 ", [
-        socket.userID,
-    ]);
-
-    if (!user || !verifyPassword(currentPassword, user.password)) {
-        throw new Error("Incorrect current password");
-    }
-
-    return user;
 }
 
 export function fileExists(file : string) {

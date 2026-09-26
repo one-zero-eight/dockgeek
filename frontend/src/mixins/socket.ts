@@ -1,7 +1,9 @@
 import { io } from "socket.io-client";
 import { Socket } from "socket.io-client";
 import { defineComponent } from "vue";
-import { jwtDecode } from "jwt-decode";
+import { createAuthClient } from "better-auth/client";
+
+export const authClient = createAuthClient();
 import { Terminal } from "@xterm/xterm";
 import { AgentSocket } from "../../../common/agent-socket";
 
@@ -25,7 +27,7 @@ export default defineComponent({
             info: {
 
             },
-            remember: (localStorage.remember !== "0"),
+            remember: true,
             loggedIn: false,
             allowLoginDialog: false,
             username: null,
@@ -109,10 +111,6 @@ export default defineComponent({
             }
         },
 
-        remember() {
-            localStorage.remember = (this.remember) ? "1" : "0";
-        },
-
         // Reload the SPA if the server version is changed.
         "info.version"(to, from) {
             if (from && from !== to) {
@@ -183,29 +181,13 @@ export default defineComponent({
                 this.socketIO.connectCount++;
                 this.socketIO.connected = true;
                 this.socketIO.showReverseProxyGuide = false;
-                const token = this.storage().token;
-
-                if (token) {
-                    if (token !== "autoLogin") {
-                        console.log("Logging in by token");
-                        this.loginByToken(token);
-                    } else {
-                        // Timeout if it is not actually auto login
-                        setTimeout(() => {
-                            if (! this.loggedIn) {
-                                this.allowLoginDialog = true;
-                                this.storage().removeItem("token");
-                            }
-                        }, 5000);
-                    }
-                } else {
-                    this.allowLoginDialog = true;
-                }
+                this.refreshSession();
 
                 this.socketIO.firstConnect = false;
             });
 
             socket.on("disconnect", () => {
+                this.loggedIn = false;
                 console.log("disconnect");
                 this.socketIO.connectionErrorMsg = `${this.$t("Lost connection to the socket server. Reconnecting...")}`;
                 this.socketIO.connected = false;
@@ -226,17 +208,12 @@ export default defineComponent({
                 this.info = info;
             });
 
-            socket.on("autoLogin", () => {
-                this.loggedIn = true;
-                this.storage().token = "autoLogin";
-                this.socketIO.token = "autoLogin";
-                this.allowLoginDialog = false;
-                this.afterLogin();
+            socket.on("authenticated", () => {
+                this.refreshSession();
             });
 
-            socket.on("setup", () => {
-                console.log("setup");
-                this.$router.push("/setup");
+            socket.on("unauthenticated", () => {
+                this.allowLoginDialog = true;
             });
 
             agentSocket.on("terminalWrite", (terminalName, data) => {
@@ -294,12 +271,16 @@ export default defineComponent({
             });
         },
 
-        /**
-         * The storage currently in use
-         * @returns Current storage
-         */
-        storage() : Storage {
-            return (this.remember) ? localStorage : sessionStorage;
+        async refreshSession() {
+            const { data } = await authClient.getSession();
+            const response = await fetch("/api/dockge/session");
+            const state = await response.json();
+            this.loggedIn = !!data?.user && state.admin;
+            this.username = data?.user?.name || data?.user?.email || null;
+            this.allowLoginDialog = !this.loggedIn;
+            if (this.loggedIn) {
+                this.afterLogin();
+            }
         },
 
         getSocket() : Socket {
@@ -310,83 +291,13 @@ export default defineComponent({
             this.getSocket().emit("agent", endpoint, eventName, ...args);
         },
 
-        /**
-         * Get payload of JWT cookie
-         * @returns {(object | undefined)} JWT payload
-         */
-        getJWTPayload() {
-            const jwtToken = this.storage().token;
-
-            if (jwtToken && jwtToken !== "autoLogin") {
-                return jwtDecode(jwtToken);
-            }
-            return undefined;
-        },
-
-        /**
-         * Send request to log user in
-         * @param {string} username Username to log in with
-         * @param {string} password Password to log in with
-         * @param {string} token User token
-         * @param {loginCB} callback Callback to call with result
-         * @returns {void}
-         */
-        login(username : string, password : string, token : string, callback) {
-            this.getSocket().emit("login", {
-                username,
-                password,
-                token,
-            }, (res) => {
-                if (res.tokenRequired) {
-                    callback(res);
-                }
-
-                if (res.ok) {
-                    this.storage().token = res.token;
-                    this.socketIO.token = res.token;
-                    this.loggedIn = true;
-                    this.username = this.getJWTPayload()?.username;
-
-                    this.afterLogin();
-
-                    // Trigger Chrome Save Password
-                    history.pushState({}, "");
-                }
-
-                callback(res);
-            });
-        },
-
-        /**
-         * Log in using a token
-         * @param {string} token Token to log in with
-         * @returns {void}
-         */
-        loginByToken(token : string) {
-            socket.emit("loginByToken", token, (res) => {
-                this.allowLoginDialog = true;
-
-                if (! res.ok) {
-                    this.logout();
-                } else {
-                    this.loggedIn = true;
-                    this.username = this.getJWTPayload()?.username;
-                    this.afterLogin();
-                }
-            });
-        },
-
-        /**
-         * Log out of the web application
-         * @returns {void}
-         */
-        logout() {
-            socket.emit("logout", () => { });
-            this.storage().removeItem("token");
-            this.socketIO.token = null;
+        async logout() {
+            await authClient.signOut();
             this.loggedIn = false;
             this.username = null;
             this.clearData();
+            socket.disconnect();
+            socket.connect();
         },
 
         /**

@@ -29,7 +29,6 @@
                     </button>
 
                     <button
-                        v-if="$root.socketIO.token !== 'autoLogin'"
                         type="button"
                         class="settings-nav-item menu-action logout flex w-full items-center gap-[0.65rem] rounded-[0.6rem] text-left font-medium"
                         @click="$root.logout"

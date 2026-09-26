@@ -1,7 +1,7 @@
 import { SocketHandler } from "../socket-handler.js";
 import { DockgeServer } from "../dockge-server";
 import { log } from "../log";
-import { callbackError, callbackResult, checkLogin, DockgeSocket } from "../util-server";
+import { callbackError, callbackResult, checkAdmin, DockgeSocket } from "../util-server";
 import { LooseObject } from "../../common/util-common";
 
 export class ManageAgentSocketHandler extends SocketHandler {
@@ -11,7 +11,7 @@ export class ManageAgentSocketHandler extends SocketHandler {
         socket.on("addAgent", async (requestData : unknown, callback : unknown) => {
             try {
                 log.debug("manage-agent-socket-handler", "addAgent");
-                checkLogin(socket);
+                checkAdmin(socket);
 
                 if (typeof(requestData) !== "object") {
                     throw new Error("Data must be an object");
@@ -19,11 +19,14 @@ export class ManageAgentSocketHandler extends SocketHandler {
 
                 let data = requestData as LooseObject;
                 let manager = socket.instanceManager;
-                await manager.test(data.url, data.username, data.password);
-                await manager.add(data.url, data.username, data.password, data.name);
+                if (typeof data.url !== "string" || typeof data.key !== "string") {
+                    throw new Error("Invalid agent credentials");
+                }
+                await manager.test(data.url, data.key);
+                await manager.add(data.url, data.key, data.name);
 
                 // connect to the agent
-                manager.connect(data.url, data.username, data.password);
+                manager.connect(data.url, data.key);
 
                 // Refresh another sockets
                 // It is a bit difficult to control another browser sessions to connect/disconnect agents, so force them to refresh the page will be easier.
@@ -45,7 +48,7 @@ export class ManageAgentSocketHandler extends SocketHandler {
         socket.on("removeAgent", async (url : unknown, callback : unknown) => {
             try {
                 log.debug("manage-agent-socket-handler", "removeAgent");
-                checkLogin(socket);
+                checkAdmin(socket);
 
                 if (typeof(url) !== "string") {
                     throw new Error("URL must be a string");
@@ -71,7 +74,7 @@ export class ManageAgentSocketHandler extends SocketHandler {
         socket.on("updateAgent", async (name : string, updatedName : string, callback : unknown) => {
             try {
                 log.debug("manage-agent-socket-handler", "updateAgent");
-                checkLogin(socket);
+                checkAdmin(socket);
 
                 let manager = socket.instanceManager;
                 await manager.update(name, updatedName);

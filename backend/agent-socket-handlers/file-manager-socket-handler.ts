@@ -48,7 +48,9 @@ export class FileManagerSocketHandler extends AgentSocketHandler {
 
         const audit = (operation : string, paths : unknown[], result : "success" | "failure", code? : string) => {
             const safePaths = paths.filter(item => typeof item === "string").map(item => JSON.stringify(item)).join(",");
-            log.info("file-manager", `user=${socket.userID} endpoint=${socket.endpoint || "current"} operation=${operation} paths=${safePaths} result=${result}${code ? ` code=${code}` : ""}`);
+            const actor = socket.principal?.kind === "admin" ? `user:${socket.principal.userId}` :
+                socket.principal?.kind === "agent" ? `agent:${socket.principal.keyHash}` : "unauthenticated";
+            log.info("file-manager", `actor=${actor} endpoint=${socket.endpoint || "current"} operation=${operation} paths=${safePaths} result=${result}${code ? ` code=${code}` : ""}`);
         };
 
         const respond = async (callback : unknown, action : () => Promise<object | void>, auditEntry? : { operation: string; paths: unknown[] | (() => unknown[]) }) => {

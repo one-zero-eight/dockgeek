@@ -178,7 +178,7 @@ test("validates sequential upload and download chunks through the agent API", as
     const agentSocket = new AgentSocket();
     let disconnect : (() => Promise<void>) | undefined;
     const socket = {
-        userID: 1,
+        principal: { kind: "admin", userId: "test-user" },
         endpoint: "",
         on(event : string, callback : () => Promise<void>) {
             if (event === "disconnect") {

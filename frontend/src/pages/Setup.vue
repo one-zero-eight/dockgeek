@@ -1,121 +1,52 @@
 <template>
-    <div class="form-container flex items-center py-10" data-cy="setup-form">
-        <div class="form w-full max-w-[330px] p-[15px] m-auto text-center">
-            <form @submit.prevent="submit">
-                <div>
-                    <img width="64" height="64" src="/icon.svg" alt="" />
-                    <div class="text-2xl font-bold mt-[5px]">
-                        Dockge
-                    </div>
-                </div>
-
-                <p class="mt-[1rem]">
-                    {{ $t("Create your admin account") }}
-                </p>
-
-                <div class="floating-field">
-                    <select id="language" v-model="$root.language" class="ui-floating-field field-select">
-                        <option v-for="(lang, i) in $i18n.availableLocales" :key="`Lang${i}`" :value="lang">
-                            {{ $i18n.messages[lang].languageName }}
-                        </option>
-                    </select>
-                    <label for="language">{{ $t("Language") }}</label>
-                </div>
-
-                <div class="floating-field mt-[1rem]">
-                    <input id="floatingInput" v-model="username" type="text" class="ui-floating-field" :placeholder="$t('Username')" required data-cy="username-input">
-                    <label for="floatingInput">{{ $t("Username") }}</label>
-                </div>
-
-                <div class="floating-field mt-[1rem]">
-                    <input id="floatingPassword" v-model="password" type="password" class="ui-floating-field" :placeholder="$t('Password')" required data-cy="password-input">
-                    <label for="floatingPassword">{{ $t("Password") }}</label>
-                </div>
-
-                <div class="floating-field mt-[1rem]">
-                    <input id="repeat" v-model="repeatPassword" type="password" class="ui-floating-field" :placeholder="$t('Repeat Password')" required data-cy="password-repeat-input">
-                    <label for="repeat">{{ $t("Repeat Password") }}</label>
-                </div>
-
-                <button class="ui-btn ui-btn-primary w-full mt-[1rem] min-h-[40px] px-5 text-base" type="submit" :disabled="processing" data-cy="submit-setup-form">
-                    {{ $t("Create") }}
-                </button>
-            </form>
-        </div>
+    <div class="form-container flex items-center py-10">
+        <form class="form w-full max-w-[330px] p-[15px] m-auto text-center" @submit.prevent="submit">
+            <h1 class="text-2xl font-bold">Claim Dockge administrator</h1>
+            <p class="mt-4">Use the one-time setup URL printed in the Dockge container logs.</p>
+            <input v-if="!signedIn" v-model="name" class="ui-field mt-4" placeholder="Name" required>
+            <input v-if="!signedIn" v-model="email" type="email" class="ui-field mt-4" placeholder="Email" autocomplete="email" required>
+            <input v-if="!signedIn" v-model="password" type="password" class="ui-field mt-4" placeholder="Password" autocomplete="new-password" required>
+            <button class="ui-btn ui-btn-primary w-full mt-4" type="submit" :disabled="processing">{{ signedIn ? "Claim administrator" : "Create account and claim" }}</button>
+            <p v-if="error" class="mt-4 text-destructive" role="alert">{{ error }}</p>
+        </form>
     </div>
 </template>
 
-<script>
+<script lang="ts">
+import { authClient } from "../mixins/socket";
 export default {
     data() {
-        return {
-            processing: false,
-            username: "",
-            password: "",
-            repeatPassword: "",
-        };
+        return { name: "", email: "", password: "", signedIn: false, processing: false, error: "" };
     },
-    watch: {
-
-    },
-    mounted() {
-        // TODO: Check if it is a database setup
-
-        this.$root.getSocket().emit("needSetup", (needSetup) => {
-            if (! needSetup) {
-                this.$router.push("/");
-            }
-        });
+    async mounted() {
+        this.signedIn = !!(await authClient.getSession()).data?.user;
     },
     methods: {
-        /**
-         * Submit form data for processing
-         * @returns {void}
-         */
-        submit() {
+        async submit() {
             this.processing = true;
-
-            if (this.password !== this.repeatPassword) {
-                this.$root.toastError("PasswordsDoNotMatch");
-                this.processing = false;
-                return;
-            }
-
-            this.$root.getSocket().emit("setup", this.username, this.password, (res) => {
-                this.processing = false;
-                this.$root.toastRes(res);
-
-                if (res.ok) {
-                    this.processing = true;
-
-                    this.$root.login(this.username, this.password, "", () => {
-                        this.processing = false;
-                        this.$router.push("/");
-                    });
+            try {
+                if (!this.signedIn) {
+                    const { error } = await authClient.signUp.email({ name: this.name, email: this.email, password: this.password });
+                    if (error) {
+                        throw new Error(error.message || "Unable to create account");
+                    }
                 }
-            });
-        },
-    },
+                const res = await fetch("/api/dockge/claim", {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ token: this.$route.query.claim })
+                });
+                if (!res.ok) {
+                    throw new Error("Invalid or expired claim URL. Check container logs for the latest link.");
+                }
+                this.$root.getSocket().disconnect();
+                this.$root.getSocket().connect();
+                this.$router.push("/");
+            } catch (error) {
+                this.error = error instanceof Error ? error.message : "Unable to claim administrator";
+            } finally {
+                this.processing = false;
+            }
+        }
+    }
 };
 </script>
-
-<style lang="scss" scoped>
-.floating-field {
-    position: relative;
-    text-align: left;
-
-    > label {
-        position: absolute;
-        top: 0.35rem;
-        left: 1.3rem;
-        color: var(--muted-foreground);
-        font-size: var(--text-sm-fontSize);
-        pointer-events: none;
-    }
-}
-
-.field-select {
-    appearance: auto;
-}
-
-</style>

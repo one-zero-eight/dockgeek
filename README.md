@@ -106,6 +106,46 @@ environment:
 Each Dockge Agent has its own independent root. File operations cannot access parent directories or traverse
 symbolic links outside the configured root.
 
+## Authentication
+
+Dockge runs Better Auth in the same container. By default, it generates a secret once at
+`/app/data/better-auth-secret` (inside the existing persistent data mount), with restrictive file
+permissions. Keep this file with your database backups; losing it invalidates existing auth sessions.
+`BETTER_AUTH_SECRET` is optional and takes precedence over the stored secret. A custom `auth.ts` that sets
+`secret` explicitly controls its own secret instead. Set `BETTER_AUTH_URL` to the externally reachable origin
+(HTTPS behind a reverse proxy). The default provider is email/password. A separate `/app/data/auth.db` stores
+Better Auth data alongside Dockge's existing data.
+On the first run, read the **single-use, 15-minute admin claim URL** in the container logs; open it to create
+and claim your administrator account. Existing Dockge usernames, passwords, JWTs, and remote-agent passwords
+are **not migrated**; keep a backup of your data and reconfigure connected instances with new agent keys.
+If a claim expires before it is used, restart the server to issue a fresh URL. An administrator
+can recover access offline with `npm run reset-password` (this resets the admin claim, not the Better Auth password). Stop Dockge before running the command, then use its printed URL within 15 minutes.
+
+For a custom Better Auth configuration, mount a TypeScript module and set `BETTER_AUTH_CONFIG`:
+
+```yaml
+volumes:
+  - ./auth.ts:/app/config/auth.ts:ro
+environment:
+  BETTER_AUTH_CONFIG: /app/config/auth.ts
+  BETTER_AUTH_URL: https://dockge.example.com
+  # Optional: BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+```
+
+Export your `betterAuth(...)` instance as the default export; import `appDatabase` from
+`/app/backend/auth.ts` and call `appDatabase()` for Dockge's persistent Better Auth SQLite database. This database is required
+so Dockge can initialize and migrate auth schemas at startup. Only packages included in the
+image resolve from a config mounted under `/app`; build a derived image for third-party plugins. Better Auth
+and official SSO, OAuth-provider, and API-key packages are included. Schema changes for the built-in adapter
+are applied at startup. The native CLI also supports `npx auth migrate --config /app/config/auth.ts` and
+`npx auth info --config /app/config/auth.ts`. Custom configs must use the exported SQLite database connector; additional plugins must be installed
+in the image before mounting the config. Changing the config file requires a container restart.
+
+Create an agent key on the **target** Dockge instance under Settings → Security, specifying the target URL's
+hostname and port. Enter that key instead of a username/password on the source instance. Revoke it from the
+target instance to terminate access; use HTTPS for remote connections. Access to Dockge requires a claimed
+administrator account, even if a custom Better Auth provider permits other people to sign in.
+
 ## Upgrade
 
 Back up `/opt/dockge/data` and the stack directory, update the pinned image version, then run:
