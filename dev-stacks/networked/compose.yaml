@@ -1,9 +1,10 @@
 services:
   server:
-    image: nginx:alpine
+    image: busybox:1.36
+    command: ["sh", "-c", "mkdir -p /www; printf 'Dockge dev stack\\n' > /www/index.html; exec httpd -f -p 80 -h /www"]
     networks: ["internal"]
   client:
-    image: alpine:3.21
+    image: busybox:1.36
     networks: ["internal"]
     depends_on: ["server"]
     command: ["sh", "-c", "wget -q -O /dev/null http://server/ && echo network-ready; sleep 3600"]
