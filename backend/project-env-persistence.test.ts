@@ -10,11 +10,13 @@ import { DockerSocketHandler } from "./agent-socket-handlers/docker-socket-handl
 import { DEFAULT_COMPOSE_FILE_PATTERNS, DEFAULT_EDITABLE_FILE_PATTERNS } from "../common/util-common";
 
 describe("project .env persistence", () => {
+    const originalGetComposeProjects = Project.getComposeProjects;
     let tmpRoot: string;
     let projectsDir: string;
     let server: DockgeekServer;
 
     before(() => {
+        Project.getComposeProjects = async () => [];
         tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "dockgeek-env-persist-"));
         projectsDir = path.join(tmpRoot, "projects");
         fs.mkdirSync(projectsDir);
@@ -22,6 +24,7 @@ describe("project .env persistence", () => {
     });
 
     after(() => {
+        Project.getComposeProjects = originalGetComposeProjects;
         fs.rmSync(tmpRoot, {
             recursive: true,
             force: true,

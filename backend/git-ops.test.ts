@@ -11,6 +11,9 @@ import { AgentSocket } from "../common/agent-socket";
 import { DockgeekSocket } from "./util-server";
 import { applyGitProject, deleteGitCredential, gitRootForProject, listGitCredentials, previewGitProject, setGitCredential } from "./git-ops";
 import { signGitOpsDelegation } from "./auth";
+import { Project } from "./project";
+
+const originalGetComposeProjects = Project.getComposeProjects;
 
 let tmp: string;
 let server: DockgeekServer;
@@ -20,17 +23,17 @@ const git = (cwd: string, ...args: string[]) => execFileSync("git", args, { cwd,
 const payload = () => ({ name: "sample", isAdd: false, filename: "compose.yaml", composeYAML: "services:\n  web:\n    image: alpine:latest\n", composeENV: "TOKEN=changed\n", draftFiles: {}, modifiedFiles: { "settings.yaml": "value: changed\n" }, deletedFiles: [], renames: [], deploy: false });
 
 before(() => {
-    tmp = fs.mkdtempSync(path.join(os.tmpdir(), "dockgeek-git-ops-test-"));
+    tmp = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "dockgeek-git-ops-test-")));
     root = path.join(tmp, "projects");
     const remote = path.join(tmp, "remote.git");
     projectDir = path.join(root, "sample");
     fs.mkdirSync(projectDir, { recursive: true });
-    git(tmp, "init", "--bare", remote);
+    git(tmp, "init", "--bare", "--initial-branch=main", remote);
     const bin = path.join(tmp, "bin");
     fs.mkdirSync(bin);
     fs.writeFileSync(path.join(bin, "ssh"), "#!/bin/sh\nfor arg do case \"$arg\" in *git-upload-pack*|*git-receive-pack*) exec sh -c \"$arg\";; esac; done\nexit 1\n", { mode: 0o700 });
     process.env.PATH = `${bin}:${process.env.PATH}`;
-    git(tmp, "init", root);
+    git(tmp, "init", "--initial-branch=main", root);
     git(root, "config", "user.email", "test@example.com");
     git(root, "config", "user.name", "Test");
     fs.writeFileSync(path.join(root, ".gitignore"), "**/.env\n");
@@ -43,10 +46,12 @@ before(() => {
     git(root, "remote", "add", "origin", `ssh://localhost${remote}`);
     git(root, "push", "-u", "origin", "HEAD");
     server = { projectsDir: root, config: { dataDir: path.join(tmp, "data") }, composeFilePatterns: DEFAULT_COMPOSE_FILE_PATTERNS, editableFilePatterns: DEFAULT_EDITABLE_FILE_PATTERNS } as DockgeekServer;
+    Project.getComposeProjects = async () => [];
     process.env.DOCKGEEK_GIT_CREDENTIALS_DIR = path.join(tmp, "secrets");
 });
 
 after(() => {
+    Project.getComposeProjects = originalGetComposeProjects;
     delete process.env.DOCKGEEK_GIT_CREDENTIALS_DIR;
     fs.rmSync(tmp, { recursive: true, force: true });
 });
@@ -141,7 +146,7 @@ test("a per-project repository is recognized without a repository at projects ro
     const separateBase = path.join(tmp, "isolated-projects");
     const separate = path.join(separateBase, "own-repo");
     fs.mkdirSync(separate, { recursive: true });
-    git(tmp, "init", separate);
+    git(tmp, "init", "--initial-branch=main", separate);
     git(separate, "config", "user.email", "test@example.com");
     git(separate, "config", "user.name", "Test");
     fs.writeFileSync(path.join(separate, "compose.yaml"), "services:\n  web:\n    image: alpine\n");
@@ -201,7 +206,7 @@ test("ignored-only changes save and deploy without committing or pushing", async
 test("missing upstream reports an actionable error without exposing remote details", async () => {
     const separate = path.join(tmp, "no-upstream");
     fs.mkdirSync(path.join(separate, "sample"), { recursive: true });
-    git(tmp, "init", separate);
+    git(tmp, "init", "--initial-branch=main", separate);
     fs.writeFileSync(path.join(separate, "sample", "compose.yaml"), "services:\n  web:\n    image: alpine\n");
     git(separate, "add", ".");
     git(separate, "-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-m", "Initial");

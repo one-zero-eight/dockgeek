@@ -235,7 +235,9 @@ async function credentialPath(server: DockgeekServer, root: string): Promise<str
         throw new ValidationError("Git credentials must be stored outside project and data directories");
     }
     await fs.mkdir(dir, { recursive: true, mode: 0o700 });
-    if (!(await fs.lstat(dir)).isDirectory() || path.resolve(await fs.realpath(dir)) !== path.resolve(dir)) {
+    const canonicalDir = await fs.realpath(dir);
+    if (!(await fs.lstat(dir)).isDirectory() || canonicalDir !== path.join(await fs.realpath(path.dirname(dir)), path.basename(dir)) ||
+        canonicalDir === projects || Project.isPathInside(projects, canonicalDir) || canonicalDir === data || Project.isPathInside(data, canonicalDir)) {
         throw new ValidationError("Invalid credential directory");
     }
     await fs.chmod(dir, 0o700);

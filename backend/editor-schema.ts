@@ -77,17 +77,22 @@ function inside(root: string, target: string): boolean {
 
 async function readLocal(target: string, root: string): Promise<string> {
     const canonicalRoot = await fs.realpath(root);
+    const lexicalRoot = path.resolve(root);
     const absolute = path.resolve(target);
-    if (!inside(canonicalRoot, absolute)) {
+    const startingRoot = inside(lexicalRoot, absolute) ? lexicalRoot : canonicalRoot;
+    if (!inside(startingRoot, absolute)) {
         throw new EditorSchemaError("SCHEMA_PATH_DENIED", "Schema is outside the projects directory.");
     }
-    let current = canonicalRoot;
-    for (const segment of path.relative(canonicalRoot, absolute).split(path.sep).filter(Boolean)) {
+    let current = startingRoot;
+    for (const segment of path.relative(startingRoot, absolute).split(path.sep).filter(Boolean)) {
         current = path.join(current, segment);
         const stat = await fs.lstat(current);
         if (stat.isSymbolicLink()) {
             throw new EditorSchemaError("SCHEMA_PATH_DENIED", "Schema symlinks are not allowed.");
         }
+    }
+    if (!inside(canonicalRoot, await fs.realpath(absolute))) {
+        throw new EditorSchemaError("SCHEMA_PATH_DENIED", "Schema is outside the projects directory.");
     }
     const handle = await fs.open(absolute, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
     try {
@@ -275,7 +280,7 @@ export async function readEditorSchema(server: DockgeekServer, request: EditorSc
             throw new EditorSchemaError("SCHEMA_URL_DENIED", "Invalid local schema URL.");
         }
         const filename = fileURLToPath(target);
-        return { content: await readLocal(filename, server.projectsDir), uri: pathToFileURL(filename).href };
+        return { content: await readLocal(filename, server.projectsDir), uri: pathToFileURL(await fs.realpath(filename)).href };
     }
     if (target.protocol !== "https:") {
         throw new EditorSchemaError("SCHEMA_URL_DENIED", "Only local files and HTTPS schemas are supported.");

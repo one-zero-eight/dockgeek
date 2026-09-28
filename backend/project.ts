@@ -378,6 +378,11 @@ export class Project {
         this._composeStatus = entry?.composeStatus;
     }
 
+    static async getComposeProjects(): Promise<{ Name: string; Status: string; ConfigFiles: string }[]> {
+        const result = await childProcessAsync.spawn("docker", [ "compose", "ls", "--all", "--format", "json" ], { encoding: "utf-8" });
+        return result.stdout ? JSON.parse(result.stdout.toString()) : [];
+    }
+
     static async getProjectList(server : DockgeekServer) : Promise<Map<string, Project>> {
         // A local compose file is a draft only until Compose reports a project for it.
         // Multiple -p projects may share that file; each keeps its own Compose name.
@@ -413,11 +418,7 @@ export class Project {
             }
         }
 
-        const result = await childProcessAsync.spawn("docker", [ "compose", "ls", "--all", "--format", "json" ], {
-            encoding: "utf-8",
-        });
-        const composeList : { Name : string, Status : string, ConfigFiles : string }[] = result.stdout
-            ? JSON.parse(result.stdout.toString()) : [];
+        const composeList = await this.getComposeProjects();
         const projectList = new Map<string, Project>();
         for (const composeProject of composeList) {
             const configFile = typeof composeProject.ConfigFiles === "string" ? composeProject.ConfigFiles.split(",")[0].trim() : "";

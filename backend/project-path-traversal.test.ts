@@ -15,6 +15,7 @@ const SECRET_ENV = `SECRET=${SECRET_TOKEN}\n`;
 const COMPOSE_YAML = "services:\n  poc:\n    image: hello-world\n";
 
 describe("project name path traversal", () => {
+    const originalGetComposeProjects = Project.getComposeProjects;
     let tmpRoot: string;
     let projectsDir: string;
     let outsideDir: string;
@@ -30,6 +31,7 @@ describe("project name path traversal", () => {
     }
 
     before(() => {
+        Project.getComposeProjects = async () => [];
         tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "dockgeek-project-traversal-"));
         projectsDir = path.join(tmpRoot, "projects");
         outsideDir = path.join(tmpRoot, "outside");
@@ -39,6 +41,7 @@ describe("project name path traversal", () => {
     });
 
     after(() => {
+        Project.getComposeProjects = originalGetComposeProjects;
         fs.rmSync(tmpRoot, {
             recursive: true,
             force: true,

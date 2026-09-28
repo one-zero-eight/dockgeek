@@ -132,7 +132,7 @@ test("root-relative remote refs stay HTTPS and pass through the fetch allowlist"
 });
 
 test("project schema requests use projectName and restrict local schemas to the projects root", async () => {
-    const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "dockgeek-project-schema-"));
+    const temporary = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), "dockgeek-project-schema-")));
     const projectsDir = path.join(temporary, "projects");
     const projectDir = path.join(projectsDir, "demo");
     await fs.mkdir(projectDir, { recursive: true });
@@ -173,7 +173,7 @@ test("project schema requests use projectName and restrict local schemas to the 
 });
 
 test("local schema reads honor the projects root even for Files documents elsewhere", async () => {
-    const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "dockgeek-schema-"));
+    const temporary = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), "dockgeek-schema-")));
     const projectsDir = path.join(temporary, "projects");
     const filesDir = path.join(temporary, "files");
     await fs.mkdir(path.join(projectsDir, "shared"), { recursive: true });
