@@ -9,6 +9,13 @@
 
 Dockgeek is a self-hosted manager for Docker Compose projects. Your Compose files stay on your host, so you can keep using the `docker compose` CLI alongside the web interface.
 
+<div align="center">
+    
+[screencast.webm](https://github.com/user-attachments/assets/f801d307-48d8-4367-8832-2c3a89994c60)
+
+</div>
+
+
 ## Features
 
 - **Your existing Compose projects, all in one place:** Discover projects from the projects directory and see what's running. Start, stop, restart, update, and delete projects from the browser.
