@@ -11,7 +11,7 @@ labels:
 ---
 
 DO NOT PROVIDE ANY DETAILS HERE. Please report the vulnerability privately at
-https://github.com/Lorwell/dockge/security/advisories/new.
+https://github.com/one-zero-eight/dockgeek/security/advisories/new.
 
 
 There is no need to create a public issue after submitting the advisory.

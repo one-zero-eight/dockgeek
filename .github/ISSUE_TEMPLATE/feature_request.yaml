@@ -4,7 +4,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Please use https://github.com/Lorwell/dockge/discussions/new?category=feature-request for feature requests.
+        Please use https://github.com/one-zero-eight/dockgeek/discussions/new?category=feature-request for feature requests.
   - type: checkboxes
     id: no-duplicate-issues
     attributes:

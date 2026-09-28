@@ -1,5 +1,5 @@
 Please read the contribution guidelines before opening a pull request:
-https://github.com/Lorwell/dockge/blob/master/CONTRIBUTING.md
+https://github.com/one-zero-eight/dockgeek/blob/master/CONTRIBUTING.md
 
 Tick the checkbox if you understand [x]: 
 - [ ] I have read and understand the pull request rules.

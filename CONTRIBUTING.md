@@ -1,76 +1,46 @@
-# Contributing
+# Contributing to Dockgeek
 
-This repository is an independently maintained fork of Dockge. Open issues and pull requests against
-`Lorwell/dockge`; do not send fork-specific changes to the upstream project.
+Open issues and pull requests at [one-zero-eight/dockgeek](https://github.com/one-zero-eight/dockgeek). Discuss large features or breaking changes in an issue first, and keep pull requests focused.
 
 ## Before opening a pull request
 
-- Keep each change focused and avoid unrelated refactors.
-- Discuss large features or breaking changes in a repository issue first.
-- Add user-facing English text to `frontend/src/lang/en.json`. Do not update unrelated translations in the same
-  change.
-- Include screenshots stored on GitHub for visible UI changes.
+- Add user-facing English text to `frontend/src/lang/en.json`; avoid unrelated translation changes.
+- Include GitHub-hosted screenshots for visible UI changes.
 - Describe manual coverage for affected UI, Socket.IO, database, and Docker Compose behavior.
+- Update the [README](./README.md) or [wiki](https://github.com/one-zero-eight/dockgeek/wiki) when user-facing behavior changes.
 
 ## Local development
 
-Requirements:
-
-- Node.js 22.14 or newer
-- npm
-- Git
-- Docker Engine with Docker Compose V2 for integration testing
-
-Install dependencies and start the frontend and backend development servers:
+Use Node.js 24.14 or newer, npm, Git, and Docker Engine with Compose V2 for integration testing.
 
 ```bash
 npm install
 npm run dev
 ```
 
-The frontend runs on <http://localhost:5000> and waits for the backend on port `5001`. The processes can also be
-started independently:
-
-```bash
-npm run dev:frontend
-npm run dev:backend
-```
-
-Both applications share the root `package.json`. Frontend-only packages belong in `devDependencies`; runtime
-backend packages belong in `dependencies`.
+The frontend runs at <http://localhost:5000> and the backend at <http://localhost:5001>. Start them separately with `npm run dev:frontend` and `npm run dev:backend`. Both use the root `package.json`; frontend-only packages belong in `devDependencies`, runtime backend packages in `dependencies`.
 
 ## Project layout
 
-- `backend/`: Node.js server, models, migrations, and Socket.IO handlers
-- `common/`: utilities shared by the frontend and backend
-- `frontend/src/`: Vue 3 components, pages, layouts, styles, and translations
-- `frontend/public/`: static frontend assets
+- `backend/`: server, models, migrations, and Socket.IO handlers
+- `common/`: shared utilities
+- `frontend/src/`: Vue components, styles, and translations
+- `frontend/public/`: frontend assets
 - `docker/`: production image definitions
+- `dev-projects/`: Docker Compose project fixtures for development
 - `extra/`: maintenance and release scripts
 
-## Code style
+## Code style and checks
 
-- Use four-space indentation for TypeScript and Vue, and two spaces for YAML.
-- Use double quotes and semicolons in TypeScript.
-- Use `camelCase` for TypeScript identifiers, `snake_case` for SQLite fields, and `kebab-case` for CSS classes.
-- Add JSDoc to methods and functions.
-- Preserve existing behavior unless the change explicitly requires otherwise.
+Use four-space indentation for TypeScript and Vue and two spaces for YAML. Use double quotes and semicolons in TypeScript, `camelCase` identifiers, `snake_case` SQLite fields, and `kebab-case` CSS classes. Add JSDoc to methods and functions, and preserve existing behavior unless the change requires otherwise.
 
-## Required checks
-
-Run the same validation used by CI before submitting:
+Before submitting, run:
 
 ```bash
 npm run lint
 npm run check-ts
 npm run build:frontend
+npm test
 ```
 
-There is no dedicated unit-test suite yet. Add focused automated tests when introducing independently testable
-logic, and document the manual tests performed for the rest.
-
-## Docker releases
-
-Stable Docker images are published from `master` with the `Build and push Docker image` workflow. The release
-version is read from `package.json`; version changes must keep `package.json` and `package-lock.json` synchronized.
-Publishing requires the repository's Docker Hub secrets and is a maintainer operation.
+Document manual tests for behavior that automated tests do not cover. Publishing the `ghcr.io/one-zero-eight/dockgeek:2.0.0` and `:2` images is a maintainer operation; keep release versions in `package.json` and `package-lock.json` synchronized.

@@ -1,13 +1,7 @@
 # Security Policy
 
-## Reporting a Vulnerability
+## Reporting a vulnerability
 
-Please report vulnerabilities privately through
-[GitHub Security Advisories](https://github.com/Lorwell/dockge/security/advisories/new).
+Report vulnerabilities privately using [Dockgeek GitHub Security Advisories](https://github.com/one-zero-eight/dockgeek/security/advisories/new). Include affected versions, reproduction steps, and potential impact. Do not post vulnerability details in public issues or discussions.
 
-Do not use the public issue tracker or discuss it in public as it will cause more damage.
-
-## Third-party bug bounty platforms
-
-This project does not currently operate a bug bounty program. Reports sent through third-party bounty platforms
-are not accepted; use GitHub Security Advisories instead.
+Dockgeek does not operate a third-party bug bounty program. Use GitHub Security Advisories for disclosure.

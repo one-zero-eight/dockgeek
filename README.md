@@ -1,207 +1,89 @@
-<div align="center" width="100%">
-    <img src="./frontend/public/icon.svg" width="128" alt="Dockge" />
+<div align="center">
+    <img src="./frontend/public/icon.svg" width="128" alt="Dockgeek" />
 </div>
 
-# Dockge — Lorwell Fork
+# Dockgeek v2.0.0
 
-[![Version](https://img.shields.io/badge/version-1.8.2-green.svg)](./package.json)
-[![Docker pulls](https://img.shields.io/docker/pulls/moailaozi/dockge.svg)](https://hub.docker.com/r/moailaozi/dockge)
-[![Build Docker image](https://github.com/Lorwell/dockge/actions/workflows/docker-image.yml/badge.svg)](https://github.com/Lorwell/dockge/actions/workflows/docker-image.yml)
+[![Version](https://img.shields.io/badge/version-2.0.0-green.svg)](./package.json)
+[![Build Docker image](https://github.com/one-zero-eight/dockgeek/actions/workflows/docker-image.yml/badge.svg)](https://github.com/one-zero-eight/dockgeek/actions/workflows/docker-image.yml)
 
-This repository is an independently maintained fork of
-[Dockge](https://github.com/louislam/dockge). It has its own Docker images, release workflow, documentation, and
-upgrade path. Use this repository and the `moailaozi/dockge` image when installing or upgrading this fork.
+Dockgeek is a self-hosted manager for Docker Compose projects. Your Compose files stay on your host, so you can keep using the `docker compose` CLI alongside the web interface.
 
-Dockge is a responsive, self-hosted manager for Docker Compose stacks. Compose files remain ordinary files on the
-host and can still be managed with the Docker Compose CLI.
+## Features
 
-## What is different in this fork
+- **Your existing Compose projects, all in one place:** Discover projects from the projects directory and see what's running. Start, stop, restart, update, and delete projects from the browser.
+- **Edit Compose and project files:** Create or edit `compose.yaml` and `.env` together, and add files such as `settings.yaml` from the project page. YAML and JSON files support schema-powered typing suggestions, validation, and formatting, including schemas hosted on GitHub.
+- **Sync project files to Git:** Use a repository in the projects root or a project folder, preview editor changes before committing and pushing, and keep ignored files local.
+- **Health and live logs:** Inspect services and containers, see healthcheck status, and follow container logs.
+- **Interactive Web Terminal:** Open a shell in a running container and execute commands without leaving your browser.
+- **Manage on mobile:** Responsive project and container views let you inspect and control services from your phone.
+- **Multiple hosts:** Connect Dockgeek agents to manage Compose projects on other Docker hosts.
 
-- Container instance details generated from the live Compose state, including stacks that use `include`
-- Dedicated Overview, Logs, and Terminal views for each created container
-- Large, viewport-aware log panels with follow, clear, copy, and in-page fullscreen controls
-- Container-level start, stop, and restart actions with stack ownership validation
-- Fully interactive Bash/sh terminals with Tab, control-key, resize, and paste support
-- The original Compose editor, stack lifecycle controls, multi-agent support, and responsive UI
+See the [GitHub wiki](https://github.com/one-zero-eight/dockgeek/wiki) for project editing and Git sync, the file manager, and administrator setup and recovery.
 
-## Quick start
+## Installation
 
-Requirements:
+Requirements: Docker Engine with Compose V2 and access to a Docker socket.
 
-- Docker Engine 20+ with Docker Compose V2, or a compatible Podman installation
-- A Linux host capable of mounting the Docker socket
-- `amd64`, `arm64`, or `arm/v7`
+### Basic setup
 
-Create the directories and save the following as `/opt/dockge/compose.yaml`:
+Create `/opt/dockgeek/compose.yaml`:
 
 ```bash
-mkdir -p /opt/dockge /opt/stacks
-cd /opt/dockge
+mkdir -p /opt/dockgeek /opt/projects
+cd /opt/dockgeek
 ```
 
 ```yaml
 services:
-  dockge:
-    image: docker.io/moailaozi/dockge:1.8.2
+  dockgeek:
+    image: ghcr.io/one-zero-eight/dockgeek:2.0.0
     restart: unless-stopped
     ports:
       - "5001:5001"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./data:/app/data
-      # The host and container paths must be identical.
-      - /opt/stacks:/opt/stacks
+      - ./data:/app/dockgeek-data
+      # Projects Directory
+      # ⚠️ READ IT CAREFULLY. If you did it wrong, your data could end up writing into a WRONG PATH.
+      # ⚠️ 1. FULL path only. No relative path (MUST)
+      # ⚠️ 2. Left Projects Path === Right Projects Path (MUST)
+      - /opt/projects:/opt/projects
     environment:
-      - DOCKGE_STACKS_DIR=/opt/stacks
-      # Set both values when stack files should be owned by a non-root user.
-      - PUID=1000
-      - PGID=1000
+      DOCKGEEK_DATA_DIR: /app/dockgeek-data
+      DOCKGEEK_PROJECTS_DIR: /opt/projects
 ```
-
-Start Dockge:
 
 ```bash
 docker compose up -d
 ```
 
-Open <http://localhost:5001>. For production, pin a full version such as `1.8.2`; the `latest` tag follows the
-newest stable release of this fork.
+Open <http://localhost:5001>.
 
-## Stack directory and imports
+## Updating
 
-The default stacks directory in the example is `/opt/stacks`. Each stack has its own directory and Compose file:
-
-```text
-/opt/stacks/
-└── example-stack/
-    └── compose.yaml
-```
-
-Existing Compose projects can also be represented with an include-only stack file:
-
-```yaml
-name: nginx-proxy-manager
-include:
-  - path: /data/nginx-proxy-manager/docker-compose.yaml
-    project_directory: /data/nginx-proxy-manager
-services: {}
-```
-
-After adding files outside the UI, use **Scan Stacks Folder** in Dockge. Paths referenced by Compose must be
-available to the Dockge container at the same absolute path.
-
-## Restricted file manager
-
-The optional file manager is disabled unless a root directory is explicitly configured. In Docker, mount only
-the directory that Dockge should be allowed to manage and set:
-
-```yaml
-volumes:
-  - /host/managed-files:/managed-files
-environment:
-  - DOCKGE_FILE_MANAGER_ROOT=/managed-files
-  - DOCKGE_FILE_MANAGER_MAX_FILE_SIZE=104857600
-```
-
-Each Dockge Agent has its own independent root. File operations cannot access parent directories or traverse
-symbolic links outside the configured root.
-
-## Authentication
-
-Dockge runs Better Auth in the same container. By default, it generates a secret once at
-`/app/data/better-auth-secret` (inside the existing persistent data mount), with restrictive file
-permissions. Keep this file with your database backups; losing it invalidates existing auth sessions.
-`BETTER_AUTH_SECRET` is optional and takes precedence over the stored secret. A custom `auth.ts` that sets
-`secret` explicitly controls its own secret instead. Set `BETTER_AUTH_URL` to the externally reachable origin
-(HTTPS behind a reverse proxy). The default provider is email/password. A separate `/app/data/auth.db` stores
-Better Auth data alongside Dockge's existing data.
-On the first run, read the **single-use, 15-minute admin claim URL** in the container logs; open it to create
-and claim your administrator account. Existing Dockge usernames, passwords, JWTs, and remote-agent passwords
-are **not migrated**; keep a backup of your data and reconfigure connected instances with new agent keys.
-If a claim expires before it is used, restart the server to issue a fresh URL. An administrator
-can recover access offline with `npm run reset-password` (this resets the admin claim, not the Better Auth password). Stop Dockge before running the command, then use its printed URL within 15 minutes.
-
-For a custom Better Auth configuration, mount a TypeScript module and set `BETTER_AUTH_CONFIG`:
-
-```yaml
-volumes:
-  - ./auth.ts:/app/config/auth.ts:ro
-environment:
-  BETTER_AUTH_CONFIG: /app/config/auth.ts
-  BETTER_AUTH_URL: https://dockge.example.com
-  # Optional: BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
-```
-
-Export your `betterAuth(...)` instance as the default export; import `appDatabase` from
-`/app/backend/auth.ts` and call `appDatabase()` for Dockge's persistent Better Auth SQLite database. This database is required
-so Dockge can initialize and migrate auth schemas at startup. Only packages included in the
-image resolve from a config mounted under `/app`; build a derived image for third-party plugins. Better Auth
-and official SSO, OAuth-provider, and API-key packages are included. Schema changes for the built-in adapter
-are applied at startup. The native CLI also supports `npx auth migrate --config /app/config/auth.ts` and
-`npx auth info --config /app/config/auth.ts`. Custom configs must use the exported SQLite database connector; additional plugins must be installed
-in the image before mounting the config. Changing the config file requires a container restart.
-
-Create an agent key on the **target** Dockge instance under Settings → Security, specifying the target URL's
-hostname and port. Enter that key instead of a username/password on the source instance. Revoke it from the
-target instance to terminate access; use HTTPS for remote connections. Access to Dockge requires a claimed
-administrator account, even if a custom Better Auth provider permits other people to sign in.
-
-## Upgrade
-
-Back up `/opt/dockge/data` and the stack directory, update the pinned image version, then run:
+Back up `/opt/dockgeek/data` and your projects directory, update the image tag in `compose.yaml`, then run:
 
 ```bash
-cd /opt/dockge
+cd /opt/dockgeek
 docker compose pull
 docker compose up -d
 ```
 
-Database migrations run automatically at startup. Restore a pre-upgrade backup if a downgrade is required.
+## FAQ
 
-## Local development
+### Can I use my existing Compose files?
 
-Dockge requires Node.js 22.14 or newer. Install dependencies and start both development servers:
+Yes. Put each project in a subdirectory of the configured projects directory, then use **Scan Projects Folder** in Dockgeek. Keep any host paths referenced by Compose available inside the Dockgeek container.
 
-```bash
-npm install
-npm run dev
-```
+### Can I manage a container without a Compose file?
 
-- Frontend: <http://localhost:5000>
-- Backend: <http://localhost:5001>
-- `npm run dev:frontend` and `npm run dev:backend` can be run separately.
+Dockgeek manages Compose projects. It can inspect containers belonging to those projects, but it is not a general-purpose manager for standalone containers.
 
-Before submitting changes, run:
+## Community and contribution
 
-```bash
-npm run lint
-npm run check-ts
-npm run build:frontend
-```
-
-## Docker image publishing
-
-The `Build and push Docker image` GitHub Actions workflow publishes multi-platform images for `amd64`, `arm64`,
-and `arm/v7`. It can only publish stable images from `master`, and derives the release version from `package.json`.
-For version `1.8.2`, it publishes `1.8.2`, `1.8`, `1`, and `latest` tags.
-
-Configure these GitHub Actions secrets before running the workflow:
-
-- `DOCKER_HUB_USERNAME`: Docker Hub account name
-- `DOCKER_HUB_TOKEN`: Docker Hub access token with permission to push `moailaozi/dockge`
-
-Then open **Actions → Build and push Docker image → Run workflow** on the `master` branch.
-
-## Support and contribution
-
-- [Issues](https://github.com/Lorwell/dockge/issues)
-- [Actions](https://github.com/Lorwell/dockge/actions)
-- [Docker image tags](https://hub.docker.com/r/moailaozi/dockge/tags)
-- [Development guidelines](./CONTRIBUTING.md)
-
-This fork is maintained independently. Do not report fork-specific problems or request its features in the
-upstream Dockge repository.
+Use [issues](https://github.com/one-zero-eight/dockgeek/issues) for bug reports and [CONTRIBUTING.md](./CONTRIBUTING.md) for development instructions. Security issues should be reported as described in [SECURITY.md](./SECURITY.md).
 
 ## Attribution
 
-Dockge is licensed under the MIT License and builds on the work of Louis Lam and the upstream Dockge contributors.
+Dockgeek is a fork of [louislam/dockge](https://github.com/louislam/dockge), created by Louis Lam and its contributors.
