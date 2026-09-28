@@ -1,66 +1,67 @@
 import { AgentSocketHandler } from "../agent-socket-handler";
-import { DockgeServer } from "../dockge-server";
-import { callbackError, callbackResult, checkLogin, DockgeSocket, ValidationError } from "../util-server";
-import { Stack } from "../stack";
+import { DockgeekServer } from "../dockge-server";
+import { callbackError, callbackResult, checkGitOpsAdmin, checkLogin, DockgeekSocket, ValidationError } from "../util-server";
+import { applyGitProject, deleteGitCredential, gitRootForProject, GitProjectPayload, listGitCredentials, previewGitProject, setGitCredential } from "../git-ops";
+import { Project } from "../project";
 import { AgentSocket } from "../../common/agent-socket";
 import { matchesFilePatterns } from "../../common/util-common";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 export class DockerSocketHandler extends AgentSocketHandler {
-    create(socket : DockgeSocket, server : DockgeServer, agentSocket : AgentSocket) {
+    create(socket : DockgeekSocket, server : DockgeekServer, agentSocket : AgentSocket) {
         // Do not call super.create()
 
-        agentSocket.on("deployStack", async (name : unknown, composeYAML : unknown, composeENV : unknown, isAdd : unknown, filename : unknown, draftFiles : unknown, callback) => {
+        agentSocket.on("deployProject", async (name : unknown, composeYAML : unknown, composeENV : unknown, isAdd : unknown, filename : unknown, draftFiles : unknown, callback) => {
             try {
                 checkLogin(socket);
-                const stack = await this.saveStack(server, name, composeYAML, composeENV, isAdd, filename, draftFiles);
-                await stack.deploy(socket);
-                server.sendStackList();
+                const project = await this.saveProject(server, name, composeYAML, composeENV, isAdd, filename, draftFiles);
+                await project.deploy(socket);
+                server.sendProjectList();
                 callbackResult({
                     ok: true,
                     msg: "Deployed",
                     msgi18n: true,
-                    name: stack.name,
-                    projectDir: stack.fullPath,
+                    projectName: project.name,
+                    projectDir: project.fullPath,
                 }, callback);
             } catch (e) {
                 callbackError(e, callback);
             }
         });
 
-        agentSocket.on("saveStack", async (name : unknown, composeYAML : unknown, composeENV : unknown, isAdd : unknown, filename : unknown, draftFiles : unknown, callback) => {
+        agentSocket.on("saveProject", async (name : unknown, composeYAML : unknown, composeENV : unknown, isAdd : unknown, filename : unknown, draftFiles : unknown, callback) => {
             try {
                 checkLogin(socket);
-                const stack = await this.saveStack(server, name, composeYAML, composeENV, isAdd, filename, draftFiles);
+                const project = await this.saveProject(server, name, composeYAML, composeENV, isAdd, filename, draftFiles);
                 callbackResult({
                     ok: true,
                     msg: "Saved",
                     msgi18n: true,
-                    name: stack.name,
-                    projectDir: stack.fullPath,
+                    projectName: project.name,
+                    projectDir: project.fullPath,
                 }, callback);
-                server.sendStackList();
+                server.sendProjectList();
             } catch (e) {
                 callbackError(e, callback);
             }
         });
 
-        agentSocket.on("deleteStack", async (name : unknown, callback) => {
+        agentSocket.on("deleteProject", async (name : unknown, callback) => {
             try {
                 checkLogin(socket);
                 if (typeof(name) !== "string") {
                     throw new ValidationError("Name must be a string");
                 }
-                const stack = await Stack.getStack(server, name);
+                const project = await Project.getProject(server, name);
 
                 try {
-                    await stack.delete(socket);
+                    await project.delete(socket);
                 } catch (e) {
-                    server.sendStackList();
+                    server.sendProjectList();
                     throw e;
                 }
 
-                server.sendStackList();
+                server.sendProjectList();
                 callbackResult({
                     ok: true,
                     msg: "Deleted",
@@ -72,47 +73,47 @@ export class DockerSocketHandler extends AgentSocketHandler {
             }
         });
 
-        agentSocket.on("getStack", async (stackName : unknown, callback) => {
+        agentSocket.on("getProject", async (projectName : unknown, callback) => {
             try {
                 checkLogin(socket);
 
-                if (typeof(stackName) !== "string") {
+                if (typeof(projectName) !== "string") {
                     throw new ValidationError("Project name must be a string");
                 }
 
-                const stack = await Stack.getStack(server, stackName);
+                const project = await Project.getProject(server, projectName);
 
                 callbackResult({
                     ok: true,
-                    stack: await stack.toJSON(socket.endpoint),
+                    project: await project.toJSON(socket.endpoint),
                     composeFilePatterns: server.composeFilePatterns,
                     editableFilePatterns: server.editableFilePatterns,
-                    files: await this.listEditableFiles(server, stack),
+                    files: await this.listEditableFiles(server, project),
                 }, callback);
             } catch (e) {
                 callbackError(e, callback);
             }
         });
 
-        agentSocket.on("listStackFiles", async (name : unknown, callback) => {
+        agentSocket.on("listProjectFiles", async (name : unknown, callback) => {
             try {
                 checkLogin(socket);
                 if (typeof name !== "string") {
                     throw new ValidationError("Project name must be a string");
                 }
-                const stack = await Stack.getStack(server, name);
+                const project = await Project.getProject(server, name);
                 callbackResult({ ok: true,
-                    files: await this.listEditableFiles(server, stack) }, callback);
+                    files: await this.listEditableFiles(server, project) }, callback);
             } catch (e) {
                 callbackError(e, callback);
             }
         });
 
-        agentSocket.on("readStackFile", async (name : unknown, filename : unknown, callback) => {
+        agentSocket.on("readProjectFile", async (name : unknown, filename : unknown, callback) => {
             try {
                 checkLogin(socket);
-                const stack = await this.editableStack(server, name, filename);
-                const target = path.join(stack.fullPath, filename as string);
+                const project = await this.editableProject(server, name, filename);
+                const target = path.join(project.fullPath, filename as string);
                 const stat = await fs.lstat(target);
                 if (!stat.isFile() || stat.size > 1024 * 1024) {
                     throw new ValidationError("File must be a regular text file smaller than 1 MiB");
@@ -124,17 +125,17 @@ export class DockerSocketHandler extends AgentSocketHandler {
             }
         });
 
-        agentSocket.on("writeStackFile", async (name : unknown, filename : unknown, content : unknown, create : unknown, callback) => {
+        agentSocket.on("writeProjectFile", async (name : unknown, filename : unknown, content : unknown, create : unknown, callback) => {
             try {
                 checkLogin(socket);
-                const stack = await this.editableStack(server, name, filename);
+                const project = await this.editableProject(server, name, filename);
                 if (typeof content !== "string" || Buffer.byteLength(content) > 1024 * 1024) {
                     throw new ValidationError("File must be text smaller than 1 MiB");
                 }
                 if (typeof create !== "boolean") {
                     throw new ValidationError("Invalid file operation");
                 }
-                const target = path.join(stack.fullPath, filename as string);
+                const target = path.join(project.fullPath, filename as string);
                 try {
                     const stat = await fs.lstat(target);
                     if (!stat.isFile()) {
@@ -157,30 +158,30 @@ export class DockerSocketHandler extends AgentSocketHandler {
                     await handle.close();
                 }
                 callbackResult({ ok: true,
-                    files: await this.listEditableFiles(server, stack) }, callback);
+                    files: await this.listEditableFiles(server, project) }, callback);
             } catch (e) {
                 callbackError(e, callback);
             }
         });
 
-        agentSocket.on("renameStackFile", async (name : unknown, filename : unknown, newFilename : unknown, callback) => {
+        agentSocket.on("renameProjectFile", async (name : unknown, filename : unknown, newFilename : unknown, callback) => {
             try {
                 checkLogin(socket);
                 if (typeof name !== "string" || typeof filename !== "string" || typeof newFilename !== "string") {
                     throw new ValidationError("Invalid filename");
                 }
-                const stack = await Stack.getStack(server, name);
-                const isCompose = filename === stack.composeFilePath.split(path.sep).pop();
+                const project = await Project.getProject(server, name);
+                const isCompose = filename === project.composeFilePath.split(path.sep).pop();
                 const patterns = isCompose ? server.composeFilePatterns : server.editableFilePatterns;
-                if (!matchesFilePatterns(filename, patterns) || !matchesFilePatterns(newFilename, patterns) || !stack.isManagedByDockge
-                    || !Stack.isPathInside(await fs.realpath(server.stacksDir), await fs.realpath(stack.fullPath))) {
+                if (!matchesFilePatterns(filename, patterns) || !matchesFilePatterns(newFilename, patterns) || !project.isManagedByDockgeek
+                    || !Project.isPathInside(await fs.realpath(server.projectsDir), await fs.realpath(project.fullPath))) {
                     throw new ValidationError("Filename is not allowed");
                 }
-                const original = path.join(stack.fullPath, filename);
+                const original = path.join(project.fullPath, filename);
                 if (!(await fs.lstat(original)).isFile()) {
                     throw new ValidationError("File must be a regular file");
                 }
-                const target = path.join(stack.fullPath, newFilename);
+                const target = path.join(project.fullPath, newFilename);
                 try {
                     await fs.lstat(target);
                     throw new ValidationError("Destination already exists");
@@ -191,36 +192,95 @@ export class DockerSocketHandler extends AgentSocketHandler {
                 }
                 await fs.rename(original, target);
                 callbackResult({ ok: true,
-                    files: await this.listEditableFiles(server, stack) }, callback);
+                    files: await this.listEditableFiles(server, project) }, callback);
                 if (isCompose) {
-                    server.sendStackList();
+                    server.sendProjectList();
                 }
             } catch (e) {
                 callbackError(e, callback);
             }
         });
 
-        agentSocket.on("deleteStackFile", async (name : unknown, filename : unknown, callback) => {
+        agentSocket.on("deleteProjectFile", async (name : unknown, filename : unknown, callback) => {
             try {
                 checkLogin(socket);
-                const stack = await this.editableStack(server, name, filename);
-                const target = path.join(stack.fullPath, filename as string);
+                const project = await this.editableProject(server, name, filename);
+                const target = path.join(project.fullPath, filename as string);
                 if (!(await fs.lstat(target)).isFile()) {
                     throw new ValidationError("File must be a regular file");
                 }
                 await fs.unlink(target);
                 callbackResult({ ok: true,
-                    files: await this.listEditableFiles(server, stack) }, callback);
+                    files: await this.listEditableFiles(server, project) }, callback);
             } catch (e) {
                 callbackError(e, callback);
             }
         });
 
-        // requestStackList
-        agentSocket.on("requestStackList", async (callback) => {
+        agentSocket.on("previewGitProject", async (payload : GitProjectPayload, delegationOrCallback : unknown, remoteCallback? : unknown) => {
+            const callback = remoteCallback ?? delegationOrCallback;
+            try {
+                checkGitOpsAdmin(socket, "previewGitProject", payload, remoteCallback ? delegationOrCallback : undefined);
+                const preview = await previewGitProject(server, payload);
+                callbackResult({ ok: true, ...preview }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        agentSocket.on("applyGitProject", async (payload : GitProjectPayload, delegationOrCallback : unknown, remoteCallback? : unknown) => {
+            const callback = remoteCallback ?? delegationOrCallback;
+            try {
+                checkGitOpsAdmin(socket, "applyGitProject", payload, remoteCallback ? delegationOrCallback : undefined);
+                const result = await applyGitProject(server, payload, async project => {
+                    await project.deploy(socket);
+                });
+                server.sendProjectList();
+                callbackResult({ ok: true, ...result }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        agentSocket.on("listGitCredentials", async (payload : { name: string }, delegationOrCallback : unknown, remoteCallback? : unknown) => {
+            const callback = remoteCallback ?? delegationOrCallback;
+            try {
+                checkGitOpsAdmin(socket, "listGitCredentials", payload, remoteCallback ? delegationOrCallback : undefined);
+                const root = await gitRootForProject(server, payload?.name);
+                callbackResult({ ok: true, ...await listGitCredentials(server, root) }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        agentSocket.on("setGitCredential", async (payload : { name: string; type: "https" | "ssh"; username?: string; token?: string; privateKey?: string }, delegationOrCallback : unknown, remoteCallback? : unknown) => {
+            const callback = remoteCallback ?? delegationOrCallback;
+            try {
+                checkGitOpsAdmin(socket, "setGitCredential", payload, remoteCallback ? delegationOrCallback : undefined);
+                const root = await gitRootForProject(server, payload?.name);
+                await setGitCredential(server, root, payload as Parameters<typeof setGitCredential>[2]);
+                callbackResult({ ok: true }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        agentSocket.on("deleteGitCredential", async (payload : { name: string }, delegationOrCallback : unknown, remoteCallback? : unknown) => {
+            const callback = remoteCallback ?? delegationOrCallback;
+            try {
+                checkGitOpsAdmin(socket, "deleteGitCredential", payload, remoteCallback ? delegationOrCallback : undefined);
+                await deleteGitCredential(server, await gitRootForProject(server, payload?.name));
+                callbackResult({ ok: true }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        // requestProjectList
+        agentSocket.on("requestProjectList", async (callback) => {
             try {
                 checkLogin(socket);
-                server.sendStackList();
+                server.sendProjectList();
                 callbackResult({
                     ok: true,
                     msg: "Updated",
@@ -231,128 +291,128 @@ export class DockerSocketHandler extends AgentSocketHandler {
             }
         });
 
-        // startStack
-        agentSocket.on("startStack", async (stackName : unknown, callback) => {
+        // startProject
+        agentSocket.on("startProject", async (projectName : unknown, callback) => {
             try {
                 checkLogin(socket);
 
-                if (typeof(stackName) !== "string") {
+                if (typeof(projectName) !== "string") {
                     throw new ValidationError("Project name must be a string");
                 }
 
-                const stack = await Stack.getStack(server, stackName);
-                await stack.start(socket);
+                const project = await Project.getProject(server, projectName);
+                await project.start(socket);
                 callbackResult({
                     ok: true,
                     msg: "Started",
                     msgi18n: true,
                 }, callback);
-                server.sendStackList();
+                server.sendProjectList();
 
             } catch (e) {
                 callbackError(e, callback);
             }
         });
 
-        // stopStack
-        agentSocket.on("stopStack", async (stackName : unknown, callback) => {
+        // stopProject
+        agentSocket.on("stopProject", async (projectName : unknown, callback) => {
             try {
                 checkLogin(socket);
 
-                if (typeof(stackName) !== "string") {
+                if (typeof(projectName) !== "string") {
                     throw new ValidationError("Project name must be a string");
                 }
 
-                const stack = await Stack.getStack(server, stackName);
-                await stack.stop(socket);
+                const project = await Project.getProject(server, projectName);
+                await project.stop(socket);
                 callbackResult({
                     ok: true,
                     msg: "Stopped",
                     msgi18n: true,
                 }, callback);
-                server.sendStackList();
+                server.sendProjectList();
             } catch (e) {
                 callbackError(e, callback);
             }
         });
 
-        // restartStack
-        agentSocket.on("restartStack", async (stackName : unknown, callback) => {
+        // restartProject
+        agentSocket.on("restartProject", async (projectName : unknown, callback) => {
             try {
                 checkLogin(socket);
 
-                if (typeof(stackName) !== "string") {
+                if (typeof(projectName) !== "string") {
                     throw new ValidationError("Project name must be a string");
                 }
 
-                const stack = await Stack.getStack(server, stackName);
-                await stack.restart(socket);
+                const project = await Project.getProject(server, projectName);
+                await project.restart(socket);
                 callbackResult({
                     ok: true,
                     msg: "Restarted",
                     msgi18n: true,
                 }, callback);
-                server.sendStackList();
+                server.sendProjectList();
             } catch (e) {
                 callbackError(e, callback);
             }
         });
 
-        // updateStack
-        agentSocket.on("updateStack", async (stackName : unknown, callback) => {
+        // updateProject
+        agentSocket.on("updateProject", async (projectName : unknown, callback) => {
             try {
                 checkLogin(socket);
 
-                if (typeof(stackName) !== "string") {
+                if (typeof(projectName) !== "string") {
                     throw new ValidationError("Project name must be a string");
                 }
 
-                const stack = await Stack.getStack(server, stackName);
-                await stack.update(socket);
+                const project = await Project.getProject(server, projectName);
+                await project.update(socket);
                 callbackResult({
                     ok: true,
                     msg: "Updated",
                     msgi18n: true,
                 }, callback);
-                server.sendStackList();
+                server.sendProjectList();
             } catch (e) {
                 callbackError(e, callback);
             }
         });
 
-        // down stack
-        agentSocket.on("downStack", async (stackName : unknown, callback) => {
+        // down project
+        agentSocket.on("downProject", async (projectName : unknown, callback) => {
             try {
                 checkLogin(socket);
 
-                if (typeof(stackName) !== "string") {
+                if (typeof(projectName) !== "string") {
                     throw new ValidationError("Project name must be a string");
                 }
 
-                const stack = await Stack.getStack(server, stackName);
-                await stack.down(socket);
+                const project = await Project.getProject(server, projectName);
+                await project.down(socket);
                 callbackResult({
                     ok: true,
                     msg: "Downed",
                     msgi18n: true,
                 }, callback);
-                server.sendStackList();
+                server.sendProjectList();
             } catch (e) {
                 callbackError(e, callback);
             }
         });
 
         // Services status
-        agentSocket.on("serviceStatusList", async (stackName : unknown, callback) => {
+        agentSocket.on("serviceStatusList", async (projectName : unknown, callback) => {
             try {
                 checkLogin(socket);
 
-                if (typeof(stackName) !== "string") {
+                if (typeof(projectName) !== "string") {
                     throw new ValidationError("Project name must be a string");
                 }
 
-                const stack = await Stack.getStack(server, stackName);
-                const serviceStatusList = Object.fromEntries(await stack.getServiceStatusList());
+                const project = await Project.getProject(server, projectName);
+                const serviceStatusList = Object.fromEntries(await project.getServiceStatusList());
                 callbackResult({
                     ok: true,
                     serviceStatusList,
@@ -372,64 +432,64 @@ export class DockerSocketHandler extends AgentSocketHandler {
                     ok: true,
                     dockerStats,
                 }, callback);
-                server.sendStackList();
+                server.sendProjectList();
             } catch (e) {
                 callbackError(e, callback);
             }
         });
 
         // Start a service
-        agentSocket.on("startService", async (stackName: unknown, serviceName: unknown, callback) => {
+        agentSocket.on("startService", async (projectName: unknown, serviceName: unknown, callback) => {
             try {
                 checkLogin(socket);
 
-                if (typeof (stackName) !== "string" || typeof (serviceName) !== "string") {
+                if (typeof (projectName) !== "string" || typeof (serviceName) !== "string") {
                     throw new ValidationError("Project name and service name must be strings");
                 }
 
-                const stack = await Stack.getStack(server, stackName);
-                await stack.startService(socket, serviceName);
+                const project = await Project.getProject(server, projectName);
+                await project.startService(socket, serviceName);
                 callbackResult({
                     ok: true,
                     msg: "Service " + serviceName + " started"
                 }, callback);
-                server.sendStackList();
+                server.sendProjectList();
             } catch (e) {
                 callbackError(e, callback);
             }
         });
 
         // Stop a service
-        agentSocket.on("stopService", async (stackName: unknown, serviceName: unknown, callback) => {
+        agentSocket.on("stopService", async (projectName: unknown, serviceName: unknown, callback) => {
             try {
                 checkLogin(socket);
 
-                if (typeof (stackName) !== "string" || typeof (serviceName) !== "string") {
+                if (typeof (projectName) !== "string" || typeof (serviceName) !== "string") {
                     throw new ValidationError("Project name and service name must be strings");
                 }
 
-                const stack = await Stack.getStack(server, stackName);
-                await stack.stopService(socket, serviceName);
+                const project = await Project.getProject(server, projectName);
+                await project.stopService(socket, serviceName);
                 callbackResult({
                     ok: true,
                     msg: "Service " + serviceName + " stopped"
                 }, callback);
-                server.sendStackList();
+                server.sendProjectList();
             } catch (e) {
                 callbackError(e, callback);
             }
         });
 
-        agentSocket.on("restartService", async (stackName: unknown, serviceName: unknown, callback) => {
+        agentSocket.on("restartService", async (projectName: unknown, serviceName: unknown, callback) => {
             try {
                 checkLogin(socket);
 
-                if (typeof stackName !== "string" || typeof serviceName !== "string") {
-                    throw new Error("Invalid stackName or serviceName");
+                if (typeof projectName !== "string" || typeof serviceName !== "string") {
+                    throw new Error("Invalid projectName or serviceName");
                 }
 
-                const stack = await Stack.getStack(server, stackName);
-                await stack.restartService(socket, serviceName);
+                const project = await Project.getProject(server, projectName);
+                await project.restartService(socket, serviceName);
                 callbackResult({
                     ok: true,
                     msg: "Service " + serviceName + " restarted"
@@ -439,52 +499,52 @@ export class DockerSocketHandler extends AgentSocketHandler {
             }
         });
 
-        agentSocket.on("startContainer", async (stackName: unknown, containerName: unknown, callback) => {
+        agentSocket.on("startContainer", async (projectName: unknown, containerName: unknown, callback) => {
             try {
                 checkLogin(socket);
-                if (typeof stackName !== "string" || typeof containerName !== "string") {
+                if (typeof projectName !== "string" || typeof containerName !== "string") {
                     throw new ValidationError("Project name and container name must be strings");
                 }
-                const stack = await Stack.getStack(server, stackName);
-                await stack.runContainerAction(containerName, "start");
+                const project = await Project.getProject(server, projectName);
+                await project.runContainerAction(containerName, "start");
                 callbackResult({ ok: true,
                     msg: "Started",
                     msgi18n: true }, callback);
-                server.sendStackList();
+                server.sendProjectList();
             } catch (e) {
                 callbackError(e, callback);
             }
         });
 
-        agentSocket.on("stopContainer", async (stackName: unknown, containerName: unknown, callback) => {
+        agentSocket.on("stopContainer", async (projectName: unknown, containerName: unknown, callback) => {
             try {
                 checkLogin(socket);
-                if (typeof stackName !== "string" || typeof containerName !== "string") {
+                if (typeof projectName !== "string" || typeof containerName !== "string") {
                     throw new ValidationError("Project name and container name must be strings");
                 }
-                const stack = await Stack.getStack(server, stackName);
-                await stack.runContainerAction(containerName, "stop");
+                const project = await Project.getProject(server, projectName);
+                await project.runContainerAction(containerName, "stop");
                 callbackResult({ ok: true,
                     msg: "Stopped",
                     msgi18n: true }, callback);
-                server.sendStackList();
+                server.sendProjectList();
             } catch (e) {
                 callbackError(e, callback);
             }
         });
 
-        agentSocket.on("restartContainer", async (stackName: unknown, containerName: unknown, callback) => {
+        agentSocket.on("restartContainer", async (projectName: unknown, containerName: unknown, callback) => {
             try {
                 checkLogin(socket);
-                if (typeof stackName !== "string" || typeof containerName !== "string") {
+                if (typeof projectName !== "string" || typeof containerName !== "string") {
                     throw new ValidationError("Project name and container name must be strings");
                 }
-                const stack = await Stack.getStack(server, stackName);
-                await stack.runContainerAction(containerName, "restart");
+                const project = await Project.getProject(server, projectName);
+                await project.runContainerAction(containerName, "restart");
                 callbackResult({ ok: true,
                     msg: "Restarted",
                     msgi18n: true }, callback);
-                server.sendStackList();
+                server.sendProjectList();
             } catch (e) {
                 callbackError(e, callback);
             }
@@ -505,27 +565,27 @@ export class DockerSocketHandler extends AgentSocketHandler {
         });
     }
 
-    async editableStack(server : DockgeServer, name : unknown, filename : unknown) : Promise<Stack> {
+    async editableProject(server : DockgeekServer, name : unknown, filename : unknown) : Promise<Project> {
         if (typeof name !== "string" || typeof filename !== "string" || !matchesFilePatterns(filename, server.editableFilePatterns)) {
             throw new ValidationError("Editable filename is not allowed");
         }
-        const stack = await Stack.getStack(server, name);
-        if (!stack.isManagedByDockge || !Stack.isPathInside(await fs.realpath(server.stacksDir), await fs.realpath(stack.fullPath))) {
-            throw new ValidationError("Project is not managed by Dockge");
+        const project = await Project.getProject(server, name);
+        if (!project.isManagedByDockgeek || !Project.isPathInside(await fs.realpath(server.projectsDir), await fs.realpath(project.fullPath))) {
+            throw new ValidationError("Project is not managed by Dockgeek");
         }
-        return stack;
+        return project;
     }
 
-    async listEditableFiles(server : DockgeServer, stack : Stack) : Promise<string[]> {
-        if (!stack.isManagedByDockge) {
+    async listEditableFiles(server : DockgeekServer, project : Project) : Promise<string[]> {
+        if (!project.isManagedByDockgeek) {
             return [];
         }
-        const files = await fs.readdir(stack.fullPath, { withFileTypes: true });
-        return files.filter(file => file.isFile() && file.name !== path.basename(stack.composeFilePath) && matchesFilePatterns(file.name, server.editableFilePatterns))
+        const files = await fs.readdir(project.fullPath, { withFileTypes: true });
+        return files.filter(file => file.isFile() && file.name !== path.basename(project.composeFilePath) && matchesFilePatterns(file.name, server.editableFilePatterns))
             .map(file => file.name).sort();
     }
 
-    async saveStack(server : DockgeServer, name : unknown, composeYAML : unknown, composeENV : unknown, isAdd : unknown, filename : unknown, draftFiles : unknown) : Promise<Stack> {
+    async saveProject(server : DockgeekServer, name : unknown, composeYAML : unknown, composeENV : unknown, isAdd : unknown, filename : unknown, draftFiles : unknown) : Promise<Project> {
         // Check types
         if (typeof(name) !== "string") {
             throw new ValidationError("Name must be a string");
@@ -551,20 +611,20 @@ export class DockerSocketHandler extends AgentSocketHandler {
         if (!isAdd && Object.keys(draftFiles).length) {
             throw new ValidationError("Additional files can only be created with a new project");
         }
-        const stack = isAdd
-            ? new Stack(server, name, composeYAML, composeENV, false)
-            : await Stack.getStack(server, name);
-        stack.setComposeFileName(filename);
+        const project = isAdd
+            ? new Project(server, name, composeYAML, composeENV, false)
+            : await Project.getProject(server, name);
+        project.setComposeFileName(filename);
         if (!isAdd) {
-            stack.setComposeContent(composeYAML, composeENV);
+            project.setComposeContent(composeYAML, composeENV);
         }
-        await stack.save(isAdd);
+        await project.save(isAdd);
         if (isAdd) {
             for (const [ file, content ] of Object.entries(draftFiles)) {
-                await fs.writeFile(path.join(stack.fullPath, file), content as string, { flag: "wx", mode: 0o600 });
+                await fs.writeFile(path.join(project.fullPath, file), content as string, { flag: "wx", mode: 0o600 });
             }
         }
-        return stack;
+        return project;
     }
 
 }

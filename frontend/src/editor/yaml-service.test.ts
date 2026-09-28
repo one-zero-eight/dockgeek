@@ -61,8 +61,9 @@ services:
 
 test("x- extension fields are allowed", async () => {
     const diagnostics = await validateComposeDocument(ls, doc(`
-x-dockge:
-  url: http://localhost
+x-dockgeek:
+  urls:
+    - http://localhost
 services:
   web:
     image: nginx:latest

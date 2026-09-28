@@ -1,29 +1,32 @@
 services:
-  dockge:
-    image: docker.io/moailaozi/dockge:1.8.2
+  dockgeek:
+    image: ghcr.io/one-zero-eight/dockgeek:2.0.0
     restart: unless-stopped
     ports:
       # Host Port : Container Port
       - 5001:5001
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./data:/app/data
+      - ./data:/app/dockgeek-data
         
-      # If you want to use private registries, you need to share the auth file with Dockge:
+      # If you want to use private registries, you need to share the auth file with Dockgeek:
       # - /root/.docker/:/root/.docker
 
-      # Stacks Directory
+      # Projects Directory
       # ⚠️ READ IT CAREFULLY. If you did it wrong, your data could end up writing into a WRONG PATH.
       # ⚠️ 1. FULL path only. No relative path (MUST)
-      # ⚠️ 2. Left Stacks Path === Right Stacks Path (MUST)
+      # ⚠️ 2. Left Projects Path === Right Projects Path (MUST)
       # Host≡container is still required for relative bind mounts in compose files.
       # (--project-directory does not remove this; host-path mapping is not implemented yet.)
-      - /opt/stacks:/opt/stacks
+      - /opt/projects:/opt/projects
       # Restricted file-manager directory; never expose the Docker socket or all host files.
       - ./managed-files:/managed-files
     environment:
-      # Tell Dockge where is your stacks directory
-      - DOCKGE_STACKS_DIR=/opt/stacks
-      - DOCKGE_ENABLE_CONSOLE=true
-      - DOCKGE_FILE_MANAGER_ROOT=/managed-files
-      - DOCKGE_FILE_MANAGER_MAX_FILE_SIZE=104857600
+      # Tell Dockgeek where your projects and existing data directories are.
+      # Existing installs: keep your old project path here and on both sides of the bind mount;
+      # changing to /opt/projects does not move existing files.
+      - DOCKGEEK_PROJECTS_DIR=/opt/projects
+      - DOCKGEEK_DATA_DIR=/app/dockgeek-data
+      - DOCKGEEK_ENABLE_CONSOLE=true
+      - DOCKGEEK_FILE_MANAGER_ROOT=/managed-files
+      - DOCKGEEK_FILE_MANAGER_MAX_FILE_SIZE=104857600

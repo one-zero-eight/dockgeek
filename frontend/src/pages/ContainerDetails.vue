@@ -12,8 +12,8 @@
                         <span class="entity-label opacity-50 select-none">{{ $t("container", 1).toLowerCase() }}</span>
                     </h1>
                     <div v-if="container" class="detail-summary flex flex-wrap items-center gap-x-[.375rem] gap-y-[.35rem]">
-                        <router-link :to="stackRoute" class="ui-entity-link text-sm">
-                            {{ stackName }} <span class="select-none opacity-50 text-foreground text-xs font-normal lowercase">{{ $t("project") }}</span>
+                        <router-link :to="projectRoute" class="ui-entity-link text-sm">
+                            {{ projectName }} <span class="select-none opacity-50 text-foreground text-xs font-normal lowercase">{{ $t("project") }}</span>
                         </router-link>
                         <template v-if="serviceName">
                             <span class="text-muted-foreground text-sm">/</span>
@@ -41,7 +41,7 @@
             <div v-else-if="!container" class="panel-box big-padding empty-state text-muted-foreground">
                 <h4>{{ $t("containerNotFound") }}</h4>
                 <p class="mb-[1rem]">{{ $t("containerNotFoundDescription") }}</p>
-                <router-link class="ui-btn ui-btn-primary" :to="stackRoute">{{ $t("backToStack") }}</router-link>
+                <router-link class="ui-btn ui-btn-primary" :to="projectRoute">{{ $t("backToProject") }}</router-link>
             </div>
 
             <template v-else>
@@ -131,7 +131,7 @@
                             class="instance-terminal terminal"
                             :name="instanceTerminalName"
                             :endpoint="endpoint"
-                            :stack-name="stackName"
+                            :project-name="projectName"
                             :container-name="containerName"
                             :shell="shell"
                             mode="interactiveContainer"
@@ -158,7 +158,7 @@
                         class="dialog-terminal terminal"
                         :name="instanceTerminalName"
                         :endpoint="endpoint"
-                        :stack-name="stackName"
+                        :project-name="projectName"
                         :container-name="containerName"
                         :shell="shell"
                         mode="interactiveContainer"
@@ -210,8 +210,8 @@ export default {
         };
     },
     computed: {
-        stackName() {
-            return this.$route.params.stackName;
+        projectName() {
+            return this.$route.params.projectName;
         },
         containerName() {
             return this.$route.params.containerName;
@@ -245,16 +245,16 @@ export default {
                 ? [
                     { key: "restartContainer",
                         icon: "rotate",
-                        i18nKey: "restartStack",
+                        i18nKey: "restartProject",
                         variant: "normal" },
                     { key: "stopContainer",
                         icon: "stop",
-                        i18nKey: "stopStack",
+                        i18nKey: "stopProject",
                         variant: "warning" },
                 ]
                 : [{ key: "startContainer",
                     icon: "play",
-                    i18nKey: "startStack",
+                    i18nKey: "startProject",
                     variant: "primary" }];
         },
         overviewItems() {
@@ -300,14 +300,14 @@ export default {
         errorLabel() {
             return formatContainerError(this.container);
         },
-        stackRoute() {
-            return this.endpoint ? `/compose/${this.stackName}/${this.endpoint}` : `/compose/${this.stackName}`;
+        projectRoute() {
+            return this.endpoint ? `/projects/${this.projectName}/${this.endpoint}` : `/projects/${this.projectName}`;
         },
         logTerminalName() {
-            return getContainerLogTerminalName(this.endpoint, this.stackName, this.containerName);
+            return getContainerLogTerminalName(this.endpoint, this.projectName, this.containerName);
         },
         instanceTerminalName() {
-            return getContainerInstanceExecTerminalName(this.endpoint, this.stackName, this.containerName, this.shell);
+            return getContainerInstanceExecTerminalName(this.endpoint, this.projectName, this.containerName, this.shell);
         },
         containerDetailsStyle() {
             if (!this.availablePageHeight) {
@@ -373,7 +373,7 @@ export default {
             this.$nextTick(() => this.$refs[`tab-${nextTab}`]?.[0]?.focus());
         },
         refresh() {
-            this.$root.emitAgent(this.endpoint, "serviceStatusList", this.stackName, (res) => {
+            this.$root.emitAgent(this.endpoint, "serviceStatusList", this.projectName, (res) => {
                 if (res.ok) {
                     this.containerStatusList = res.serviceStatusList;
                 } else {
@@ -422,7 +422,7 @@ export default {
         },
         performAction(eventName) {
             this.processing = true;
-            this.$root.emitAgent(this.endpoint, eventName, this.stackName, this.containerName, (res) => {
+            this.$root.emitAgent(this.endpoint, eventName, this.projectName, this.containerName, (res) => {
                 this.processing = false;
                 this.$root.toastRes(res);
                 if (res.ok) {
@@ -434,7 +434,7 @@ export default {
             if (this.logJoined) {
                 return;
             }
-            this.$root.emitAgent(this.endpoint, "joinContainerLogs", this.stackName, this.containerName, (res) => {
+            this.$root.emitAgent(this.endpoint, "joinContainerLogs", this.projectName, this.containerName, (res) => {
                 if (res.ok) {
                     this.logJoined = true;
                     this.$nextTick(() => this.$refs.logTerminal?.fit());
@@ -448,7 +448,7 @@ export default {
                 return;
             }
             this.logJoined = false;
-            this.$root.emitAgent(this.endpoint, "leaveContainerLogs", this.stackName, this.containerName, () => {});
+            this.$root.emitAgent(this.endpoint, "leaveContainerLogs", this.projectName, this.containerName, () => {});
         },
         toggleFollow() {
             this.$refs.logTerminal?.setFollow(!this.followLogs);

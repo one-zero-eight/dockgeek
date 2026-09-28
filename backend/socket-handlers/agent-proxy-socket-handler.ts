@@ -1,13 +1,14 @@
 import { SocketHandler } from "../socket-handler.js";
-import { DockgeServer } from "../dockge-server";
+import { DockgeekServer } from "../dockge-server";
 import { log } from "../log";
-import { checkLogin, DockgeSocket } from "../util-server";
+import { callbackError, checkAdmin, checkLogin, DockgeekSocket } from "../util-server";
+import { isGitOpsEvent } from "../auth";
 import { AgentSocket } from "../../common/agent-socket";
 import { ALL_ENDPOINTS } from "../../common/util-common";
 
 export class AgentProxySocketHandler extends SocketHandler {
 
-    create2(socket : DockgeSocket, server : DockgeServer, agentSocket : AgentSocket) {
+    create2(socket : DockgeekSocket, server : DockgeekServer, agentSocket : AgentSocket) {
         // Agent - proxying requests if needed
         socket.on("agent", async (endpoint : unknown, eventName : unknown, ...args : unknown[]) => {
             try {
@@ -19,6 +20,16 @@ export class AgentProxySocketHandler extends SocketHandler {
                 }
                 if (typeof(eventName) !== "string") {
                     throw new Error("Event name must be a string");
+                }
+
+                if (isGitOpsEvent(eventName)) {
+                    checkAdmin(socket);
+                    if (endpoint === ALL_ENDPOINTS) {
+                        throw new Error("GitOps requires a specific endpoint");
+                    }
+                    if (args.length !== 2 || typeof args[1] !== "function") {
+                        throw new Error("Invalid GitOps request");
+                    }
                 }
 
                 if (endpoint === ALL_ENDPOINTS) {      // Send to all endpoints
@@ -34,14 +45,16 @@ export class AgentProxySocketHandler extends SocketHandler {
                     await socket.instanceManager.emitToEndpoint(endpoint, eventName, ...args);
                 }
             } catch (e) {
-                if (e instanceof Error) {
+                if (typeof eventName === "string" && isGitOpsEvent(eventName) && typeof args[args.length - 1] === "function") {
+                    callbackError(e, args[args.length - 1]);
+                } else if (e instanceof Error) {
                     log.warn("agent", e.message);
                 }
             }
         });
     }
 
-    create(socket : DockgeSocket, server : DockgeServer) {
+    create(socket : DockgeekSocket, server : DockgeekServer) {
         throw new Error("Method not implemented. Please use create2 instead.");
     }
 }

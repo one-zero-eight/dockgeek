@@ -209,7 +209,7 @@ export default {
         },
 
         scanFolder() {
-            this.$root.emitAgent(ALL_ENDPOINTS, "requestStackList", (res) => {
+            this.$root.emitAgent(ALL_ENDPOINTS, "requestProjectList", (res) => {
                 this.$root.toastRes(res);
             });
         },

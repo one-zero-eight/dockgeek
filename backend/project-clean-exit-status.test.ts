@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { afterEach, describe, test } from "node:test";
-import { Stack } from "./stack";
-import { CREATED_STACK, DEAD, EXITED, RUNNING, STOPPED, UNKNOWN } from "../common/util-common";
+import { Project } from "./project";
+import { CREATED_PROJECT, DEAD, EXITED, RUNNING, STOPPED, UNKNOWN } from "../common/util-common";
 
 type ContainerState = {
     Status: string;
@@ -10,21 +10,21 @@ type ContainerState = {
 };
 
 describe("clean-exit compose status", () => {
-    const originalGetStates = Stack.getProjectContainerStates;
+    const originalGetStates = Project.getProjectContainerStates;
 
     afterEach(() => {
-        Stack.getProjectContainerStates = originalGetStates;
+        Project.getProjectContainerStates = originalGetStates;
     });
 
     function stubStates(states: ContainerState[] | null) {
-        Stack.getProjectContainerStates = async () => states;
+        Project.getProjectContainerStates = async () => states;
     }
 
     test("statusConvert still maps unmixed statuses", () => {
-        assert.equal(Stack.statusConvert("running(2)"), RUNNING);
-        assert.equal(Stack.statusConvert("exited(1)"), EXITED);
-        assert.equal(Stack.statusConvert("created"), CREATED_STACK);
-        assert.equal(Stack.statusConvert("exited(1), running(2)"), EXITED);
+        assert.equal(Project.statusConvert("running(2)"), RUNNING);
+        assert.equal(Project.statusConvert("exited(1)"), EXITED);
+        assert.equal(Project.statusConvert("created"), CREATED_PROJECT);
+        assert.equal(Project.statusConvert("exited(1), running(2)"), EXITED);
     });
 
     test("resolveComposeStatus upgrades exit-0 + running to RUNNING", async () => {
@@ -38,7 +38,7 @@ describe("clean-exit compose status", () => {
                 ExitCode: 0,
             },
         ]);
-        assert.equal(await Stack.resolveComposeStatus({
+        assert.equal(await Project.resolveComposeStatus({
             Name: "demo",
             Status: "exited(1), running(2)",
         }), RUNNING);
@@ -54,7 +54,7 @@ describe("clean-exit compose status", () => {
                 ExitCode: 1,
             },
         ]);
-        assert.equal(await Stack.resolveComposeStatus({
+        assert.equal(await Project.resolveComposeStatus({
             Name: "demo",
             Status: "exited(1), running(1)",
         }), EXITED);
@@ -69,7 +69,7 @@ describe("clean-exit compose status", () => {
                 Status: "paused",
             },
         ]);
-        assert.equal(await Stack.resolveComposeStatus({
+        assert.equal(await Project.resolveComposeStatus({
             Name: "demo",
             Status: "exited(1), running(1)",
         }), EXITED);
@@ -82,7 +82,7 @@ describe("clean-exit compose status", () => {
                 Status: "restarting",
             },
         ]);
-        assert.equal(await Stack.resolveComposeStatus({
+        assert.equal(await Project.resolveComposeStatus({
             Name: "demo",
             Status: "exited(1), running(1)",
         }), EXITED);
@@ -95,7 +95,7 @@ describe("clean-exit compose status", () => {
                 Status: "dead",
             },
         ]);
-        assert.equal(await Stack.resolveComposeStatus({
+        assert.equal(await Project.resolveComposeStatus({
             Name: "demo",
             Status: "exited(1), running(1)",
         }), EXITED);
@@ -103,13 +103,13 @@ describe("clean-exit compose status", () => {
 
     test("resolveComposeStatus returns UNKNOWN on missing or incomplete inspect data", async () => {
         stubStates(null);
-        assert.equal(await Stack.resolveComposeStatus({
+        assert.equal(await Project.resolveComposeStatus({
             Name: "demo",
             Status: "exited(1), running(1)",
         }), UNKNOWN);
 
         stubStates([]);
-        assert.equal(await Stack.resolveComposeStatus({
+        assert.equal(await Project.resolveComposeStatus({
             Name: "demo",
             Status: "exited(1), running(1)",
         }), UNKNOWN);
@@ -122,17 +122,17 @@ describe("clean-exit compose status", () => {
                 Status: "exited",
             },
         ]);
-        assert.equal(await Stack.resolveComposeStatus({
+        assert.equal(await Project.resolveComposeStatus({
             Name: "demo",
             Status: "exited(1), running(1)",
         }), EXITED);
     });
 
     test("resolveComposeStatus returns UNKNOWN when inspect throws", async () => {
-        Stack.getProjectContainerStates = async () => {
+        Project.getProjectContainerStates = async () => {
             throw new Error("docker unavailable");
         };
-        assert.equal(await Stack.resolveComposeStatus({
+        assert.equal(await Project.resolveComposeStatus({
             Name: "demo",
             Status: "exited(1), running(1)",
         }), UNKNOWN);
@@ -140,20 +140,20 @@ describe("clean-exit compose status", () => {
 
     test("resolveComposeStatus skips inspect for running-only statuses", async () => {
         let called = false;
-        Stack.getProjectContainerStates = async () => {
+        Project.getProjectContainerStates = async () => {
             called = true;
             return null;
         };
-        assert.equal(await Stack.resolveComposeStatus({
+        assert.equal(await Project.resolveComposeStatus({
             Name: "demo",
             Status: "running(2)",
         }), RUNNING);
         assert.equal(called, false);
     });
 
-    test("resolveComposeStatus inspects fully exited stacks", async () => {
+    test("resolveComposeStatus inspects fully exited projects", async () => {
         stubStates(null);
-        assert.equal(await Stack.resolveComposeStatus({
+        assert.equal(await Project.resolveComposeStatus({
             Name: "demo",
             Status: "exited(2)",
         }), EXITED);
@@ -164,7 +164,7 @@ describe("clean-exit compose status", () => {
                 ExitCode: 137,
             },
         ]);
-        assert.equal(await Stack.resolveComposeStatus({
+        assert.equal(await Project.resolveComposeStatus({
             Name: "demo",
             Status: "exited(1)",
         }), STOPPED);
@@ -181,10 +181,10 @@ describe("clean-exit compose status", () => {
                 ExitCode: 0,
             },
         ]);
-        assert.equal(await Stack.resolveMixedRunningAndExited("demo"), STOPPED);
+        assert.equal(await Project.resolveMixedRunningAndExited("demo"), STOPPED);
     });
 
-    test("State.Error marks mixed stacks DEAD", async () => {
+    test("State.Error marks mixed projects DEAD", async () => {
         stubStates([
             {
                 Status: "running",
@@ -195,10 +195,10 @@ describe("clean-exit compose status", () => {
                 Error: "Bind for 0.0.0.0:18019 failed: port is already allocated",
             },
         ]);
-        assert.equal(await Stack.resolveMixedRunningAndExited("demo"), DEAD);
+        assert.equal(await Project.resolveMixedRunningAndExited("demo"), DEAD);
     });
 
-    test("created stack with State.Error resolves to DEAD", async () => {
+    test("created project with State.Error resolves to DEAD", async () => {
         stubStates([
             {
                 Status: "created",
@@ -206,23 +206,23 @@ describe("clean-exit compose status", () => {
                 Error: "port is already allocated",
             },
         ]);
-        assert.equal(await Stack.resolveComposeStatus({
+        assert.equal(await Project.resolveComposeStatus({
             Name: "demo",
             Status: "created(1)",
         }), DEAD);
     });
 
-    test("created stack without Error stays CREATED_STACK", async () => {
+    test("created project without Error stays CREATED_PROJECT", async () => {
         stubStates([
             {
                 Status: "created",
                 ExitCode: 0,
             },
         ]);
-        assert.equal(await Stack.resolveComposeStatus({
+        assert.equal(await Project.resolveComposeStatus({
             Name: "demo",
             Status: "created(1)",
-        }), CREATED_STACK);
+        }), CREATED_PROJECT);
     });
 
     test("fully exited with 143 resolves to STOPPED", async () => {
@@ -232,7 +232,7 @@ describe("clean-exit compose status", () => {
                 ExitCode: 143,
             },
         ]);
-        assert.equal(await Stack.resolveComposeStatus({
+        assert.equal(await Project.resolveComposeStatus({
             Name: "demo",
             Status: "exited(1)",
         }), STOPPED);
@@ -245,7 +245,7 @@ describe("clean-exit compose status", () => {
                 ExitCode: 1,
             },
         ]);
-        assert.equal(await Stack.resolveComposeStatus({
+        assert.equal(await Project.resolveComposeStatus({
             Name: "demo",
             Status: "exited(1)",
         }), EXITED);
@@ -261,6 +261,6 @@ describe("clean-exit compose status", () => {
                 ExitCode: 143,
             },
         ]);
-        assert.equal(await Stack.resolveMixedRunningAndExited("demo"), RUNNING);
+        assert.equal(await Project.resolveMixedRunningAndExited("demo"), RUNNING);
     });
 });

@@ -6,6 +6,7 @@ package main
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"io"
 	"log"
 	"net/http"
@@ -15,31 +16,42 @@ import (
 )
 
 func main() {
-	// Is K8S + "dockge" as the container name
-	// See https://github.com/louislam/uptime-kuma/pull/2083
-	isK8s := strings.HasPrefix(os.Getenv("DOCKGE_PORT"), "tcp://")
+	// Kubernetes may inject a service URL into DOCKGEEK_PORT.
+	isK8s := strings.HasPrefix(os.Getenv("DOCKGEEK_PORT"), "tcp://")
 
-	// process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{
-		InsecureSkipVerify: true,
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	if caFile := os.Getenv("DOCKGEEK_SSL_CA"); caFile != "" {
+		roots, err := x509.SystemCertPool()
+		if err != nil {
+			log.Fatalln(err)
+		}
+		certificate, err := os.ReadFile(caFile)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		if !roots.AppendCertsFromPEM(certificate) {
+			log.Fatalf("no certificates found in %s", caFile)
+		}
+		transport.TLSClientConfig = &tls.Config{RootCAs: roots}
 	}
 
 	client := http.Client{
-		Timeout: 28 * time.Second,
+		Transport: transport,
+		Timeout:   28 * time.Second,
 	}
 
-	sslKey := os.Getenv("DOCKGE_SSL_KEY")
-	sslCert := os.Getenv("DOCKGE_SSL_CERT")
+	sslKey := os.Getenv("DOCKGEEK_SSL_KEY")
+	sslCert := os.Getenv("DOCKGEEK_SSL_CERT")
 
-	hostname := os.Getenv("DOCKGE_HOST")
+	hostname := os.Getenv("DOCKGEEK_HOSTNAME")
 	if len(hostname) == 0 {
 		hostname = "127.0.0.1"
 	}
 
 	port := ""
-	// DOCKGE_PORT is override by K8S unexpectedly,
+	// DOCKGEEK_PORT is override by K8S unexpectedly,
 	if !isK8s {
-		port = os.Getenv("DOCKGE_PORT")
+		port = os.Getenv("DOCKGEEK_PORT")
 	}
 	if len(port) == 0 {
 		port = "5001"
@@ -52,7 +64,7 @@ func main() {
 		protocol = "http"
 	}
 
-	url := protocol + "://" + hostname + ":" + port
+	url := protocol + "://" + hostname + ":" + port + "/api/dockgeek/session"
 
 	log.Println("Checking " + url)
 	resp, err := client.Get(url)
@@ -67,6 +79,10 @@ func main() {
 
 	if err != nil {
 		log.Fatalln(err)
+	}
+
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusBadRequest {
+		log.Fatalf("Health Check Failed [Res Code: %d]", resp.StatusCode)
 	}
 
 	log.Printf("Health Check OK [Res Code: %d]\n", resp.StatusCode)

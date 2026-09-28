@@ -7,9 +7,9 @@ import { isIP } from "node:net";
 import ipaddr from "ipaddr.js";
 import https from "node:https";
 import { TextDecoder } from "node:util";
-import { DockgeServer } from "./dockge-server";
+import { DockgeekServer } from "./dockge-server";
 import { Settings } from "./settings";
-import { Stack } from "./stack";
+import { Project } from "./project";
 import { matchesFilePatterns } from "../common/util-common";
 
 const LIMIT = 1024 * 1024;
@@ -27,8 +27,8 @@ export class EditorSchemaError extends Error {
 }
 
 export interface EditorSchemaRequest {
-    source: "stack" | "files";
-    stackName?: string;
+    source: "project" | "files";
+    projectName?: string;
     filename?: string;
     path?: string;
     schemaUrl: string;
@@ -79,7 +79,7 @@ async function readLocal(target: string, root: string): Promise<string> {
     const canonicalRoot = await fs.realpath(root);
     const absolute = path.resolve(target);
     if (!inside(canonicalRoot, absolute)) {
-        throw new EditorSchemaError("SCHEMA_PATH_DENIED", "Schema is outside the stacks directory.");
+        throw new EditorSchemaError("SCHEMA_PATH_DENIED", "Schema is outside the projects directory.");
     }
     let current = canonicalRoot;
     for (const segment of path.relative(canonicalRoot, absolute).split(path.sep).filter(Boolean)) {
@@ -93,7 +93,7 @@ async function readLocal(target: string, root: string): Promise<string> {
     try {
         // Verify the opened inode, not just the path checked before open (parent swaps can race).
         if (process.platform === "linux" && !inside(canonicalRoot, await fs.realpath(`/proc/self/fd/${handle.fd}`))) {
-            throw new EditorSchemaError("SCHEMA_PATH_DENIED", "Schema is outside the stacks directory.");
+            throw new EditorSchemaError("SCHEMA_PATH_DENIED", "Schema is outside the projects directory.");
         }
         const stat = await handle.stat();
         if (!stat.isFile() || stat.size > LIMIT) {
@@ -207,28 +207,38 @@ async function fetchRemote(initial: URL, prefixes: string[]): Promise<{ content:
     }
 }
 
-export async function readEditorSchema(server: DockgeServer, request: EditorSchemaRequest): Promise<{ content: string; uri: string }> {
-    if (!request || (request.source !== "stack" && request.source !== "files") ||
+export async function readEditorSchema(server: DockgeekServer, request: EditorSchemaRequest): Promise<{ content: string; uri: string }> {
+    if (!request || (request.source !== "project" && request.source !== "files") ||
         typeof request.schemaUrl !== "string" || !request.schemaUrl || request.schemaUrl.length > 4096 ||
         (request.baseUri !== undefined && (typeof request.baseUri !== "string" || request.baseUri.length > 4096))) {
         throw new EditorSchemaError("VALIDATION", "Invalid schema request.");
     }
     let document: string;
-    if (request.source === "stack") {
-        const stack = await Stack.getStack(server, request.stackName as string);
+    if (request.source === "project") {
+        const project = await Project.getProject(server, request.projectName as string);
         const filename = request.filename;
-        if (!stack.isManagedByDockge || typeof filename !== "string" || filename !== path.basename(filename) ||
-            !matchesFilePatterns(filename, filename === path.basename(stack.composeFilePath) ? server.composeFilePatterns : server.editableFilePatterns)) {
-            throw new EditorSchemaError("SCHEMA_PATH_DENIED", "Invalid managed stack document.");
+        if (!project.isManagedByDockgeek || typeof filename !== "string" || filename !== path.basename(filename) ||
+            !matchesFilePatterns(filename, filename === path.basename(project.composeFilePath) ? server.composeFilePatterns : server.editableFilePatterns)) {
+            throw new EditorSchemaError("SCHEMA_PATH_DENIED", "Invalid managed project document.");
         }
-        const stackRoot = await fs.realpath(server.stacksDir);
-        const project = await fs.realpath(stack.fullPath);
-        if (!inside(stackRoot, project)) {
-            throw new EditorSchemaError("SCHEMA_PATH_DENIED", "Stack is outside the stacks directory.");
+        const projectRoot = await fs.realpath(server.projectsDir);
+        const projectPath = await fs.realpath(project.fullPath);
+        if (!inside(projectRoot, projectPath)) {
+            throw new EditorSchemaError("SCHEMA_PATH_DENIED", "Project is outside the projects directory.");
         }
-        document = await fs.realpath(path.join(project, filename));
-        if (!inside(project, document)) {
-            throw new EditorSchemaError("SCHEMA_PATH_DENIED", "Document is outside its stack.");
+        const documentPath = path.join(projectPath, filename);
+        try {
+            document = await fs.realpath(documentPath);
+        } catch (error) {
+            if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+                throw error;
+            }
+            // New editor tabs do not exist on disk yet; the project directory is
+            // canonical and the filename was already restricted to a basename.
+            document = documentPath;
+        }
+        if (!inside(projectPath, document)) {
+            throw new EditorSchemaError("SCHEMA_PATH_DENIED", "Document is outside its project.");
         }
     } else {
         if (!server.fileManager) {
@@ -265,7 +275,7 @@ export async function readEditorSchema(server: DockgeServer, request: EditorSche
             throw new EditorSchemaError("SCHEMA_URL_DENIED", "Invalid local schema URL.");
         }
         const filename = fileURLToPath(target);
-        return { content: await readLocal(filename, server.stacksDir), uri: pathToFileURL(filename).href };
+        return { content: await readLocal(filename, server.projectsDir), uri: pathToFileURL(filename).href };
     }
     if (target.protocol !== "https:") {
         throw new EditorSchemaError("SCHEMA_URL_DENIED", "Only local files and HTTPS schemas are supported.");

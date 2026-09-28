@@ -1,13 +1,13 @@
 <template>
     <transition name="slide-fade" appear>
         <div>
-            <h1 class="mb-[1rem]">{{ $t("terminal") }} - {{ serviceName }} ({{ stackName }})</h1>
+            <h1 class="mb-[1rem]">{{ $t("terminal") }} - {{ serviceName }} ({{ projectName }})</h1>
 
             <div class="mb-[1rem]">
                 <router-link :to="sh" class="ui-btn shell-link me-[.5rem] border border-secondary">{{ $t("Switch to sh") }}</router-link>
             </div>
 
-            <Terminal class="terminal" :rows="20" mode="interactive" :name="terminalName" :stack-name="stackName" :service-name="serviceName" :shell="shell" :endpoint="endpoint"></Terminal>
+            <Terminal class="terminal" :rows="20" mode="interactive" :name="terminalName" :project-name="projectName" :service-name="serviceName" :shell="shell" :endpoint="endpoint"></Terminal>
         </div>
     </transition>
 </template>
@@ -24,8 +24,8 @@ export default {
         };
     },
     computed: {
-        stackName() {
-            return this.$route.params.stackName;
+        projectName() {
+            return this.$route.params.projectName;
         },
         endpoint() {
             return this.$route.params.endpoint || "";
@@ -37,7 +37,7 @@ export default {
             return this.$route.params.serviceName;
         },
         terminalName() {
-            return getContainerExecTerminalName(this.endpoint, this.stackName, this.serviceName, 0, this.shell);
+            return getContainerExecTerminalName(this.endpoint, this.projectName, this.serviceName, 0, this.shell);
         },
         sh() {
             let endpoint = this.$route.params.endpoint;
@@ -45,7 +45,7 @@ export default {
             let data = {
                 name: "containerTerminal",
                 params: {
-                    stackName: this.stackName,
+                    projectName: this.projectName,
                     serviceName: this.serviceName,
                     type: "sh",
                 },

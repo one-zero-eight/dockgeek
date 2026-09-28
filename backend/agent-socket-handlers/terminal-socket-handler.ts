@@ -1,13 +1,13 @@
-import { DockgeServer } from "../dockge-server";
-import { callbackError, callbackResult, checkLogin, DockgeSocket, ValidationError } from "../util-server";
+import { DockgeekServer } from "../dockge-server";
+import { callbackError, callbackResult, checkLogin, DockgeekSocket, ValidationError } from "../util-server";
 import { log } from "../log";
 import { InteractiveTerminal, MainTerminal, Terminal } from "../terminal";
-import { Stack } from "../stack";
+import { Project } from "../project";
 import { AgentSocketHandler } from "../agent-socket-handler";
 import { AgentSocket } from "../../common/agent-socket";
 
 export class TerminalSocketHandler extends AgentSocketHandler {
-    create(socket : DockgeSocket, server : DockgeServer, agentSocket : AgentSocket) {
+    create(socket : DockgeekSocket, server : DockgeekServer, agentSocket : AgentSocket) {
 
         agentSocket.on("terminalInput", async (terminalName : unknown, cmd : unknown, callback) => {
             try {
@@ -85,11 +85,11 @@ export class TerminalSocketHandler extends AgentSocketHandler {
         });
 
         // Interactive Terminal for containers
-        agentSocket.on("interactiveTerminal", async (stackName : unknown, serviceName : unknown, shell : unknown, callback) => {
+        agentSocket.on("interactiveTerminal", async (projectName : unknown, serviceName : unknown, shell : unknown, callback) => {
             try {
                 checkLogin(socket);
 
-                if (typeof(stackName) !== "string") {
+                if (typeof(projectName) !== "string") {
                     throw new ValidationError("Project name must be a string.");
                 }
 
@@ -104,12 +104,12 @@ export class TerminalSocketHandler extends AgentSocketHandler {
                     throw new ValidationError("Shell must be bash or sh.");
                 }
 
-                log.debug("interactiveTerminal", "Project name: " + stackName);
+                log.debug("interactiveTerminal", "Project name: " + projectName);
                 log.debug("interactiveTerminal", "Service name: " + serviceName);
 
-                // Get stack
-                const stack = await Stack.getStack(server, stackName);
-                stack.joinContainerTerminal(socket, serviceName, shell);
+                // Get project
+                const project = await Project.getProject(server, projectName);
+                project.joinContainerTerminal(socket, serviceName, shell);
 
                 callbackResult({
                     ok: true,
@@ -119,31 +119,31 @@ export class TerminalSocketHandler extends AgentSocketHandler {
             }
         });
 
-        agentSocket.on("leaveInteractiveTerminal", async (stackName : unknown, serviceName : unknown, shell : unknown, callback) => {
+        agentSocket.on("leaveInteractiveTerminal", async (projectName : unknown, serviceName : unknown, shell : unknown, callback) => {
             try {
                 checkLogin(socket);
-                if (typeof(stackName) !== "string" || typeof(serviceName) !== "string" || typeof(shell) !== "string") {
+                if (typeof(projectName) !== "string" || typeof(serviceName) !== "string" || typeof(shell) !== "string") {
                     throw new ValidationError("Project name, service name and shell must be strings.");
                 }
                 if (shell !== "bash" && shell !== "sh") {
                     throw new ValidationError("Shell must be bash or sh.");
                 }
-                const stack = await Stack.getStack(server, stackName);
-                stack.leaveContainerTerminal(socket, serviceName, shell);
+                const project = await Project.getProject(server, projectName);
+                project.leaveContainerTerminal(socket, serviceName, shell);
                 callbackResult({ ok: true }, callback);
             } catch (e) {
                 callbackError(e, callback);
             }
         });
 
-        agentSocket.on("joinContainerLogs", async (stackName : unknown, containerName : unknown, callback) => {
+        agentSocket.on("joinContainerLogs", async (projectName : unknown, containerName : unknown, callback) => {
             try {
                 checkLogin(socket);
-                if (typeof(stackName) !== "string" || typeof(containerName) !== "string") {
+                if (typeof(projectName) !== "string" || typeof(containerName) !== "string") {
                     throw new ValidationError("Project name and container name must be strings.");
                 }
-                const stack = await Stack.getStack(server, stackName);
-                const terminalName = await stack.joinContainerLogs(socket, containerName);
+                const project = await Project.getProject(server, projectName);
+                const terminalName = await project.joinContainerLogs(socket, containerName);
                 callbackResult({
                     ok: true,
                     terminalName,
@@ -153,45 +153,45 @@ export class TerminalSocketHandler extends AgentSocketHandler {
             }
         });
 
-        agentSocket.on("leaveContainerLogs", async (stackName : unknown, containerName : unknown, callback) => {
+        agentSocket.on("leaveContainerLogs", async (projectName : unknown, containerName : unknown, callback) => {
             try {
                 checkLogin(socket);
-                if (typeof(stackName) !== "string" || typeof(containerName) !== "string") {
+                if (typeof(projectName) !== "string" || typeof(containerName) !== "string") {
                     throw new ValidationError("Project name and container name must be strings.");
                 }
-                const stack = await Stack.getStack(server, stackName);
-                await stack.leaveContainerLogs(socket, containerName);
+                const project = await Project.getProject(server, projectName);
+                await project.leaveContainerLogs(socket, containerName);
                 callbackResult({ ok: true }, callback);
             } catch (e) {
                 callbackError(e, callback);
             }
         });
 
-        agentSocket.on("interactiveContainerTerminal", async (stackName : unknown, containerName : unknown, shell : unknown, callback) => {
+        agentSocket.on("interactiveContainerTerminal", async (projectName : unknown, containerName : unknown, shell : unknown, callback) => {
             try {
                 checkLogin(socket);
-                if (typeof(stackName) !== "string" || typeof(containerName) !== "string" || typeof(shell) !== "string") {
+                if (typeof(projectName) !== "string" || typeof(containerName) !== "string" || typeof(shell) !== "string") {
                     throw new ValidationError("Project name, container name and shell must be strings.");
                 }
                 if (shell !== "bash" && shell !== "sh") {
                     throw new ValidationError("Shell must be bash or sh.");
                 }
-                const stack = await Stack.getStack(server, stackName);
-                await stack.joinContainerInstanceTerminal(socket, containerName, shell);
+                const project = await Project.getProject(server, projectName);
+                await project.joinContainerInstanceTerminal(socket, containerName, shell);
                 callbackResult({ ok: true }, callback);
             } catch (e) {
                 callbackError(e, callback);
             }
         });
 
-        agentSocket.on("leaveInteractiveContainerTerminal", async (stackName : unknown, containerName : unknown, shell : unknown, callback) => {
+        agentSocket.on("leaveInteractiveContainerTerminal", async (projectName : unknown, containerName : unknown, shell : unknown, callback) => {
             try {
                 checkLogin(socket);
-                if (typeof(stackName) !== "string" || typeof(containerName) !== "string" || typeof(shell) !== "string") {
+                if (typeof(projectName) !== "string" || typeof(containerName) !== "string" || typeof(shell) !== "string") {
                     throw new ValidationError("Project name, container name and shell must be strings.");
                 }
-                const stack = await Stack.getStack(server, stackName);
-                stack.leaveContainerInstanceTerminal(socket, containerName, shell);
+                const project = await Project.getProject(server, projectName);
+                project.leaveContainerInstanceTerminal(socket, containerName, shell);
                 callbackResult({ ok: true }, callback);
             } catch (e) {
                 callbackError(e, callback);
@@ -227,18 +227,18 @@ export class TerminalSocketHandler extends AgentSocketHandler {
         });
 
         // Leave Combined Terminal
-        agentSocket.on("leaveCombinedTerminal", async (stackName : unknown, callback) => {
+        agentSocket.on("leaveCombinedTerminal", async (projectName : unknown, callback) => {
             try {
                 checkLogin(socket);
 
-                log.debug("leaveCombinedTerminal", "Project name: " + stackName);
+                log.debug("leaveCombinedTerminal", "Project name: " + projectName);
 
-                if (typeof(stackName) !== "string") {
+                if (typeof(projectName) !== "string") {
                     throw new ValidationError("Project name must be a string.");
                 }
 
-                const stack = await Stack.getStack(server, stackName);
-                await stack.leaveCombinedTerminal(socket);
+                const project = await Project.getProject(server, projectName);
+                await project.leaveCombinedTerminal(socket);
 
                 callbackResult({
                     ok: true,

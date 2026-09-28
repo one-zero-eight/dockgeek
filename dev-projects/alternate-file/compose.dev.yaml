@@ -2,5 +2,5 @@ services:
   app:
     image: busybox:1.36
     labels:
-      dockge.message: ${MESSAGE:-hello-without-global-env}
+      dockgeek.message: ${MESSAGE:-hello-without-global-env}
     command: ["sh", "-c", "echo alternate-compose-filename; sleep 3600"]

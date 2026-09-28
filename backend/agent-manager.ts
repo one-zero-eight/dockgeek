@@ -1,4 +1,4 @@
-import { DockgeSocket } from "./util-server";
+import { DockgeekSocket } from "./util-server";
 import { io, Socket as SocketClient } from "socket.io-client";
 import { log } from "./log";
 import { Agent } from "./models/agent";
@@ -6,14 +6,16 @@ import { isDev, LooseObject, sleep } from "../common/util-common";
 import semver from "semver";
 import { R } from "redbean-node";
 import dayjs, { Dayjs } from "dayjs";
+import { isGitOpsEvent, signGitOpsDelegation } from "./auth";
+import { checkAdmin } from "./util-server";
 
 export class AgentManager {
-    protected socket : DockgeSocket;
+    protected socket : DockgeekSocket;
     protected agentSocketList : Record<string, SocketClient> = {};
     protected agentLoggedInList : Record<string, boolean> = {};
     protected _firstConnectTime : Dayjs = dayjs();
 
-    constructor(socket: DockgeSocket) {
+    constructor(socket: DockgeekSocket) {
         this.socket = socket;
     }
 
@@ -136,7 +138,17 @@ export class AgentManager {
                 throw new Error("Socket client not connected for endpoint: " + endpoint);
             }
         }
-        client.emit("agent", endpoint, eventName, ...args);
+        if (isGitOpsEvent(eventName)) {
+            checkAdmin(this.socket);
+            if (args.length !== 2 || typeof args[1] !== "function") {
+                throw new Error("Invalid GitOps request");
+            }
+            const [ payload, callback ] = args;
+            // The agent key authenticates the connection, never GitOps authority.
+            client.emit("agent", endpoint, eventName, payload, signGitOpsDelegation(eventName, payload, endpoint), callback);
+        } else {
+            client.emit("agent", endpoint, eventName, ...args);
+        }
     }
 
     emitToAllEndpoints(eventName: string, ...args : unknown[]) {

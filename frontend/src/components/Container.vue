@@ -124,7 +124,7 @@ const SERVICE_ACTIONS = {
     start: {
         title: "startServiceConfirmTitle",
         message: "startServiceConfirmMsg",
-        ok: "startStack",
+        ok: "startProject",
         variant: "primary",
         command: "docker compose up -d {service}",
         emit: "start-service",
@@ -132,7 +132,7 @@ const SERVICE_ACTIONS = {
     stop: {
         title: "stopServiceConfirmTitle",
         message: "stopServiceConfirmMsg",
-        ok: "stopStack",
+        ok: "stopProject",
         variant: "warning",
         command: "docker compose stop {service}",
         emit: "stop-service",
@@ -140,7 +140,7 @@ const SERVICE_ACTIONS = {
     restart: {
         title: "restartServiceConfirmTitle",
         message: "restartServiceConfirmMsg",
-        ok: "restartStack",
+        ok: "restartProject",
         variant: "primary",
         command: "docker compose restart {service}",
         emit: "restart-service",
@@ -210,11 +210,11 @@ export default defineComponent({
             if (this.isRunning) {
                 return [
                     { key: "restart",
-                        i18nKey: "restartStack",
+                        i18nKey: "restartProject",
                         icon: "rotate",
                         variant: "normal" },
                     { key: "stop",
-                        i18nKey: "stopStack",
+                        i18nKey: "stopProject",
                         icon: "stop",
                         variant: "warning" },
                     { key: "bash",
@@ -227,7 +227,7 @@ export default defineComponent({
 
             return [
                 { key: "start",
-                    i18nKey: "startStack",
+                    i18nKey: "startProject",
                     icon: "play",
                     variant: "primary" },
             ];
@@ -252,7 +252,7 @@ export default defineComponent({
                     name: "containerTerminalEndpoint",
                     params: {
                         endpoint: this.endpoint,
-                        stackName: this.stackName,
+                        projectName: this.projectName,
                         serviceName: this.name,
                         type: "bash",
                     },
@@ -261,7 +261,7 @@ export default defineComponent({
                 return {
                     name: "containerTerminal",
                     params: {
-                        stackName: this.stackName,
+                        projectName: this.projectName,
                         serviceName: this.name,
                         type: "bash",
                     },
@@ -273,12 +273,12 @@ export default defineComponent({
             return this.$parent.$parent.endpoint;
         },
 
-        stack() {
-            return this.$parent.$parent.stack;
+        project() {
+            return this.$parent.$parent.project;
         },
 
-        stackName() {
-            return this.$parent.$parent.stack.name;
+        projectName() {
+            return this.$parent.$parent.project.name;
         },
 
         envsubstJSONConfig() {
@@ -353,8 +353,8 @@ export default defineComponent({
             }
         },
         portHostname() {
-            if (this.stack.endpoint) {
-                return this.stack.primaryHostname;
+            if (this.project.endpoint) {
+                return this.project.primaryHostname;
             }
             return this.$root.info.primaryHostname || location.hostname;
         },
@@ -389,7 +389,7 @@ export default defineComponent({
             const route = {
                 name: this.endpoint ? "containerDetailsEndpoint" : "containerDetails",
                 params: {
-                    stackName: this.stackName,
+                    projectName: this.projectName,
                     containerName: instance.name,
                 },
             };

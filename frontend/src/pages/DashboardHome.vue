@@ -11,7 +11,7 @@
                     <!-- Stats -->
                     <div class="panel-box mb-[1.5rem] text-center p-5">
                         <div class="-mx-3 flex flex-wrap">
-                            <div v-for="summary in stackSummaries" :key="summary.key" class="min-w-0 flex-1 px-3">
+                            <div v-for="summary in projectSummaries" :key="summary.key" class="min-w-0 flex-1 px-3">
                                 <h3>{{ $t(summary.key) }}</h3>
                                 <span class="num block text-3xl font-bold" :class="summary.color">{{ summary.value }}</span>
                             </div>
@@ -22,7 +22,7 @@
                 <div class="w-full px-3 md:w-5/12 md:flex-none">
                     <!-- Agent List -->
                     <div class="panel-box p-5">
-                        <h4 class="mb-[1rem]">{{ $t("dockgeAgent", 2) }} <span class="ui-badge ui-badge-warning">beta</span></h4>
+                        <h4 class="mb-[1rem]">{{ $t("dockgeekAgent", 2) }} <span class="ui-badge ui-badge-warning">beta</span></h4>
 
                         <div v-for="(agentItem, endpoint) in $root.agentList" :key="endpoint" class="mb-[1rem] agent">
                             <!-- Agent Status -->
@@ -78,7 +78,7 @@
                         <!-- Add Agent Form -->
                         <form v-if="showAgentForm" @submit.prevent="addAgent">
                             <div class="mb-[1rem]">
-                                <label for="url" class="field-label">{{ $t("dockgeURL") }}</label>
+                                <label for="url" class="field-label">{{ $t("dockgeekURL") }}</label>
                                 <input id="url" v-model="agent.url" type="url" class="ui-field" required placeholder="http://">
                             </div>
 
@@ -144,7 +144,7 @@ export default {
     },
 
     computed: {
-        stackSummaries() {
+        projectSummaries() {
             return [
                 { key: "active",
                     value: this.activeNum,
@@ -218,8 +218,8 @@ export default {
                     let urlObj = new URL(url);
                     let endpoint = urlObj.host;
 
-                    // Remove the stack list and status list of the removed agent
-                    delete this.$root.allAgentStackList[endpoint];
+                    // Remove the project list and status list of the removed agent
+                    delete this.$root.allAgentProjectList[endpoint];
                 }
             });
         },
@@ -240,9 +240,9 @@ export default {
         getStatusNum(statusName) {
             let num = 0;
 
-            for (let stackName in this.$root.completeStackList) {
-                const stack = this.$root.completeStackList[stackName];
-                if (statusNameShort(stack.status) === statusName) {
+            for (let projectName in this.$root.completeProjectList) {
+                const project = this.$root.completeProjectList[projectName];
+                if (statusNameShort(project.status) === statusName) {
                     num += 1;
                 }
             }

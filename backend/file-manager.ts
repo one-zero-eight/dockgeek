@@ -222,7 +222,7 @@ export class FileManager {
             if (!source.stat.isFile() || !destinationStat.isFile() || source.stat.isSymbolicLink() || destinationStat.isSymbolicLink()) {
                 throw new FileManagerError("DIRECTORY_CONFLICT", "Directories and symbolic links cannot be overwritten.");
             }
-            destinationBackup = path.join(destination.parent, `.dockge-move-backup-${randomUUID()}.tmp`);
+            destinationBackup = path.join(destination.parent, `.dockgeek-move-backup-${randomUUID()}.tmp`);
             await fsAsync.rename(destination.absolute, destinationBackup);
         }
 
@@ -298,7 +298,7 @@ export class FileManager {
         if (!force && (typeof expectedRevision !== "string" || this.hash(current) !== expectedRevision)) {
             throw new FileManagerError("CONFLICT", "The file changed after it was opened.");
         }
-        const temporary = path.join(path.dirname(source.absolute), `.dockge-edit-${randomUUID()}.tmp`);
+        const temporary = path.join(path.dirname(source.absolute), `.dockgeek-edit-${randomUUID()}.tmp`);
         try {
             await fsAsync.writeFile(temporary, buffer, { flag: "wx" });
             await fsAsync.rename(temporary, source.absolute);
@@ -395,7 +395,7 @@ export class FileManager {
                 throw new FileManagerError("DIRECTORY_CONFLICT", "Only regular files can be overwritten.");
             }
         }
-        const temporary = path.join(target.parent, `.dockge-upload-${randomUUID()}.tmp`);
+        const temporary = path.join(target.parent, `.dockgeek-upload-${randomUUID()}.tmp`);
         return { ...target,
             size: size as number,
             temporary,
@@ -426,7 +426,7 @@ export class FileManager {
             return;
         }
 
-        const backup = path.join(path.dirname(target), `.dockge-upload-backup-${randomUUID()}.tmp`);
+        const backup = path.join(path.dirname(target), `.dockgeek-upload-backup-${randomUUID()}.tmp`);
         await fsAsync.rename(target, backup);
         try {
             await fsAsync.rename(temporary, target);

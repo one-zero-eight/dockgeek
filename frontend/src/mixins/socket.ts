@@ -29,14 +29,15 @@ export default defineComponent({
             },
             remember: true,
             loggedIn: false,
+            superadmin: false,
             allowLoginDialog: false,
             username: null,
 
-            stackList: {},
-            stacksDirectoryPaths: {} as Record<string, string>,
+            projectList: {},
+            projectsDirectoryPaths: {} as Record<string, string>,
 
-            // All stack list from all agents
-            allAgentStackList: {} as Record<string, object>,
+            // All project list from all agents
+            allAgentProjectList: {} as Record<string, object>,
 
             // online / offline / connecting
             agentStatusList: {
@@ -55,17 +56,17 @@ export default defineComponent({
             return Object.keys(this.agentList).length;
         },
 
-        completeStackList() {
+        completeProjectList() {
             let list : Record<string, object> = {};
 
-            for (let stackName in this.stackList) {
-                list[stackName + "_"] = this.stackList[stackName];
+            for (let projectName in this.projectList) {
+                list[projectName + "_"] = this.projectList[projectName];
             }
 
-            for (let endpoint in this.allAgentStackList) {
-                let instance = this.allAgentStackList[endpoint];
-                for (let stackName in instance.stackList) {
-                    list[stackName + "_" + endpoint] = instance.stackList[stackName];
+            for (let endpoint in this.allAgentProjectList) {
+                let instance = this.allAgentProjectList[endpoint];
+                for (let projectName in instance.projectList) {
+                    list[projectName + "_" + endpoint] = instance.projectList[projectName];
                 }
             }
             return list;
@@ -217,29 +218,18 @@ export default defineComponent({
                 terminal.write(data);
             });
 
-            agentSocket.on("stackList", (res) => {
+            agentSocket.on("projectList", (res) => {
                 if (res.ok) {
-                    this.stacksDirectoryPaths[res.endpoint || "current"] = res.stacksDirectoryPath;
+                    this.projectsDirectoryPaths[res.endpoint || "current"] = res.projectsDirectoryPath;
                     if (!res.endpoint) {
-                        this.stackList = res.stackList;
+                        this.projectList = res.projectList;
                     } else {
-                        if (!this.allAgentStackList[res.endpoint]) {
-                            this.allAgentStackList[res.endpoint] = {
-                                stackList: {},
+                        if (!this.allAgentProjectList[res.endpoint]) {
+                            this.allAgentProjectList[res.endpoint] = {
+                                projectList: {},
                             };
                         }
-                        this.allAgentStackList[res.endpoint].stackList = res.stackList;
-                    }
-                }
-            });
-
-            socket.on("stackStatusList", (res) => {
-                if (res.ok) {
-                    for (let stackName in res.stackStatusList) {
-                        const stackObj = this.stackList[stackName];
-                        if (stackObj) {
-                            stackObj.status = res.stackStatusList[stackName];
-                        }
+                        this.allAgentProjectList[res.endpoint].projectList = res.projectList;
                     }
                 }
             });
@@ -265,9 +255,10 @@ export default defineComponent({
 
         async refreshSession() {
             const { data } = await authClient.getSession();
-            const response = await fetch("/api/dockge/session");
+            const response = await fetch("/api/dockgeek/session");
             const state = await response.json();
             this.loggedIn = !!data?.user && state.admin;
+            this.superadmin = this.loggedIn && !!state.superadmin;
             this.username = data?.user?.name || data?.user?.email || null;
             this.allowLoginDialog = !this.loggedIn;
             if (this.loggedIn) {
@@ -286,6 +277,7 @@ export default defineComponent({
         async logout() {
             await authClient.signOut();
             this.loggedIn = false;
+            this.superadmin = false;
             this.username = null;
             this.clearData();
             socket.disconnect();

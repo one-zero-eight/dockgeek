@@ -4,8 +4,8 @@ node_modules
 .idea
 data
 managed-files
-dev-stacks
-stacks
+dev-projects
+projects
 tmp
 /private
 

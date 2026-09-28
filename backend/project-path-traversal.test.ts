@@ -3,22 +3,22 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { after, before, describe, test } from "node:test";
-import { Stack } from "./stack";
+import { Project } from "./project";
 import { Terminal } from "./terminal";
-import { DockgeServer } from "./dockge-server";
-import { DockgeSocket, ValidationError } from "./util-server";
+import { DockgeekServer } from "./dockge-server";
+import { DockgeekSocket, ValidationError } from "./util-server";
 import { DEFAULT_COMPOSE_FILE_PATTERNS, DEFAULT_EDITABLE_FILE_PATTERNS, filePatterns, matchesFilePatterns, preferredMatchingFile } from "../common/util-common";
 
-const STACK_NAME_ALLOW_LIST = /^[a-z0-9_-]+$/;
+const PROJECT_NAME_ALLOW_LIST = /^[a-z0-9_-]+$/;
 const SECRET_TOKEN = "POC_TOKEN_ff2a7ee07e511fac5e1e03333e298575";
 const SECRET_ENV = `SECRET=${SECRET_TOKEN}\n`;
 const COMPOSE_YAML = "services:\n  poc:\n    image: hello-world\n";
 
-describe("stack name path traversal", () => {
+describe("project name path traversal", () => {
     let tmpRoot: string;
-    let stacksDir: string;
+    let projectsDir: string;
     let outsideDir: string;
-    let server: DockgeServer;
+    let server: DockgeekServer;
     const traversalName = "../outside";
 
     function seedOutsideDir() {
@@ -30,12 +30,12 @@ describe("stack name path traversal", () => {
     }
 
     before(() => {
-        tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "dockge-stack-traversal-"));
-        stacksDir = path.join(tmpRoot, "stacks");
+        tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "dockgeek-project-traversal-"));
+        projectsDir = path.join(tmpRoot, "projects");
         outsideDir = path.join(tmpRoot, "outside");
-        fs.mkdirSync(stacksDir);
+        fs.mkdirSync(projectsDir);
         seedOutsideDir();
-        server = { stacksDir, composeFilePatterns: DEFAULT_COMPOSE_FILE_PATTERNS } as DockgeServer;
+        server = { projectsDir, composeFilePatterns: DEFAULT_COMPOSE_FILE_PATTERNS } as DockgeekServer;
     });
 
     after(() => {
@@ -45,31 +45,31 @@ describe("stack name path traversal", () => {
         });
     });
 
-    test("path.join(stacksDir, name) escapes stacksDir when name fails the allow-list", () => {
-        assert.equal(Boolean(traversalName.match(STACK_NAME_ALLOW_LIST)), false);
-        const joined = path.resolve(path.join(stacksDir, traversalName));
-        const stacksResolved = path.resolve(stacksDir);
+    test("path.join(projectsDir, name) escapes projectsDir when name fails the allow-list", () => {
+        assert.equal(Boolean(traversalName.match(PROJECT_NAME_ALLOW_LIST)), false);
+        const joined = path.resolve(path.join(projectsDir, traversalName));
+        const projectsResolved = path.resolve(projectsDir);
         assert.equal(joined, path.resolve(outsideDir));
-        assert.equal(joined === stacksResolved || joined.startsWith(stacksResolved + path.sep), false);
+        assert.equal(joined === projectsResolved || joined.startsWith(projectsResolved + path.sep), false);
     });
 
-    test("getStack must not read compose files outside stacksDir via a ../ stack name", async () => {
+    test("getProject must not read compose files outside projectsDir via a ../ project name", async () => {
         seedOutsideDir();
         let composeENV = "";
         let composeYAML = "";
         try {
-            const stack = await Stack.getStack(server, traversalName);
-            composeENV = stack.composeENV;
-            composeYAML = stack.composeYAML;
+            const project = await Project.getProject(server, traversalName);
+            composeENV = project.composeENV;
+            composeYAML = project.composeYAML;
         } catch (e) {
             assert.ok(e instanceof ValidationError);
-            assert.match(e.message, /Stack name/);
+            assert.match(e.message, /Project name/);
         }
         assert.equal(composeENV.includes(SECRET_TOKEN), false);
         assert.equal(composeYAML.includes("hello-world"), false);
     });
 
-    test("deleteStack must not recursively remove a traversed path", async () => {
+    test("deleteProject must not recursively remove a traversed path", async () => {
         seedOutsideDir();
         const origExec = Terminal.exec;
         Terminal.exec = async () => {
@@ -77,13 +77,13 @@ describe("stack name path traversal", () => {
         };
         try {
             try {
-                const stack = await Stack.getStack(server, traversalName);
-                await stack.delete({
+                const project = await Project.getProject(server, traversalName);
+                await project.delete({
                     endpoint: "",
-                } as DockgeSocket);
+                } as DockgeekSocket);
             } catch (e) {
                 assert.ok(e instanceof ValidationError);
-                assert.match(e.message, /Stack name/);
+                assert.match(e.message, /Project name/);
             }
             assert.equal(fs.existsSync(outsideDir), true);
             assert.equal(fs.readFileSync(path.join(outsideDir, ".env"), "utf-8"), SECRET_ENV);
@@ -92,18 +92,18 @@ describe("stack name path traversal", () => {
         }
     });
 
-    test("getStack rejects slash, backslash, empty and non-string names", async () => {
+    test("getProject rejects slash, backslash, empty and non-string names", async () => {
         for (const name of [ "a/b", "a\\b", "", "UPPER", "has.dot" ]) {
-            await assert.rejects(() => Stack.getStack(server, name), (e: unknown) => {
+            await assert.rejects(() => Project.getProject(server, name), (e: unknown) => {
                 assert.ok(e instanceof ValidationError);
                 return true;
             });
         }
-        await assert.rejects(() => Stack.getStack(server, null as unknown as string), (e: unknown) => {
+        await assert.rejects(() => Project.getProject(server, null as unknown as string), (e: unknown) => {
             assert.ok(e instanceof ValidationError);
             return true;
         });
-        await assert.rejects(() => Stack.getStack(server, undefined as unknown as string), (e: unknown) => {
+        await assert.rejects(() => Project.getProject(server, undefined as unknown as string), (e: unknown) => {
             assert.ok(e instanceof ValidationError);
             return true;
         });
@@ -127,27 +127,27 @@ describe("stack name path traversal", () => {
         assert.equal(preferredMatchingFile([ "compose.dev.yaml", "docker-compose.yml" ], DEFAULT_COMPOSE_FILE_PATTERNS), "docker-compose.yml");
     });
 
-    test("getStack prefers compose.yaml over other matching files", async () => {
-        const dir = path.join(stacksDir, "preferred-compose");
+    test("getProject prefers compose.yaml over other matching files", async () => {
+        const dir = path.join(projectsDir, "preferred-compose");
         fs.mkdirSync(dir);
         fs.writeFileSync(path.join(dir, "compose.dev.yaml"), "services:\n  dev:\n    image: busybox\n");
         fs.writeFileSync(path.join(dir, "compose.yaml"), COMPOSE_YAML);
-        const stack = await Stack.getStack(server, "preferred-compose");
-        assert.equal(path.basename(stack.composeFilePath), "compose.yaml");
-        assert.equal(stack.composeYAML, COMPOSE_YAML);
+        const project = await Project.getProject(server, "preferred-compose");
+        assert.equal(path.basename(project.composeFilePath), "compose.yaml");
+        assert.equal(project.composeYAML, COMPOSE_YAML);
     });
 
-    test("getStack still loads a stack whose name is on the allow-list", async () => {
-        const name = "ok-stack_1";
-        const dir = path.join(stacksDir, name);
+    test("getProject still loads a project whose name is on the allow-list", async () => {
+        const name = "ok-project_1";
+        const dir = path.join(projectsDir, name);
         fs.mkdirSync(dir, {
             recursive: true,
         });
         fs.writeFileSync(path.join(dir, ".env"), "FOO=bar\n");
         fs.writeFileSync(path.join(dir, "compose.yaml"), "services:\n  web:\n    image: nginx\n");
-        const stack = await Stack.getStack(server, name);
-        assert.equal(stack.name, name);
-        assert.equal(stack.composeENV.includes("FOO=bar"), true);
-        assert.equal(stack.composeYAML.includes("nginx"), true);
+        const project = await Project.getProject(server, name);
+        assert.equal(project.name, name);
+        assert.equal(project.composeENV.includes("FOO=bar"), true);
+        assert.equal(project.composeYAML.includes("nginx"), true);
     });
 });

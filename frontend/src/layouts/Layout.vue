@@ -13,10 +13,10 @@
         <header v-if="!$root.isCompact" class="desktop-header flex flex-none flex-wrap justify-center items-center gap-2 min-h-[52px] mb-0 py-[0.4rem] bg-card border-b">
             <router-link to="/" class="brand flex items-center min-h-8 mb-0 me-auto no-underline text-foreground">
                 <img class="me-2 ms-4" width="32" height="32" src="/icon.svg" alt="" />
-                <span class="title text-2xl font-bold">Dockge</span>
+                <span class="title text-2xl font-bold">Dockgeek</span>
             </router-link>
 
-            <a v-if="hasNewVersion" target="_blank" href="https://github.com/louislam/dockge/releases" class="update-button me-3">
+            <a v-if="hasNewVersion" target="_blank" href="https://github.com/one-zero-eight/dockgeek/releases" class="update-button me-3">
                 <font-awesome-icon icon="arrow-alt-circle-up" /> {{ $t("newUpdate") }}
             </a>
 
@@ -92,7 +92,7 @@
 
         <nav v-if="$root.isCompact && $root.loggedIn" class="bottom-nav fixed bottom-0 left-0 z-1000 w-full flex bg-card text-center whitespace-nowrap" :aria-label="$t('mainNavigation')">
             <router-link to="/" active-class="home-route-parent" exact-active-class="active"><font-awesome-icon icon="home" /><span>{{ $t("home") }}</span></router-link>
-            <router-link to="/stacks" :class="{ active: isProjectsRoute }"><font-awesome-icon icon="stream" /><span>{{ $t("stacks") }}</span></router-link>
+            <router-link to="/projects" :class="{ active: isProjectsRoute }"><font-awesome-icon icon="stream" /><span>{{ $t("projects") }}</span></router-link>
             <router-link to="/console"><font-awesome-icon icon="terminal" /><span>{{ $t("console") }}</span></router-link>
             <router-link to="/files"><font-awesome-icon icon="folder-open" /><span>{{ $t("files") }}</span></router-link>
             <router-link to="/settings"><font-awesome-icon icon="cog" /><span>{{ $t("Settings") }}</span></router-link>
@@ -130,7 +130,7 @@ export default {
         },
 
         isProjectsRoute() {
-            return this.$route.path === "/stacks" || this.$route.path === "/compose" || this.$route.path.startsWith("/compose/") || this.$route.path.startsWith("/terminal/");
+            return this.$route.path === "/projects" || this.$route.path === "/compose" || this.$route.path.startsWith("/projects/") || this.$route.path.startsWith("/terminal/");
         },
 
         hasNewVersion() {
@@ -157,7 +157,7 @@ export default {
 
     methods: {
         scanFolder() {
-            this.$root.emitAgent(ALL_ENDPOINTS, "requestStackList", (res) => {
+            this.$root.emitAgent(ALL_ENDPOINTS, "requestProjectList", (res) => {
                 this.$root.toastRes(res);
             });
         },

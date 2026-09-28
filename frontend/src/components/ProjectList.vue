@@ -1,5 +1,5 @@
 <template>
-    <div class="panel-box stack-list-box flex h-full min-h-0 w-full flex-col lg:sticky lg:top-0 lg:max-h-full">
+    <div class="panel-box project-list-box flex h-full min-h-0 w-full flex-col lg:sticky lg:top-0 lg:max-h-full">
         <div class="list-header -m-[10px] mb-[10px] rounded-t-[10px] border-b border-border bg-card p-[10px] max-[770px]:p-[8px]">
             <div class="flex items-center justify-between gap-[.5rem]">
                 <!-- TODO -->
@@ -25,7 +25,7 @@
 
             <!-- TODO -->
             <div v-if="false" class="flex items-center">
-                <!--<StackListFilter :filterState="filterState" @update-filter="updateFilter" />-->
+                <!--<ProjectListFilter :filterState="filterState" @update-filter="updateFilter" />-->
             </div>
 
             <!-- TODO: Selection Controls -->
@@ -41,16 +41,16 @@
                     {{ $t("Resume") }}
                 </button>
 
-                <span v-if="selectedStackCount > 0">
-                    {{ $t("selectedStackCount", [selectedStackCount]) }}
+                <span v-if="selectedProjectCount > 0">
+                    {{ $t("selectedProjectCount", [selectedProjectCount]) }}
                 </span>
             </div>
         </div>
-        <div ref="stackList" class="min-h-0 flex-[1_1_auto]" :class="{ 'overflow-y-auto overscroll-contain': scrollbar }">
-            <div v-if="agentStackList[0] && agentStackList[0].stacks.length === 0" class="mt-[1rem] text-center">
-                <router-link to="/compose">{{ $t("addFirstStackMsg") }}</router-link>
+        <div ref="projectList" class="min-h-0 flex-[1_1_auto]" :class="{ 'overflow-y-auto overscroll-contain': scrollbar }">
+            <div v-if="agentProjectList.length === 0" class="mt-[1rem] text-center">
+                <router-link to="/compose">{{ $t("addFirstProjectMsg") }}</router-link>
             </div>
-            <div v-for="(agent, agentIndex) in agentStackList" :key="agentIndex" class="stack-list-inner">
+            <div v-for="(agent, agentIndex) in agentProjectList" :key="agentIndex" class="project-list-inner">
                 <div
                     v-if="$root.agentCount > 1" class="agent-select flex cursor-pointer select-none items-center text-muted-foreground text-sm font-medium px-[10px] py-[.5rem]"
                     @click="closedAgents.set(agent.endpoint, !closedAgents.get(agent.endpoint))"
@@ -63,13 +63,13 @@
                     <span v-else>{{ agent.endpoint }}</span>
                 </div>
                 <div v-show="$root.agentCount === 1 || !closedAgents.get(agent.endpoint)">
-                    <div v-if="$root.stacksDirectoryPaths[agent.endpoint]" class="directory-heading flex min-h-[34px] items-center gap-[8px] px-[6px] py-[3px] text-foreground text-base font-normal">
+                    <div v-if="$root.projectsDirectoryPaths[agent.endpoint]" class="directory-heading flex min-h-[34px] items-center gap-[8px] px-[6px] py-[3px] text-foreground text-base font-normal">
                         <font-awesome-icon icon="folder-open" />
-                        <span :title="$root.stacksDirectoryPaths[agent.endpoint]"><bdi dir="ltr">{{ $root.stacksDirectoryPaths[agent.endpoint] }}</bdi></span>
+                        <span :title="$root.projectsDirectoryPaths[agent.endpoint]"><bdi dir="ltr">{{ $root.projectsDirectoryPaths[agent.endpoint] }}</bdi></span>
                     </div>
-                    <StackListItem
-                        v-for="item in agent.stacks"
-                        :key="item.name" :stack="item" :isSelectMode="selectMode"
+                    <ProjectListItem
+                        v-for="item in agent.projects"
+                        :key="item.name" :project="item" :isSelectMode="selectMode"
                         :isSelected="isSelected" :select="select" :deselect="deselect"
                     />
                 </div>
@@ -78,19 +78,19 @@
     </div>
 
     <Confirm ref="confirmPause" :yes-text="$t('Yes')" :no-text="$t('No')" @yes="pauseSelected">
-        {{ $t("pauseStackMsg") }}
+        {{ $t("pauseProjectMsg") }}
     </Confirm>
 </template>
 
 <script>
 import Confirm from "../components/Confirm.vue";
-import StackListItem from "../components/StackListItem.vue";
-import { CREATED_FILE, CREATED_STACK, EXITED, RUNNING, STOPPED, UNKNOWN } from "../../../common/util-common";
+import ProjectListItem from "../components/ProjectListItem.vue";
+import { CREATED_FILE, CREATED_PROJECT, EXITED, RUNNING, STOPPED, UNKNOWN } from "../../../common/util-common";
 
 export default {
     components: {
         Confirm,
-        StackListItem,
+        ProjectListItem,
     },
     props: {
         /** Should the scrollbar be shown */
@@ -104,7 +104,7 @@ export default {
             selectMode: false,
             selectAll: false,
             disableSelectAllWatcher: false,
-            selectedStacks: {},
+            selectedProjects: {},
             filterState: {
                 status: null,
                 active: null,
@@ -115,35 +115,35 @@ export default {
     },
     computed: {
         /**
-         * Returns a sorted list of stacks based on the applied filters and search text.
-         * @returns {Array} The sorted list of stacks.
+         * Returns a sorted list of projects based on the applied filters and search text.
+         * @returns {Array} The sorted list of projects.
          */
-        agentStackList() {
-            let result = Object.values(this.$root.completeStackList);
+        agentProjectList() {
+            let result = Object.values(this.$root.completeProjectList);
 
-            result = result.filter(stack => {
+            result = result.filter(project => {
                 // filter by search text
-                // finds stack name, tag name or tag value
+                // finds project name, tag name or tag value
                 let searchTextMatch = true;
                 if (this.searchText !== "") {
                     const loweredSearchText = this.searchText.toLowerCase();
                     searchTextMatch =
-                        stack.name.toLowerCase().includes(loweredSearchText)
-                        || stack.tags.find(tag => tag.name.toLowerCase().includes(loweredSearchText)
+                        project.name.toLowerCase().includes(loweredSearchText)
+                        || project.tags.find(tag => tag.name.toLowerCase().includes(loweredSearchText)
                             || tag.value?.toLowerCase().includes(loweredSearchText));
                 }
 
                 // filter by active
                 let activeMatch = true;
                 if (this.filterState.active != null && this.filterState.active.length > 0) {
-                    activeMatch = this.filterState.active.includes(stack.active);
+                    activeMatch = this.filterState.active.includes(project.active);
                 }
 
                 // filter by tags
                 let tagsMatch = true;
                 if (this.filterState.tags != null && this.filterState.tags.length > 0) {
-                    tagsMatch = stack.tags.map(tag => tag.tag_id) // convert to array of tag IDs
-                        .filter(stackTagId => this.filterState.tags.includes(stackTagId)) // perform Array Intersaction between filter and stack's tags
+                    tagsMatch = project.tags.map(tag => tag.tag_id) // convert to array of tag IDs
+                        .filter(projectTagId => this.filterState.tags.includes(projectTagId)) // perform Array Intersaction between filter and project's tags
                         .length > 0;
                 }
 
@@ -152,10 +152,10 @@ export default {
 
             result.sort((m1, m2) => {
 
-                // sort by managed by dockge
-                if (m1.isManagedByDockge && !m2.isManagedByDockge) {
+                // sort by managed by Dockgeek
+                if (m1.isManagedByDockgeek && !m2.isManagedByDockgeek) {
                     return -1;
-                } else if (!m1.isManagedByDockge && m2.isManagedByDockge) {
+                } else if (!m1.isManagedByDockgeek && m2.isManagedByDockgeek) {
                     return 1;
                 }
 
@@ -169,9 +169,9 @@ export default {
                         return 1;
                     } else if (m1.status === EXITED || m1.status === STOPPED) {
                         return -1;
-                    } else if (m2.status === CREATED_STACK) {
+                    } else if (m2.status === CREATED_PROJECT) {
                         return 1;
-                    } else if (m1.status === CREATED_STACK) {
+                    } else if (m1.status === CREATED_PROJECT) {
                         return -1;
                     } else if (m2.status === CREATED_FILE) {
                         return 1;
@@ -186,20 +186,20 @@ export default {
                 return m1.name.localeCompare(m2.name);
             });
 
-            // Group stacks by endpoint, sorting them so the local endpoint is first
+            // Group projects by endpoint, sorting them so the local endpoint is first
             // and the rest are sorted alphabetically
             result = [
-                ...result.reduce((acc, stack) => {
-                    const endpoint = stack.endpoint || "current";
+                ...result.reduce((acc, project) => {
+                    const endpoint = project.endpoint || "current";
                     if (!acc.has(endpoint)) {
                         acc.set(endpoint, []);
                     }
-                    acc.get(endpoint).push(stack);
+                    acc.get(endpoint).push(project);
                     return acc;
                 }, new Map()).entries()
-            ].map(([ endpoint, stacks ]) => ({
+            ].map(([ endpoint, projects ]) => ({
                 endpoint,
-                stacks
+                projects
             })).sort((a, b) => {
                 if (a.endpoint === "current" && b.endpoint !== "current") {
                     return -1;
@@ -216,8 +216,8 @@ export default {
             return document.body.classList.contains("dark");
         },
 
-        selectedStackCount() {
-            return Object.keys(this.selectedStacks).length;
+        selectedProjectCount() {
+            return Object.keys(this.selectedProjects).length;
         },
 
         /**
@@ -230,8 +230,8 @@ export default {
     },
     watch: {
         searchText() {
-            for (let stack of this.agentStackList) {
-                if (!this.selectedStacks[stack.id]) {
+            for (let project of this.agentProjectList) {
+                if (!this.selectedProjects[project.id]) {
                     if (this.selectAll) {
                         this.disableSelectAllWatcher = true;
                         this.selectAll = false;
@@ -242,11 +242,11 @@ export default {
         },
         selectAll() {
             if (!this.disableSelectAllWatcher) {
-                this.selectedStacks = {};
+                this.selectedProjects = {};
 
                 if (this.selectAll) {
-                    this.agentStackList.forEach((item) => {
-                        this.selectedStacks[item.id] = true;
+                    this.agentProjectList.forEach((item) => {
+                        this.selectedProjects[item.id] = true;
                     });
                 }
             } else {
@@ -256,7 +256,7 @@ export default {
         selectMode() {
             if (!this.selectMode) {
                 this.selectAll = false;
-                this.selectedStacks = {};
+                this.selectedProjects = {};
             }
         },
     },
@@ -269,7 +269,7 @@ export default {
             this.searchText = "";
         },
         /**
-         * Update the StackList Filter
+         * Update the ProjectList Filter
          * @param {object} newFilter Object with new filter
          * @returns {void}
          */
@@ -277,28 +277,28 @@ export default {
             this.filterState = newFilter;
         },
         /**
-         * Deselect a stack
-         * @param {number} id ID of stack
+         * Deselect a project
+         * @param {number} id ID of project
          * @returns {void}
          */
         deselect(id) {
-            delete this.selectedStacks[id];
+            delete this.selectedProjects[id];
         },
         /**
-         * Select a stack
-         * @param {number} id ID of stack
+         * Select a project
+         * @param {number} id ID of project
          * @returns {void}
          */
         select(id) {
-            this.selectedStacks[id] = true;
+            this.selectedProjects[id] = true;
         },
         /**
-         * Determine if stack is selected
-         * @param {number} id ID of stack
-         * @returns {bool} Is the stack selected?
+         * Determine if project is selected
+         * @param {number} id ID of project
+         * @returns {bool} Is the project selected?
          */
         isSelected(id) {
-            return id in this.selectedStacks;
+            return id in this.selectedProjects;
         },
         /**
          * Disable select mode and reset selection
@@ -306,7 +306,7 @@ export default {
          */
         cancelSelectMode() {
             this.selectMode = false;
-            this.selectedStacks = {};
+            this.selectedProjects = {};
         },
         /**
          * Show dialog to confirm pause
@@ -316,24 +316,24 @@ export default {
             this.$refs.confirmPause.show();
         },
         /**
-         * Pause each selected stack
+         * Pause each selected project
          * @returns {void}
          */
         pauseSelected() {
-            Object.keys(this.selectedStacks)
-                .filter(id => this.$root.stackList[id].active)
-                .forEach(id => this.$root.getSocket().emit("pauseStack", id, () => { }));
+            Object.keys(this.selectedProjects)
+                .filter(id => this.$root.projectList[id].active)
+                .forEach(id => this.$root.emitAgent("", "stopProject", this.$root.projectList[id].name, () => { }));
 
             this.cancelSelectMode();
         },
         /**
-         * Resume each selected stack
+         * Resume each selected project
          * @returns {void}
          */
         resumeSelected() {
-            Object.keys(this.selectedStacks)
-                .filter(id => !this.$root.stackList[id].active)
-                .forEach(id => this.$root.getSocket().emit("resumeStack", id, () => { }));
+            Object.keys(this.selectedProjects)
+                .filter(id => !this.$root.projectList[id].active)
+                .forEach(id => this.$root.emitAgent("", "startProject", this.$root.projectList[id].name, () => { }));
 
             this.cancelSelectMode();
         },
@@ -342,7 +342,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.stack-list-box {
+.project-list-box {
     margin-bottom: 0 !important;
 }
 
@@ -376,7 +376,7 @@ export default {
     }
 }
 
-.stack-item {
+.project-item {
     width: 100%;
 }
 

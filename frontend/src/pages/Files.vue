@@ -3,7 +3,7 @@
         <div class="files-page">
             <div class="page-header mb-[1rem] flex items-center justify-between gap-[0.65rem]">
                 <div class="text-muted-foreground text-sm">{{ $t("fileManagerRestrictedHint") }}</div>
-                <select v-model="selectedEndpoint" class="ui-field endpoint-select" :aria-label="$t('dockgeAgent')" @change="switchEndpoint">
+                <select v-model="selectedEndpoint" class="ui-field endpoint-select" :aria-label="$t('dockgeekAgent')" @change="switchEndpoint">
                     <option v-for="option in endpointOptions" :key="option.value" :value="option.value" :disabled="option.offline">
                         {{ option.label }}{{ option.offline ? ` (${$t('agentOffline')})` : "" }}
                     </option>
@@ -14,7 +14,7 @@
             <div v-else-if="!info.enabled" class="file-notice panel-box p-4 rounded-md border border-warning bg-card text-foreground">
                 <h4>{{ $t("fileManagerDisabled") }}</h4>
                 <p class="mb-2">{{ $t("fileManagerDisabledHint") }}</p>
-                <code>DOCKGE_FILE_MANAGER_ROOT=/managed-files</code>
+                <code>DOCKGEEK_FILE_MANAGER_ROOT=/managed-files</code>
             </div>
 
             <template v-else>
@@ -146,7 +146,7 @@
                 <div class="file-help mt-1 text-muted-foreground text-sm">{{ $t("destinationDirectoryHint") }}</div>
             </FloatingDialog>
 
-            <FloatingDialog v-model="showDelete" size="sm" :title="$t('confirmDelete')" :ok-title="$t('deleteStack')" ok-variant="danger" :cancel-title="$t('cancel')" @ok="deleteEntry">
+            <FloatingDialog v-model="showDelete" size="sm" :title="$t('confirmDelete')" :ok-title="$t('deleteProject')" ok-variant="danger" :cancel-title="$t('cancel')" @ok="deleteEntry">
                 {{ $t("fileDeleteConfirm", { name: activeEntry?.name }) }}
             </FloatingDialog>
 
@@ -364,7 +364,7 @@ export default {
                 { key: "move",
                     label: "move" },
                 { key: "delete",
-                    label: "deleteStack",
+                    label: "deleteProject",
                     icon: "trash",
                     iconOnly: true,
                     danger: true },

@@ -1,8 +1,8 @@
 <template>
     <transition name="slide-fade" appear>
         <div
-            class="compose-page"
-            :class="{ 'stack-view-mode': !isAdd && !isEditMode && stack.isManagedByDockge, 'full-page-editor': isFullPageEditor }"
+            class="project-page"
+            :class="{ 'project-view-mode': !isAdd && !isEditMode && project.isManagedByDockgeek, 'full-page-editor': isFullPageEditor }"
         >
             <div v-if="!isAdd" class="project-header mb-[1rem]">
                 <h1 class="project-title mb-0">
@@ -11,23 +11,23 @@
                             <span
                                 v-bind="triggerAttrs"
                                 class="project-status-dot inline-block w-3 h-3 rounded-full align-[0.12em]"
-                                :class="`tone-${statusColor(globalStack?.status)}`"
+                                :class="`tone-${statusColor(globalProject?.status)}`"
                                 role="img"
                                 :aria-label="$t(projectStatus.title)"
                             />
                         </template>
                         <span class="floating-tooltip-title">{{ $t(projectStatus.title) }}</span>
                         <span class="floating-tooltip-detail">{{ projectStatus.detail }}</span>
-                    </FloatingTooltip> <span>{{ stack.name }}</span>
-                    <span class="stack-label opacity-50 select-none">{{ $t("project") }}</span>
+                    </FloatingTooltip> <span>{{ project.name }}</span>
+                    <span class="project-label opacity-50 select-none">{{ $t("project") }}</span>
                     <span v-if="$root.agentCount > 1 && endpoint !== ''" class="agent-name text-muted-foreground text-sm">
                         ({{ endpointDisplay }})
                     </span>
                 </h1>
 
                 <ActionGroup
-                    v-if="stack.isManagedByDockge && !isFullPageEditor"
-                    class="stack-actions"
+                    v-if="project.isManagedByDockgeek && !isFullPageEditor"
+                    class="project-actions"
                     :actions="projectActions"
                     :disabled="processing"
                     :max-visible="3"
@@ -44,35 +44,35 @@
                 </a>
             </div>
 
-            <div v-if="$root.isCompact && stack.isManagedByDockge && !isFullPageEditor" class="compact-compose-tabs mb-[1rem] flex w-full items-center gap-[0.15rem] rounded-lg bg-card p-1" role="tablist">
+            <div v-if="$root.isCompact && project.isManagedByDockgeek && !isFullPageEditor" class="compact-compose-tabs mb-[1rem] flex w-full items-center gap-[0.15rem] rounded-lg bg-card p-1" role="tablist">
                 <button class="compact-tab" :class="{ active: compactTab === 'containers' }" type="button" role="tab" :aria-selected="compactTab === 'containers'" @click="compactTab = 'containers'">{{ $t("services") }}</button>
                 <button class="compact-tab" :class="{ active: compactTab === 'compose' }" type="button" role="tab" :aria-selected="compactTab === 'compose'" @click="compactTab = 'compose'">Compose</button>
             </div>
 
             <!-- New project general fields -->
             <div v-if="isAdd" class="panel-box big-padding mb-[1rem]">
-                <label for="name" class="stack-name-label inline-block mb-2">{{ $t("stackFolder") }}</label>
-                <div class="stack-folder-picker">
+                <label for="name" class="project-name-label inline-block mb-2">{{ $t("projectFolder") }}</label>
+                <div class="project-folder-picker">
                     <FloatingMenu
                         placement="bottom-start"
                         :offset="4"
                         :match-trigger-width="true"
-                        panel-class="stack-path-menu"
+                        panel-class="project-path-menu"
                     >
                         <template #trigger="{ triggerAttrs, isOpen }">
                             <button
                                 v-bind="triggerAttrs"
                                 id="endpoint"
                                 type="button"
-                                class="stack-path-full"
+                                class="project-path-full"
                                 :class="{ open: isOpen }"
-                                :title="stacksDirectoryPath"
-                                :aria-label="$t('dockgeAgent')"
+                                :title="projectsDirectoryPath"
+                                :aria-label="$t('dockgeekAgent')"
                             >
-                                <span class="stack-path-text">
-                                    <span class="stack-path-dir">{{ stacksDirectoryPath.replace(/\/+$/, "") }}/</span><span class="stack-path-name" :class="{ 'is-placeholder': !stack.name }">{{ stack.name || $t("stackFolderPlaceholder") }}</span>
+                                <span class="project-path-text">
+                                    <span class="project-path-dir">{{ projectsDirectoryPath.replace(/\/+$/, "") }}/</span><span class="project-path-name" :class="{ 'is-placeholder': !project.name }">{{ project.name || $t("projectFolderPlaceholder") }}</span>
                                 </span>
-                                <font-awesome-icon icon="chevron-down" class="stack-path-caret" />
+                                <font-awesome-icon icon="chevron-down" class="project-path-caret" />
                             </button>
                         </template>
 
@@ -81,38 +81,38 @@
                             :key="opt.endpoint === '' ? 'current' : opt.endpoint"
                             type="button"
                             role="menuitem"
-                            class="floating-menu-item stack-path-option"
-                            :class="{ active: (stack.endpoint || '') === (opt.endpoint || '') }"
+                            class="floating-menu-item project-path-option"
+                            :class="{ active: (project.endpoint || '') === (opt.endpoint || '') }"
                             :disabled="opt.offline"
                             @click="selectAgentPath(opt.endpoint)"
                         >
-                            <span class="stack-path-option-line">
-                                <span class="stack-path-option-dir">{{ opt.path }}/</span><span class="stack-path-option-name" :class="{ 'is-placeholder': !stack.name }">{{ stack.name || $t("stackFolderPlaceholder") }}</span>
+                            <span class="project-path-option-line">
+                                <span class="project-path-option-dir">{{ opt.path }}/</span><span class="project-path-option-name" :class="{ 'is-placeholder': !project.name }">{{ project.name || $t("projectFolderPlaceholder") }}</span>
                             </span>
-                            <span v-if="opt.agentLabel" class="stack-path-option-agent">{{ opt.agentLabel }}</span>
+                            <span v-if="opt.agentLabel" class="project-path-option-agent">{{ opt.agentLabel }}</span>
                         </button>
                     </FloatingMenu>
-                    <div class="stack-name-input">
+                    <div class="project-name-input">
                         <input
                             id="name"
-                            v-model="stack.name"
+                            v-model="project.name"
                             type="text"
                             class="ui-field"
                             required
                             spellcheck="false"
                             autocomplete="off"
-                            :placeholder="$t('stackFolderPlaceholder')"
-                            @blur="stack.name = stack.name.trim()"
+                            :placeholder="$t('projectFolderPlaceholder')"
+                            @blur="project.name = project.name.trim()"
                         >
-                        <span v-if="!stack.name" class="stack-name-placeholder" aria-hidden="true">
-                            <span class="stack-name-placeholder-text">{{ $t("stackFolderPlaceholder") }}</span><span class="stack-name-required"> *</span>
+                        <span v-if="!project.name" class="project-name-placeholder" aria-hidden="true">
+                            <span class="project-name-placeholder-text">{{ $t("projectFolderPlaceholder") }}</span><span class="project-name-required"> *</span>
                         </span>
                     </div>
                 </div>
-                <div class="stack-name-help mt-1 text-muted-foreground text-sm">{{ $t("stackFolderHint") }}</div>
+                <div class="project-name-help mt-1 text-muted-foreground text-sm">{{ $t("projectFolderHint") }}</div>
             </div>
 
-            <div v-if="stack.isManagedByDockge" class="stack-content -mx-3 flex flex-wrap">
+            <div v-if="project.isManagedByDockgeek" class="project-content -mx-3 flex flex-wrap">
                 <div v-if="!isFullPageEditor" v-show="!$root.isCompact || compactTab === 'containers'" class="containers-column w-full px-3 min-[992px]:w-1/2 min-[992px]:flex-none">
                     <div ref="containerList" class="container-list">
                         <Container
@@ -134,9 +134,9 @@
                         <div class="editor-toolbar">
                             <div class="editor-tabs-wrap">
                                 <div ref="fileTabs" class="editor-file-tabs" role="tablist" :aria-label="$t('projectFiles')" @wheel="onFileTabsWheel">
-                                    <div v-for="file in [stack.composeFileName, ...editableFiles]" :key="file" class="editor-file-tab" :class="{ active: selectedFile === file, 'pending-delete': stagedDeletedFiles.includes(file) }">
+                                    <div v-for="file in [project.composeFileName, ...editableFiles]" :key="file" class="editor-file-tab" :class="{ active: selectedFile === file, 'pending-delete': stagedDeletedFiles.includes(file) }">
                                         <span v-if="renamingFile === file && !stagedDeletedFiles.includes(file)" class="editor-file-rename">
-                                            <font-awesome-icon :icon="file === stack.composeFileName ? faDocker : 'gear'" class="editor-file-icon" aria-hidden="true" />
+                                            <font-awesome-icon :icon="file === project.composeFileName ? faDocker : 'gear'" class="editor-file-icon" aria-hidden="true" />
                                             <FloatingTooltip placement="bottom-start" :disabled="validFilenameDraft" panel-class="text-destructive">
                                                 <template #trigger="{ triggerAttrs }">
                                                     <span class="editor-filename-wrap" v-bind="triggerAttrs">
@@ -154,15 +154,15 @@
                                                         />
                                                     </span>
                                                 </template>
-                                                {{ $t('filenamePatternInvalid', { patterns: file === stack.composeFileName ? composeFilePatterns : editableFilePatterns }) }}
+                                                {{ $t('filenamePatternInvalid', { patterns: file === project.composeFileName ? composeFilePatterns : editableFilePatterns }) }}
                                             </FloatingTooltip>
                                         </span>
                                         <button v-else type="button" role="tab" class="editor-file-name" :aria-selected="selectedFile === file" @click="chooseFile(file)">
-                                            <font-awesome-icon :icon="file === stack.composeFileName ? faDocker : 'gear'" class="editor-file-icon" aria-hidden="true" />
+                                            <font-awesome-icon :icon="file === project.composeFileName ? faDocker : 'gear'" class="editor-file-icon" aria-hidden="true" />
                                             <span class="editor-file-label">{{ file }}</span>
-                                            <span v-if="!stagedDeletedFiles.includes(file) && fileHasPendingChanges(file)" class="editor-file-dirty" :class="{ 'is-new': file !== stack.composeFileName && !editableFilesOnDisk.includes(file) }" :title="$t(file !== stack.composeFileName && !editableFilesOnDisk.includes(file) ? 'newEditableFile' : 'fileChange')" aria-hidden="true">{{ file !== stack.composeFileName && !editableFilesOnDisk.includes(file) ? '+' : '•' }}</span>
+                                            <span v-if="!stagedDeletedFiles.includes(file) && fileHasPendingChanges(file)" class="editor-file-dirty" :class="{ 'is-new': file !== project.composeFileName && !editableFilesOnDisk.includes(file) }" :title="$t(file !== project.composeFileName && !editableFilesOnDisk.includes(file) ? 'newEditableFile' : 'fileChange')" aria-hidden="true">{{ file !== project.composeFileName && !editableFilesOnDisk.includes(file) ? '+' : '•' }}</span>
                                         </button>
-                                        <button v-if="selectedFile === file && file !== stack.composeFileName" type="button" class="editor-tab-close" :aria-label="$t(stagedDeletedFiles.includes(file) ? 'undoDeleteEditableFile' : 'deleteEditableFile')" :title="$t(stagedDeletedFiles.includes(file) ? 'undoDeleteEditableFile' : 'deleteEditableFile')" @click="toggleDeleteEditableFile(file)">{{ stagedDeletedFiles.includes(file) ? '↶' : '×' }}</button>
+                                        <button v-if="selectedFile === file && file !== project.composeFileName" type="button" class="editor-tab-close" :aria-label="$t(stagedDeletedFiles.includes(file) ? 'undoDeleteEditableFile' : 'deleteEditableFile')" :title="$t(stagedDeletedFiles.includes(file) ? 'undoDeleteEditableFile' : 'deleteEditableFile')" @click="toggleDeleteEditableFile(file)">{{ stagedDeletedFiles.includes(file) ? '↶' : '×' }}</button>
                                     </div>
                                     <span v-if="addingFile" class="editor-file-tab editor-file-new" @focusout="cancelNewFile">
                                         <font-awesome-icon icon="gear" class="editor-file-icon" aria-hidden="true" />
@@ -192,10 +192,10 @@
                         </div>
 
                         <code-mirror
-                            :key="`${endpoint}:${stack.projectDir || stack.name}:${selectedFile}`"
+                            :key="`${endpoint}:${project.projectDir || project.name}:${selectedFile}`"
                             ref="editor"
                             v-model="editorContent"
-                            :extensions="selectedSchemaLanguage ? schemaExtensions : (selectedFile === stack.composeFileName ? extensions : envExtensions)"
+                            :extensions="selectedSchemaLanguage ? schemaExtensions : (selectedFile === project.composeFileName ? extensions : envExtensions)"
                             minimal
                             wrap
                             :dark="$root.isDark"
@@ -219,14 +219,14 @@
                         </div>
 
                         <!-- Editor actions -->
-                        <div v-if="!isFullPageEditor && stack.isManagedByDockge" class="editor-actions editor-view-actions">
-                            <button type="button" class="editor-edit" :disabled="processing || (selectedFile !== stack.composeFileName && !Object.hasOwn(fileContents, selectedFile))" @click="copyCurrentFile">
+                        <div v-if="!isFullPageEditor && project.isManagedByDockgeek" class="editor-actions editor-view-actions">
+                            <button type="button" class="editor-edit" :disabled="processing || (selectedFile !== project.composeFileName && !Object.hasOwn(fileContents, selectedFile))" @click="copyCurrentFile">
                                 <font-awesome-icon :icon="fileCopied ? 'check' : 'copy'" />
                                 {{ $t(fileCopied ? 'fileCopied' : 'copyFile') }}
                             </button>
                             <button type="button" class="editor-edit" :disabled="processing" @click="enableEditMode">
                                 <font-awesome-icon icon="pen" />
-                                {{ $t("editStack") }}
+                                {{ $t("editProject") }}
                             </button>
                         </div>
                         <div v-if="isFullPageEditor" class="editor-actions">
@@ -234,20 +234,20 @@
                                 <button
                                     type="button"
                                     class="ui-btn ui-btn-gradient-primary !rounded-none"
-                                    :disabled="processing || saveStatus === 'saved' || !canSaveStack || !validFilenameDraft || !hasUnsavedChanges"
-                                    @click="requestDeployStack"
+                                    :disabled="processing || saveStatus === 'saved' || !canSaveProject || !validFilenameDraft || !hasUnsavedChanges"
+                                    @click="requestDeployProject"
                                 >
                                     <font-awesome-icon icon="rocket" />
-                                    <span class="action-group-text">{{ $t("deployStack") }}</span>
+                                    <span class="action-group-text">{{ $t("deployProject") }}</span>
                                 </button>
                                 <button
                                     type="button"
                                     class="ui-btn !rounded-none"
-                                    :disabled="processing || saveStatus === 'saved' || !canSaveStack || !validFilenameDraft || !hasUnsavedChanges"
+                                    :disabled="processing || saveStatus === 'saved' || !canSaveProject || !validFilenameDraft || !hasUnsavedChanges"
                                     @click="saveCurrentFile"
                                 >
                                     <font-awesome-icon :icon="saveStatus === 'saving' ? 'spinner' : saveStatus === 'saved' ? 'check' : 'save'" :spin="saveStatus === 'saving'" />
-                                    <span class="action-group-text">{{ $t(saveStatus === 'saved' ? 'Saved' : 'saveStackDraft') }}</span>
+                                    <span class="action-group-text">{{ $t(saveStatus === 'saved' ? 'Saved' : 'saveProjectDraft') }}</span>
                                 </button>
                             </div>
                             <div class="editor-format-btn flex items-stretch">
@@ -267,17 +267,17 @@
                                 type="button"
                                 class="editor-edit editor-discard"
                                 :disabled="processing"
-                                @click="discardStack"
+                                @click="discardProject"
                             >
-                                {{ $t("discardStack") }}
+                                {{ $t("discardProject") }}
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div v-if="!stack.isManagedByDockge && !processing">
-                {{ $t("stackNotManagedByDockgeMsg") }}
+            <div v-if="!project.isManagedByDockgeek && !processing">
+                {{ $t("projectNotManagedByDockgeMsg") }}
             </div>
 
             <FloatingDialog
@@ -291,9 +291,42 @@
                 @ok="confirmProjectAction"
                 @hidden="clearPendingAction"
             >
-                <p class="mb-[.5rem]">{{ $t(actionConfirm.message, { name: stack.name }) }}</p>
+                <p class="mb-[.5rem]">{{ $t(actionConfirm.message, { name: project.name }) }}</p>
                 <div v-if="actionConfirm.commands?.length" class="mt-3">
                     <pre class="m-0 overflow-x-auto rounded-[0.35rem] bg-background px-3 py-[0.65rem]"><code v-for="(cmd, i) in actionConfirm.commands" :key="i" class="mt-[0.15rem] first:mt-0 block rounded-none bg-transparent p-0 font-app-mono text-sm leading-[1.45] whitespace-pre text-foreground"><span class="text-[#1a7f37] [.dark_&]:text-[#7ee787]">$</span> {{ cmd }}</code></pre>
+                </div>
+            </FloatingDialog>
+
+            <FloatingDialog
+                v-model="showGitReview"
+                size="lg"
+                :title="$t('gitReviewTitle')"
+                :ok-title="$t(gitPreview?.changes?.length ? 'gitCommitPush' : 'gitSaveOnlyConfirm')"
+                :cancel-title="$t('cancel')"
+                ok-variant="primary"
+                :busy="processing"
+                @ok="confirmGitSave"
+                @hidden="clearGitReview"
+            >
+                <p>{{ $t('gitReviewDescription', { repository: gitPreview?.repository || gitPreview?.repoRoot || gitPreview?.remote || '' }) }}</p>
+                <p v-if="gitSaveDeploy" class="text-muted-foreground">{{ $t('gitDeployAfterPush') }}</p>
+                <div v-for="kind in ['create', 'modify', 'delete']" :key="kind" class="mt-3">
+                    <template v-if="gitPreviewFiles(kind).length">
+                        <strong>{{ $t(`gitChange_${kind}`) }}</strong>
+                        <ul class="mb-0 mt-1 list-disc pl-5 break-all">
+                            <li v-for="file in gitPreviewFiles(kind)" :key="file.path">
+                                <strong>{{ file.path }}</strong>
+                                <pre v-if="file.diff" class="mt-1 max-h-48 overflow-auto whitespace-pre-wrap rounded bg-background p-2 text-xs">{{ file.diff }}</pre>
+                            </li>
+                        </ul>
+                    </template>
+                </div>
+                <p v-if="!gitPreview?.changes?.length" class="mt-3">{{ $t('gitNoCommitChanges') }}</p>
+                <div v-if="gitIgnoredFiles.length" class="mt-3">
+                    <strong>{{ $t('gitSaveOnly') }}</strong>
+                    <ul class="mb-0 mt-1 list-disc pl-5 break-all">
+                        <li v-for="file in gitIgnoredFiles" :key="file.path || file.name || file">{{ file.path || file.name || file }}</li>
+                    </ul>
                 </div>
             </FloatingDialog>
 
@@ -363,7 +396,6 @@
                     :cols="progressTerminalCols"
                     :show-toolbar="false"
                     :auto-fit="false"
-                    @has-data="onProgressTerminalData"
                     @selection-change="progressTerminalHasSelection = $event"
                 />
             </FloatingDialog>
@@ -395,11 +427,11 @@ import {
     matchesFilePatterns,
     envsubstYAML,
     getComposeTerminalName,
-    validateStackFolderName,
+    validateProjectFolderName,
     PROGRESS_TERMINAL_ROWS,
     statusColor,
-    stackStatusDetail,
-    stackStatusTitle,
+    projectStatusDetail,
+    projectStatusTitle,
     TERMINAL_COLS,
     RUNNING
 } from "../../../common/util-common";
@@ -499,55 +531,55 @@ const template = `services:
  * `commands` are the docker / compose invocations that will run.
  */
 const PROJECT_ACTIONS = {
-    deployStack: {
+    deployProject: {
         title: "deployProjectConfirmTitle",
         message: "deployProjectConfirmMsg",
-        ok: "deployStack",
+        ok: "deployProject",
         variant: "primary",
         commands: [ "docker compose up -d --remove-orphans" ],
     },
-    startStack: {
+    startProject: {
         title: "startProjectConfirmTitle",
         message: "startProjectConfirmMsg",
-        ok: "startStack",
+        ok: "startProject",
         variant: "primary",
         commands: [ "docker compose up -d --remove-orphans" ],
     },
-    restartStack: {
+    restartProject: {
         title: "restartProjectConfirmTitle",
         message: "restartProjectConfirmMsg",
-        ok: "restartStack",
+        ok: "restartProject",
         variant: "primary",
         commands: [ "docker compose restart" ],
     },
-    updateStack: {
+    updateProject: {
         title: "updateProjectConfirmTitle",
         message: "updateProjectConfirmMsg",
-        ok: "updateStack",
+        ok: "updateProject",
         variant: "primary",
         commands: [
             "docker compose pull",
             "docker compose up -d --remove-orphans",
         ],
     },
-    stopStack: {
+    stopProject: {
         title: "stopProjectConfirmTitle",
         message: "stopProjectConfirmMsg",
-        ok: "stopStack",
+        ok: "stopProject",
         variant: "warning",
         commands: [ "docker compose stop" ],
     },
-    downStack: {
+    downProject: {
         title: "downProjectConfirmTitle",
         message: "downProjectConfirmMsg",
-        ok: "downStack",
+        ok: "downProject",
         variant: "warning",
         commands: [ "docker compose down" ],
     },
-    deleteStack: {
+    deleteProject: {
         title: "deleteProjectConfirmTitle",
         message: "deleteProjectConfirmMsg",
-        ok: "deleteStack",
+        ok: "deleteProject",
         variant: "danger",
         commands: [ "docker compose down --remove-orphans" ],
     },
@@ -603,7 +635,7 @@ export default {
             jsonConfig: {},
             envsubstJSONConfig: {},
             processing: true,
-            stack: {
+            project: {
 
             },
             selectedFile: "compose.yaml",
@@ -633,6 +665,11 @@ export default {
             saveStatus: "idle",
             fileCopied: false,
             showDeleteFileDialog: false,
+            showGitReview: false,
+            gitPreview: null,
+            gitSavePayload: null,
+            gitSaveDeploy: false,
+            stagedRenames: [],
             stagedDeletedFiles: [],
             pendingDeletionAction: null,
             submitted: false,
@@ -656,42 +693,45 @@ export default {
     computed: {
         editorContent: {
             get() {
-                return this.selectedFile === this.stack.composeFileName ? this.stack.composeYAML : (this.isAdd ? this.draftFiles[this.selectedFile] ?? "" : this.fileContents[this.selectedFile] ?? "");
+                return this.selectedFile === this.project.composeFileName ? this.project.composeYAML : (this.isAdd ? this.draftFiles[this.selectedFile] ?? "" : this.fileContents[this.selectedFile] ?? "");
             },
             set(value) {
-                if (this.selectedFile === this.stack.composeFileName) {
-                    this.stack.composeYAML = value;
+                if (this.selectedFile === this.project.composeFileName) {
+                    this.project.composeYAML = value;
                 } else if (this.isAdd) {
                     this.draftFiles[this.selectedFile] = value;
                     if (this.selectedFile === ".env") {
-                        this.stack.composeENV = value;
+                        this.project.composeENV = value;
                     }
                 } else {
                     this.fileContents[this.selectedFile] = value;
                     this.otherFileContent = value;
+                    if (this.selectedFile === ".env") {
+                        this.project.composeENV = value;
+                    }
                 }
             },
         },
         validComposeFileName() {
-            return matchesFilePatterns(this.stack.composeFileName, this.composeFilePatterns);
+            return matchesFilePatterns(this.project.composeFileName, this.composeFilePatterns);
         },
         validFilenameDraft() {
             if (!this.renamingFile) {
                 return true;
             }
-            const patterns = this.renamingFile === this.stack.composeFileName ? this.composeFilePatterns : this.editableFilePatterns;
+            const patterns = this.renamingFile === this.project.composeFileName ? this.composeFilePatterns : this.editableFilePatterns;
             return matchesFilePatterns(this.filenameDraft, patterns);
         },
         validNewFileName() {
             return matchesFilePatterns(this.newFileName.trim(), this.editableFilePatterns)
-                && this.newFileName.trim() !== this.stack.composeFileName
+                && this.newFileName.trim() !== this.project.composeFileName
                 && !this.editableFiles.includes(this.newFileName.trim());
         },
         diffExtensions() {
             if (this.isAdd) {
                 return [];
             }
-            const original = this.selectedFile === this.stack.composeFileName
+            const original = this.selectedFile === this.project.composeFileName
                 ? this.savedComposeContent : this.savedFileContents[this.selectedFile];
             return original === undefined ? [] : changeGutter(original, (view, chunk, saved) => this.openDiffPopup(view, chunk, saved));
         },
@@ -721,39 +761,39 @@ export default {
             const actions = [];
 
             if (this.active) {
-                actions.push({ key: "restartStack",
-                    i18nKey: "restartStack",
+                actions.push({ key: "restartProject",
+                    i18nKey: "restartProject",
                     icon: "rotate",
                     variant: "normal" });
-                actions.push({ key: "updateStack",
-                    i18nKey: "updateStack",
+                actions.push({ key: "updateProject",
+                    i18nKey: "updateProject",
                     icon: "cloud-arrow-down",
                     variant: "normal" });
-                actions.push({ key: "stopStack",
-                    i18nKey: "stopStack",
+                actions.push({ key: "stopProject",
+                    i18nKey: "stopProject",
                     icon: "stop",
                     variant: "warning" });
             } else {
-                actions.push({ key: "startStack",
-                    i18nKey: "startStack",
+                actions.push({ key: "startProject",
+                    i18nKey: "startProject",
                     icon: "play",
                     variant: "primary" });
             }
 
             if (!this.active) {
-                actions.push({ key: "updateStack",
-                    i18nKey: "updateStack",
+                actions.push({ key: "updateProject",
+                    i18nKey: "updateProject",
                     icon: "cloud-arrow-down",
                     variant: "normal",
                     menuOnly: true });
             }
-            actions.push({ key: "downStack",
-                i18nKey: "downStack",
+            actions.push({ key: "downProject",
+                i18nKey: "downProject",
                 icon: "stop",
                 variant: "warning",
                 menuOnly: true });
-            actions.push({ key: "deleteStack",
-                i18nKey: "deleteStack",
+            actions.push({ key: "deleteProject",
+                i18nKey: "deleteProject",
                 icon: "trash",
                 variant: "danger",
                 menuOnly: true });
@@ -766,7 +806,7 @@ export default {
          * @returns {{ title: string, message: string, ok: string, variant: string, commands: string[] }}
          */
         actionConfirm() {
-            return PROJECT_ACTIONS[this.pendingAction] ?? PROJECT_ACTIONS.startStack;
+            return PROJECT_ACTIONS[this.pendingAction] ?? PROJECT_ACTIONS.startProject;
         },
 
         /**
@@ -781,12 +821,12 @@ export default {
         },
 
         urls() {
-            if (!this.envsubstJSONConfig["x-dockge"] || !this.envsubstJSONConfig["x-dockge"].urls || !Array.isArray(this.envsubstJSONConfig["x-dockge"].urls)) {
+            if (!this.envsubstJSONConfig["x-dockgeek"] || !this.envsubstJSONConfig["x-dockgeek"].urls || !Array.isArray(this.envsubstJSONConfig["x-dockgeek"].urls)) {
                 return [];
             }
 
             let urls = [];
-            for (const url of this.envsubstJSONConfig["x-dockge"].urls) {
+            for (const url of this.envsubstJSONConfig["x-dockgeek"].urls) {
                 let display;
                 try {
                     let obj = new URL(url);
@@ -815,11 +855,11 @@ export default {
             return this.isAdd || this.isEditMode;
         },
 
-        stacksDirectoryPath() {
-            const key = this.stack.endpoint || "current";
-            return this.$root.stacksDirectoryPaths[key]
-                || this.$root.stacksDirectoryPaths.current
-                || "stacks";
+        projectsDirectoryPath() {
+            const key = this.project.endpoint || "current";
+            return this.$root.projectsDirectoryPaths[key]
+                || this.$root.projectsDirectoryPaths.current
+                || "projects";
         },
 
         agentPathOptions() {
@@ -827,7 +867,7 @@ export default {
             const agents = Object.entries(this.$root.agentList || {});
 
             if (agents.length === 0) {
-                const dir = (this.$root.stacksDirectoryPaths.current || "stacks").replace(/\/+$/, "");
+                const dir = (this.$root.projectsDirectoryPaths.current || "projects").replace(/\/+$/, "");
                 options.push({
                     endpoint: "",
                     path: dir,
@@ -839,9 +879,9 @@ export default {
 
             for (const [ endpoint, agent ] of agents) {
                 const pathKey = endpoint || "current";
-                const dir = (this.$root.stacksDirectoryPaths[pathKey]
-                    || this.$root.stacksDirectoryPaths.current
-                    || "stacks").replace(/\/+$/, "");
+                const dir = (this.$root.projectsDirectoryPaths[pathKey]
+                    || this.$root.projectsDirectoryPaths.current
+                    || "projects").replace(/\/+$/, "");
                 const agentLabel = (agent.name !== "" ? agent.name : null) || agent.url || this.$t("Current");
                 const status = this.$root.agentStatusList[endpoint];
                 options.push({
@@ -854,7 +894,7 @@ export default {
             return options;
         },
 
-        canSaveStack() {
+        canSaveProject() {
             if (!this.validComposeFileName) {
                 return false;
             }
@@ -862,26 +902,31 @@ export default {
                 return true;
             }
             try {
-                validateStackFolderName(this.stack.name);
+                validateProjectFolderName(this.project.name);
                 return true;
             } catch {
                 return false;
             }
         },
 
+        gitIgnoredFiles() {
+            return this.gitPreview?.ignored || [];
+        },
+
         hasUnsavedChanges() {
             return this.isAdd
                 || this.stagedDeletedFiles.length > 0
-                || this.fileHasPendingChanges(this.stack.composeFileName)
+                || this.stagedRenames.length > 0
+                || this.fileHasPendingChanges(this.project.composeFileName)
                 || this.editableFiles.some(file => this.fileHasPendingChanges(file));
         },
 
         /**
-         * Get the stack from the global stack list, because it may contain more real-time data like status
+         * Get the project from the global project list, because it may contain more real-time data like status
          * @return {*}
          */
-        globalStack() {
-            return this.$root.completeStackList[this.stack.name + "_" + this.endpoint];
+        globalProject() {
+            return this.$root.completeProjectList[this.project.name + "_" + this.endpoint];
         },
 
         /**
@@ -889,15 +934,15 @@ export default {
          * @returns {object}
          */
         projectStatus() {
-            const stack = this.globalStack || this.stack;
+            const project = this.globalProject || this.project;
             return {
-                title: stackStatusTitle(stack),
-                detail: this.formatStackStatusDetail(stack),
+                title: projectStatusTitle(project),
+                detail: this.formatProjectStatusDetail(project),
             };
         },
 
         status() {
-            return this.globalStack?.status;
+            return this.globalProject?.status;
         },
 
         active() {
@@ -913,10 +958,10 @@ export default {
         },
 
         terminalName() {
-            if (!this.stack.name) {
+            if (!this.project.name) {
                 return "";
             }
-            return getComposeTerminalName(this.endpoint, this.stack.name);
+            return getComposeTerminalName(this.endpoint, this.project.name);
         },
 
         networks() {
@@ -924,22 +969,22 @@ export default {
         },
 
         endpoint() {
-            return this.stack.endpoint || this.$route.params.endpoint || "";
+            return this.project.endpoint || this.$route.params.endpoint || "";
         },
 
         url() {
-            if (this.stack.endpoint) {
-                return `/compose/${this.stack.name}/${this.stack.endpoint}`;
+            if (this.project.endpoint) {
+                return `/projects/${this.project.name}/${this.project.endpoint}`;
             } else {
-                return `/compose/${this.stack.name}`;
+                return `/projects/${this.project.name}`;
             }
         },
 
     },
     watch: {
         "$root.loggedIn"(loggedIn) {
-            if (loggedIn && !this.isAdd && this.processing && !this.stack.composeFileName) {
-                this.loadStack();
+            if (loggedIn && !this.isAdd && this.processing && !this.project.composeFileName) {
+                this.loadProject();
             }
         },
         selectedFile() {
@@ -958,7 +1003,7 @@ export default {
                 }
             });
         },
-        "stack.composeYAML": {
+        "project.composeYAML": {
             handler() {
                 if (this.editorFocus) {
                     console.debug("yaml code changed");
@@ -968,7 +1013,7 @@ export default {
             deep: true,
         },
 
-        "stack.composeENV": {
+        "project.composeENV": {
             handler() {
                 if (this.editorFocus) {
                     console.debug("env code changed");
@@ -994,24 +1039,24 @@ export default {
             this.$root.envTemplate = "";
 
             // Default Values
-            this.stack = {
+            this.project = {
                 name: "",
                 composeYAML,
                 composeENV,
                 composeFileName: "compose.yaml",
-                isManagedByDockge: true,
+                isManagedByDockgeek: true,
                 endpoint: "",
             };
 
-            this.selectedFile = this.stack.composeFileName;
+            this.selectedFile = this.project.composeFileName;
             this.filenameDraft = this.selectedFile;
             this.editableFiles = [ ".env" ];
             this.draftFiles = { ".env": composeENV };
             this.yamlCodeChange();
 
         } else {
-            this.stack.name = this.$route.params.stackName;
-            this.loadStack();
+            this.project.name = this.$route.params.projectName;
+            this.loadProject();
         }
 
         this.requestServiceStatus();
@@ -1026,17 +1071,20 @@ export default {
     },
     methods: {
         fileHasPendingChanges(file) {
-            if (file === this.stack.composeFileName) {
-                return this.isAdd || this.stack.composeYAML !== this.savedComposeContent || this.stack.composeFileName !== this.savedComposeFileName;
+            if (file === this.project.composeFileName) {
+                return this.isAdd || this.project.composeYAML !== this.savedComposeContent || this.project.composeFileName !== this.savedComposeFileName;
             }
             if (this.stagedDeletedFiles.includes(file)) {
                 return false;
+            }
+            if (this.stagedRenames.some(rename => rename.to === file)) {
+                return true;
             }
             if (this.isAdd) {
                 return !this.editableFilesOnDisk.includes(file) || this.draftFiles[file] !== "";
             }
             return !this.editableFilesOnDisk.includes(file)
-                || (file === ".env" && this.stack.composeENV !== this.savedComposeENV)
+                || (file === ".env" && this.project.composeENV !== this.savedComposeENV)
                 || (Object.hasOwn(this.fileContents, file) && this.fileContents[file] !== this.savedFileContents[file]);
         },
         onFileTabsWheel(event) {
@@ -1052,11 +1100,11 @@ export default {
         },
         getSchemaExtensions() {
             const language = this.selectedSchemaLanguage;
-            if (!language || !this.stack.name) {
-                return this.selectedFile === this.stack.composeFileName ? this.extensions : this.envExtensions;
+            if (!language || !this.project.name) {
+                return this.selectedFile === this.project.composeFileName ? this.extensions : this.envExtensions;
             }
-            const projectDir = this.stack.projectDir || `/stacks/${this.stack.name}`;
-            const key = `${this.endpoint}:${this.stack.name}:${projectDir}:${this.selectedFile}:${language}`;
+            const projectDir = this.project.projectDir || `${this.$root.projectsDirectoryPaths[this.endpoint || "current"] || this.$root.projectsDirectoryPaths.current || "/opt/projects"}/${this.project.name}`;
+            const key = `${this.endpoint}:${this.project.name}:${projectDir}:${this.selectedFile}:${language}`;
             if (this.schemaClientKey !== key) {
                 this.schemaClient?.dispose();
                 const documentUri = new URL(`./${encodeURIComponent(this.selectedFile)}`, `file://${projectDir.replace(/\/$/, "")}/`).href;
@@ -1064,8 +1112,8 @@ export default {
                 this.schemaClient = markRaw(new SchemaLanguageClient({
                     language,
                     documentUri,
-                    compose: this.selectedFile === this.stack.composeFileName,
-                    loadSchema: schemaLoader(emit, { source: "stack", stackName: this.stack.name, filename: this.selectedFile }),
+                    compose: this.selectedFile === this.project.composeFileName,
+                    loadSchema: schemaLoader(emit, { source: "project", projectName: this.project.name, filename: this.selectedFile }),
                     resolveReference: resolveSchemaReference,
                 }));
                 this.schemaClientKey = key;
@@ -1128,7 +1176,7 @@ export default {
 
         onEditorChange() {
             this.diffPopup = null;
-            if (this.selectedFile === this.stack.composeFileName) {
+            if (this.selectedFile === this.project.composeFileName) {
                 this.yamlCodeChange();
             }
         },
@@ -1136,14 +1184,14 @@ export default {
         /**
          * Localize the status detail line under the project title tooltip.
          * Compose statuses are shown as "containers running(1), …".
-         * @param {object|null|undefined} stack Stack status payload.
+         * @param {object|null|undefined} project Project status payload.
          * @returns {string}
          */
-        formatStackStatusDetail(stack) {
-            if (stack?.composeStatus) {
-                return this.$t("projectStatusContainers", { status: stack.composeStatus });
+        formatProjectStatusDetail(project) {
+            if (project?.composeStatus) {
+                return this.$t("projectStatusContainers", { status: project.composeStatus });
             }
-            const detail = stackStatusDetail(stack);
+            const detail = projectStatusDetail(project);
             return this.$te(detail) ? this.$t(detail) : detail;
         },
 
@@ -1162,12 +1210,12 @@ export default {
         },
 
         requestServiceStatus() {
-            // Do not request if it is add mode
-            if (this.isAdd) {
+            // Do not request until a project exists
+            if (this.isAdd || !this.project.name) {
                 return;
             }
 
-            this.$root.emitAgent(this.endpoint, "serviceStatusList", this.stack.name, (res) => {
+            this.$root.emitAgent(this.endpoint, "serviceStatusList", this.project.name, (res) => {
                 if (res.ok) {
                     this.serviceStatusList = res.serviceStatusList;
                 }
@@ -1190,7 +1238,7 @@ export default {
 
         exitConfirm(next) {
             if (this.isEditMode) {
-                if (confirm(this.$t("confirmLeaveStack"))) {
+                if (confirm(this.$t("confirmLeaveProject"))) {
                     this.exitAction();
                     next();
                 } else {
@@ -1251,7 +1299,6 @@ export default {
             this.progressCommands = commands ?? PROJECT_ACTIONS[actionKey]?.commands ?? [];
             this.progressResult = null;
             this.progressCloseIn = 0;
-            this.submitted = true;
 
             if (this.showProgressDialog) {
                 this.bindTerminal(run);
@@ -1268,10 +1315,6 @@ export default {
                 this.pendingProgressRun = null;
                 run?.();
             });
-        },
-
-        onProgressTerminalData() {
-            this.submitted = true;
         },
 
         onProgressDialogHidden() {
@@ -1337,23 +1380,24 @@ export default {
             }
         },
 
-        loadStack() {
+        loadProject() {
             if (!this.$root.loggedIn) {
                 return;
             }
             this.processing = true;
-            this.$root.emitAgent(this.endpoint, "getStack", this.stack.name, (res) => {
+            this.$root.emitAgent(this.endpoint, "getProject", this.project.name, (res) => {
                 if (res.ok) {
                     this.diffPopup = null;
-                    this.stack = res.stack;
-                    this.savedComposeContent = res.stack.composeYAML;
-                    this.savedComposeENV = res.stack.composeENV;
-                    this.savedComposeFileName = res.stack.composeFileName;
-                    this.selectedFile = res.stack.composeFileName;
+                    this.project = res.project;
+                    this.savedComposeContent = res.project.composeYAML;
+                    this.savedComposeENV = res.project.composeENV;
+                    this.savedComposeFileName = res.project.composeFileName;
+                    this.selectedFile = res.project.composeFileName;
                     this.filenameDraft = this.selectedFile;
                     this.editableFilesOnDisk = res.files;
-                    this.editableFiles = res.files;
+                    this.editableFiles = [ ...res.files ];
                     this.stagedDeletedFiles = [];
+                    this.stagedRenames = [];
                     this.fileContents = {};
                     this.savedFileContents = {};
                     this.composeFilePatterns = res.composeFilePatterns;
@@ -1381,14 +1425,14 @@ export default {
                 const next = pendingFiles.shift();
                 if (!next) {
                     if (!this.stagedDeletedFiles.includes(".env") && Object.hasOwn(this.fileContents, ".env")) {
-                        this.stack.composeENV = this.fileContents[".env"];
+                        this.project.composeENV = this.fileContents[".env"];
                     }
                     onSaved();
                     return;
                 }
                 const [ file, content ] = next;
                 const create = !this.editableFilesOnDisk.includes(file);
-                this.$root.emitAgent(this.endpoint, "writeStackFile", this.stack.name, file, content, create, (res) => {
+                this.$root.emitAgent(this.endpoint, "writeProjectFile", this.project.name, file, content, create, (res) => {
                     if (!res?.ok) {
                         onError(res);
                         return;
@@ -1416,7 +1460,7 @@ export default {
                     removeNext();
                     return;
                 }
-                this.$root.emitAgent(this.endpoint, "deleteStackFile", this.stack.name, file, (res) => {
+                this.$root.emitAgent(this.endpoint, "deleteProjectFile", this.project.name, file, (res) => {
                     if (!res?.ok) {
                         onError(res);
                         return;
@@ -1435,28 +1479,28 @@ export default {
             delete this.fileContents[file];
             delete this.savedFileContents[file];
             if (file === ".env") {
-                this.stack.composeENV = "";
+                this.project.composeENV = "";
             }
             if (this.selectedFile === file) {
-                this.selectedFile = this.stack.composeFileName;
+                this.selectedFile = this.project.composeFileName;
                 this.filenameDraft = this.selectedFile;
                 this.otherFileContent = "";
             }
         },
 
-        deployStack() {
+        deployProject() {
             const draftFiles = this.isAdd ? Object.fromEntries(Object.entries(this.draftFiles).filter(([ file ]) => file !== ".env" && !this.stagedDeletedFiles.includes(file))) : {};
-            this.runWithProgress("deployStack", () => {
+            this.runWithProgress("deployProject", () => {
                 this.saveEditedFiles(() => {
                     this.applyStagedDeletions(() => {
-                        this.$root.emitAgent(this.stack.endpoint, "deployStack", this.stack.name, this.composeEditorContent(), this.stack.composeENV, this.isAdd, this.stack.composeFileName, draftFiles, (res) => {
+                        this.$root.emitAgent(this.project.endpoint, "deployProject", this.project.name, this.composeEditorContent(), this.project.composeENV, this.isAdd, this.project.composeFileName, draftFiles, (res) => {
                             this.finishProgress(res);
 
                             if (res.ok) {
-                                this.stack.name = res.name;
-                                this.savedComposeContent = this.stack.composeYAML;
-                                this.savedComposeENV = this.stack.composeENV;
-                                this.savedComposeFileName = this.stack.composeFileName;
+                                this.project.name = res.projectName;
+                                this.savedComposeContent = this.project.composeYAML;
+                                this.savedComposeENV = this.project.composeENV;
+                                this.savedComposeFileName = this.project.composeFileName;
                                 this.isEditMode = false;
                                 this.clearProgressCloseTimer();
                                 this.showProgressDialog = false;
@@ -1473,8 +1517,8 @@ export default {
          * Deploy saves compose YAML, .env, and edited additional files before running Compose.
          * @returns {void}
          */
-        requestDeployStack() {
-            if (!this.canSaveStack || !this.validFilenameDraft || this.filenameDraft !== this.selectedFile || !this.hasUnsavedChanges || this.processing || this.saveStatus === "saved") {
+        requestDeployProject() {
+            if (!this.canSaveProject || !this.validFilenameDraft || this.filenameDraft !== this.selectedFile || !this.hasUnsavedChanges || this.processing || this.saveStatus === "saved") {
                 return;
             }
 
@@ -1490,45 +1534,172 @@ export default {
 
             const serviceNameList = Object.keys(this.jsonConfig.services);
 
-            // Set the stack name if empty, use the first container name
-            if (!this.stack.name && serviceNameList.length > 0) {
+            // Set the project name if empty, use the first container name
+            if (!this.project.name && serviceNameList.length > 0) {
                 const serviceName = serviceNameList[0];
                 const service = this.jsonConfig.services[serviceName];
 
                 if (service && service.container_name) {
-                    this.stack.name = service.container_name;
+                    this.project.name = service.container_name;
                 } else {
-                    this.stack.name = serviceName;
+                    this.project.name = serviceName;
                 }
             }
 
-            if (this.stagedDeletedFiles.length) {
-                this.pendingDeletionAction = "deployStack";
+            this.previewProjectSave(true);
+        },
+
+        gitPreviewFiles(kind) {
+            return this.gitPreview?.changes?.filter(file => file.type === kind) || [];
+        },
+
+        gitSaveRequest(deploy) {
+            const draftFiles = this.isAdd
+                ? Object.fromEntries(Object.entries(this.draftFiles).filter(([ file ]) => file !== ".env" && !this.stagedDeletedFiles.includes(file)))
+                : {};
+            const modifiedFiles = this.isAdd ? {} : Object.fromEntries(Object.entries(this.fileContents).filter(([ file, content ]) =>
+                file !== ".env" && !this.stagedDeletedFiles.includes(file) && (this.stagedRenames.some(rename => rename.to === file)
+                    || !this.editableFilesOnDisk.includes(file) || content !== this.savedFileContents[file])));
+            return {
+                name: this.project.name,
+                isAdd: this.isAdd,
+                composeYAML: this.composeEditorContent(),
+                composeENV: this.stagedDeletedFiles.includes(".env") ? "" : this.project.composeENV,
+                filename: this.project.composeFileName,
+                draftFiles,
+                modifiedFiles,
+                deletedFiles: [ ...this.stagedDeletedFiles ],
+                renames: [ ...this.stagedRenames ],
+                deploy,
+            };
+        },
+
+        previewProjectSave(deploy) {
+            if (this.processing) {
+                return;
+            }
+            const payload = this.gitSaveRequest(deploy);
+            this.processing = true;
+            this.$root.emitAgent(this.endpoint, "previewGitProject", payload, (res) => {
+                this.processing = false;
+                if (res?.notGit === true) {
+                    this.continueNonGitSave(deploy);
+                } else if (!res?.ok) {
+                    this.$root.toastRes(res);
+                } else if (res.previewId && Array.isArray(res.changes) && Array.isArray(res.ignored)) {
+                    this.gitPreview = res;
+                    this.gitSavePayload = payload;
+                    this.gitSaveDeploy = deploy;
+                    this.showGitReview = true;
+                } else {
+                    this.$root.toastError(this.$t("gitPreviewUnavailable"));
+                }
+            });
+        },
+
+        continueNonGitSave(deploy) {
+            if (this.stagedRenames.length) {
+                this.applyNonGitRenames(() => this.continueNonGitSave(deploy));
+                return;
+            }
+            if (deploy) {
+                if (this.stagedDeletedFiles.length) {
+                    this.pendingDeletionAction = "deployProject";
+                    this.showDeleteFileDialog = true;
+                } else {
+                    this.requestProjectAction("deployProject");
+                }
+            } else if (this.stagedDeletedFiles.length) {
+                this.pendingDeletionAction = "saveProject";
                 this.showDeleteFileDialog = true;
             } else {
-                this.requestProjectAction("deployStack");
+                this.saveProject();
             }
+        },
+
+        applyNonGitRenames(onDone) {
+            const [ rename ] = this.stagedRenames;
+            if (!rename) {
+                onDone();
+                return;
+            }
+            this.processing = true;
+            this.$root.emitAgent(this.endpoint, "renameProjectFile", this.project.name, rename.from, rename.to, (res) => {
+                this.processing = false;
+                if (!res?.ok) {
+                    this.$root.toastRes(res);
+                    return;
+                }
+                this.stagedRenames.shift();
+                this.editableFilesOnDisk = res.files;
+                this.applyNonGitRenames(onDone);
+            });
+        },
+
+        clearGitReview() {
+            if (this.showGitReview || this.processing) {
+                return;
+            }
+            this.gitPreview = null;
+            this.gitSavePayload = null;
+        },
+
+        confirmGitSave() {
+            if (this.processing || !this.gitSavePayload || !this.gitPreview?.previewId) {
+                return;
+            }
+            const payload = { ...this.gitSavePayload, previewId: this.gitPreview.previewId };
+            const deploy = this.gitSaveDeploy;
+            this.showGitReview = false;
+            this.processing = true;
+            this.saveStatus = "saving";
+            this.$root.emitAgent(this.endpoint, "applyGitProject", payload, (res) => {
+                this.processing = false;
+                this.saveStatus = "idle";
+                if (!res?.ok) {
+                    this.$root.toastError(res?.msg ? `${res.msg} — ${this.$t("gitSaveFailed")}` : this.$t("gitSaveFailed"));
+                    return;
+                }
+                this.project.name = res.projectName || this.project.name;
+                this.submitted = this.submitted || this.isAdd;
+                this.savedComposeContent = this.project.composeYAML;
+                this.savedComposeENV = payload.composeENV;
+                this.project.composeENV = payload.composeENV;
+                this.savedComposeFileName = this.project.composeFileName;
+                for (const file of [ ...this.stagedDeletedFiles ]) {
+                    this.finishDeletedFile(file);
+                }
+                if (!this.isAdd && this.editableFiles.includes(".env") && !Object.hasOwn(this.fileContents, ".env")) {
+                    this.fileContents[".env"] = payload.composeENV;
+                }
+                this.stagedRenames = [];
+                this.stagedDeletedFiles = [];
+                this.editableFilesOnDisk = [ ...this.editableFiles ];
+                this.savedFileContents = { ...this.fileContents };
+                this.$root.toastSuccess(deploy ? "Deployed" : "Saved");
+                if (deploy) {
+                    this.isEditMode = false;
+                    this.$router.push(this.url);
+                } else {
+                    this.finishSave();
+                }
+            });
         },
 
         /** Return the editor document verbatim, including comments and trailing newline. */
         composeEditorContent() {
-            return this.stack.composeYAML;
+            return this.project.composeYAML;
         },
 
         saveCurrentFile() {
-            if (this.processing || this.saveStatus === "saved" || !this.canSaveStack || !this.hasUnsavedChanges) {
+            if (this.processing || this.saveStatus === "saved" || !this.canSaveProject || !this.hasUnsavedChanges) {
                 return;
             }
             if (this.filenameDraft !== this.selectedFile) {
                 this.$root.toastError(this.$t("saveFilenameFirst"));
                 return;
             }
-            if (this.stagedDeletedFiles.length) {
-                this.pendingDeletionAction = "saveStack";
-                this.showDeleteFileDialog = true;
-            } else {
-                this.saveStack();
-            }
+            this.previewProjectSave(false);
         },
 
         beginRename(file) {
@@ -1551,7 +1722,7 @@ export default {
             }
             const oldFilename = this.renamingFile;
             const filename = this.filenameDraft.trim();
-            if (!matchesFilePatterns(filename, oldFilename === this.stack.composeFileName ? this.composeFilePatterns : this.editableFilePatterns)) {
+            if (!matchesFilePatterns(filename, oldFilename === this.project.composeFileName ? this.composeFilePatterns : this.editableFilePatterns)) {
                 this.resetFilename();
                 return;
             }
@@ -1560,20 +1731,25 @@ export default {
                 this.renamingFile = null;
                 return;
             }
-            if (filename === this.stack.composeFileName || this.editableFiles.includes(filename)) {
+            if (filename === this.project.composeFileName || this.editableFiles.includes(filename) || this.editableFilesOnDisk.includes(filename)) {
                 this.$root.toastError("File already exists");
                 this.resetFilename();
                 return;
             }
+            if (!this.isAdd && (oldFilename === this.project.composeFileName || oldFilename === ".env" || filename === ".env")) {
+                this.$root.toastError(this.$t("gitRenameRestricted"));
+                this.resetFilename();
+                return;
+            }
             if (this.isAdd) {
-                if (this.selectedFile === this.stack.composeFileName) {
-                    this.stack.composeFileName = filename;
+                if (this.selectedFile === this.project.composeFileName) {
+                    this.project.composeFileName = filename;
                 } else {
                     if (oldFilename === ".env") {
-                        this.stack.composeENV = "";
+                        this.project.composeENV = "";
                     }
                     if (filename === ".env") {
-                        this.stack.composeENV = this.draftFiles[this.selectedFile];
+                        this.project.composeENV = this.draftFiles[this.selectedFile];
                     }
                     this.draftFiles[filename] = this.draftFiles[this.selectedFile];
                     delete this.draftFiles[this.selectedFile];
@@ -1584,54 +1760,47 @@ export default {
                 this.renamingFile = null;
                 return;
             }
-            if (!this.editableFilesOnDisk.includes(oldFilename) && oldFilename !== this.stack.composeFileName) {
+            if (this.editableFilesOnDisk.includes(oldFilename) && !Object.hasOwn(this.fileContents, oldFilename) && !this.stagedRenames.some(rename => rename.to === oldFilename)) {
+                this.$root.emitAgent(this.endpoint, "readProjectFile", this.project.name, oldFilename, (res) => {
+                    if (!res?.ok) {
+                        this.$root.toastRes(res);
+                        this.resetFilename();
+                        return;
+                    }
+                    this.fileContents[oldFilename] = res.content;
+                    this.savedFileContents[oldFilename] = res.content;
+                    this.commitFilename();
+                });
+                return;
+            }
+            if (!this.editableFilesOnDisk.includes(oldFilename) && !this.stagedRenames.some(rename => rename.to === oldFilename)) {
                 const content = this.fileContents[oldFilename];
                 this.fileContents[filename] = content;
                 delete this.fileContents[oldFilename];
-                if (oldFilename === ".env") {
-                    this.stack.composeENV = "";
-                }
-                if (filename === ".env") {
-                    this.stack.composeENV = content;
-                }
                 this.editableFiles = this.editableFiles.map(file => file === oldFilename ? filename : file);
                 this.selectedFile = filename;
                 this.filenameDraft = filename;
                 this.renamingFile = null;
                 return;
             }
-            if (this.processing) {
-                return;
-            }
-            this.processing = true;
-            this.$root.emitAgent(this.endpoint, "renameStackFile", this.stack.name, this.selectedFile, filename, (res) => {
-                this.processing = false;
-                if (!res.ok) {
-                    this.$root.toastRes(res);
-                    this.resetFilename();
-                    return;
-                }
-                if (this.selectedFile === this.stack.composeFileName) {
-                    this.stack.composeFileName = filename;
-                    this.savedComposeFileName = filename;
+            const original = this.stagedRenames.find(rename => rename.to === oldFilename);
+            if (original) {
+                if (filename === original.from) {
+                    this.stagedRenames = this.stagedRenames.filter(rename => rename !== original);
                 } else {
-                    this.editableFilesOnDisk = res.files;
-                    this.editableFiles = res.files;
-                    this.fileContents[filename] = this.fileContents[oldFilename] ?? "";
-                    this.savedFileContents[filename] = this.savedFileContents[oldFilename] ?? "";
-                    if (oldFilename === ".env") {
-                        this.stack.composeENV = "";
-                    }
-                    if (filename === ".env") {
-                        this.stack.composeENV = this.savedFileContents[filename];
-                    }
-                    delete this.fileContents[oldFilename];
-                    delete this.savedFileContents[oldFilename];
+                    original.to = filename;
                 }
-                this.selectedFile = filename;
-                this.filenameDraft = filename;
-                this.renamingFile = null;
-            });
+            } else {
+                this.stagedRenames.push({ from: oldFilename, to: filename });
+            }
+            this.editableFiles = this.editableFiles.map(file => file === oldFilename ? filename : file);
+            this.fileContents[filename] = this.fileContents[oldFilename] ?? this.savedFileContents[oldFilename] ?? "";
+            this.savedFileContents[filename] = this.savedFileContents[oldFilename] ?? "";
+            delete this.fileContents[oldFilename];
+            delete this.savedFileContents[oldFilename];
+            this.selectedFile = filename;
+            this.filenameDraft = filename;
+            this.renamingFile = null;
         },
 
         chooseFile(filename) {
@@ -1647,7 +1816,7 @@ export default {
         },
 
         selectProjectFile() {
-            if (this.selectedFile === this.stack.composeFileName) {
+            if (this.selectedFile === this.project.composeFileName) {
                 return;
             }
             if (this.isAdd) {
@@ -1659,15 +1828,15 @@ export default {
                 return;
             }
             const file = this.selectedFile;
-            this.$root.emitAgent(this.endpoint, "readStackFile", this.stack.name, file, (res) => {
+            this.$root.emitAgent(this.endpoint, "readProjectFile", this.project.name, file, (res) => {
                 if (res.ok) {
                     if (Object.hasOwn(this.fileContents, file)) {
                         return;
                     }
                     this.fileContents[file] = res.content;
                     this.savedFileContents[file] = res.content;
-                    if (file === ".env") {
-                        this.stack.composeENV = res.content;
+                    if (file === ".env" && this.project.composeENV === this.savedComposeENV) {
+                        this.project.composeENV = res.content;
                     }
                     if (this.selectedFile === file) {
                         this.otherFileContent = res.content;
@@ -1676,7 +1845,7 @@ export default {
                 } else {
                     this.$root.toastRes(res);
                     if (this.selectedFile === file) {
-                        this.selectedFile = this.stack.composeFileName;
+                        this.selectedFile = this.project.composeFileName;
                         this.filenameDraft = this.selectedFile;
                     }
                 }
@@ -1727,6 +1896,13 @@ export default {
                 return;
             }
             this.resetFilename();
+            const rename = this.stagedRenames.find(item => item.to === file);
+            if (rename) {
+                this.stagedRenames = this.stagedRenames.filter(item => item !== rename);
+                this.finishDeletedFile(file);
+                this.stagedDeletedFiles.push(rename.from);
+                return;
+            }
             if (!this.editableFilesOnDisk.includes(file)) {
                 delete this.draftFiles[file];
                 this.finishDeletedFile(file);
@@ -1741,9 +1917,9 @@ export default {
 
         confirmStagedDeletions() {
             this.showDeleteFileDialog = false;
-            if (this.pendingDeletionAction === "saveStack") {
+            if (this.pendingDeletionAction === "saveProject") {
                 this.pendingDeletionAction = null;
-                this.saveStack();
+                this.saveProject();
             }
         },
 
@@ -1756,7 +1932,7 @@ export default {
         clearPendingDeletionAction() {
             const action = this.pendingDeletionAction;
             this.pendingDeletionAction = null;
-            if (action === "deployStack") {
+            if (action === "deployProject") {
                 this.requestProjectAction(action);
             }
         },
@@ -1773,8 +1949,8 @@ export default {
             }, 750);
         },
 
-        saveStack() {
-            if (!this.canSaveStack || !this.hasUnsavedChanges || this.processing) {
+        saveProject() {
+            if (!this.canSaveProject || !this.hasUnsavedChanges || this.processing) {
                 return;
             }
 
@@ -1788,16 +1964,16 @@ export default {
             };
             this.saveEditedFiles(() => {
                 this.applyStagedDeletions(() => {
-                    this.$root.emitAgent(this.stack.endpoint, "saveStack", this.stack.name, this.composeEditorContent(), this.stack.composeENV, this.isAdd, this.stack.composeFileName, this.isAdd ? Object.fromEntries(Object.entries(this.draftFiles).filter(([ file ]) => file !== ".env")) : {}, (res) => {
+                    this.$root.emitAgent(this.project.endpoint, "saveProject", this.project.name, this.composeEditorContent(), this.project.composeENV, this.isAdd, this.project.composeFileName, this.isAdd ? Object.fromEntries(Object.entries(this.draftFiles).filter(([ file ]) => file !== ".env")) : {}, (res) => {
                         if (!res?.ok) {
                             fail(res);
                             return;
                         }
 
-                        this.stack.name = res.name;
-                        this.savedComposeContent = this.stack.composeYAML;
-                        this.savedComposeENV = this.stack.composeENV;
-                        this.savedComposeFileName = this.stack.composeFileName;
+                        this.project.name = res.projectName;
+                        this.savedComposeContent = this.project.composeYAML;
+                        this.savedComposeENV = this.project.composeENV;
+                        this.savedComposeFileName = this.project.composeFileName;
                         this.submitted = this.submitted || this.isAdd;
                         this.finishSave();
                     });
@@ -1831,49 +2007,49 @@ export default {
             this.pendingAction = null;
         },
 
-        startStack() {
-            this.runWithProgress("startStack", () => {
-                this.$root.emitAgent(this.endpoint, "startStack", this.stack.name, (res) => {
+        startProject() {
+            this.runWithProgress("startProject", () => {
+                this.$root.emitAgent(this.endpoint, "startProject", this.project.name, (res) => {
                     this.finishProgress(res);
                 });
             });
         },
 
-        stopStack() {
-            this.runWithProgress("stopStack", () => {
-                this.$root.emitAgent(this.endpoint, "stopStack", this.stack.name, (res) => {
+        stopProject() {
+            this.runWithProgress("stopProject", () => {
+                this.$root.emitAgent(this.endpoint, "stopProject", this.project.name, (res) => {
                     this.finishProgress(res);
                 });
             });
         },
 
-        downStack() {
-            this.runWithProgress("downStack", () => {
-                this.$root.emitAgent(this.endpoint, "downStack", this.stack.name, (res) => {
+        downProject() {
+            this.runWithProgress("downProject", () => {
+                this.$root.emitAgent(this.endpoint, "downProject", this.project.name, (res) => {
                     this.finishProgress(res);
                 });
             });
         },
 
-        restartStack() {
-            this.runWithProgress("restartStack", () => {
-                this.$root.emitAgent(this.endpoint, "restartStack", this.stack.name, (res) => {
+        restartProject() {
+            this.runWithProgress("restartProject", () => {
+                this.$root.emitAgent(this.endpoint, "restartProject", this.project.name, (res) => {
                     this.finishProgress(res);
                 });
             });
         },
 
-        updateStack() {
-            this.runWithProgress("updateStack", () => {
-                this.$root.emitAgent(this.endpoint, "updateStack", this.stack.name, (res) => {
+        updateProject() {
+            this.runWithProgress("updateProject", () => {
+                this.$root.emitAgent(this.endpoint, "updateProject", this.project.name, (res) => {
                     this.finishProgress(res);
                 });
             });
         },
 
-        deleteStack() {
-            this.runWithProgress("deleteStack", () => {
-                this.$root.emitAgent(this.endpoint, "deleteStack", this.stack.name, (res) => {
+        deleteProject() {
+            this.runWithProgress("deleteProject", () => {
+                this.$root.emitAgent(this.endpoint, "deleteProject", this.project.name, (res) => {
                     this.finishProgress(res);
                     if (res.ok) {
                         this.clearProgressCloseTimer();
@@ -1884,9 +2060,16 @@ export default {
             });
         },
 
-        discardStack() {
+        discardProject() {
+            const hadRenames = this.stagedRenames.length > 0;
             this.stagedDeletedFiles = [];
-            if (this.selectedFile !== this.stack.composeFileName) {
+            this.stagedRenames = [];
+            if (hadRenames) {
+                this.loadProject();
+                this.isEditMode = false;
+                return;
+            }
+            if (this.selectedFile !== this.project.composeFileName) {
                 const file = this.selectedFile;
                 this.resetFilename();
                 if (this.editableFilesOnDisk.includes(file)) {
@@ -1898,7 +2081,7 @@ export default {
                     this.finishDeletedFile(file);
                 }
             } else {
-                this.loadStack();
+                this.loadProject();
             }
             this.isEditMode = false;
         },
@@ -1912,7 +2095,7 @@ export default {
             try {
                 if (await formatComposeYaml(view)) {
                     this.editorContent = view.state.doc.toString();
-                    if (this.selectedFile === this.stack.composeFileName) {
+                    if (this.selectedFile === this.project.composeFileName) {
                         this.yamlCodeChange();
                     }
                 }
@@ -1941,10 +2124,10 @@ export default {
             try {
                 // Parsed data drives previews only; never serialize it into the editor.
                 // Schema/syntax issues are shown as editor underlines — no duplicate text banner.
-                this.jsonConfig = this.yamlToJSON(this.stack.composeYAML);
+                this.jsonConfig = this.yamlToJSON(this.project.composeYAML);
 
-                const env = dotenv.parse(this.stack.composeENV);
-                this.envsubstJSONConfig = envsubstYAML(this.stack.composeYAML, env);
+                const env = dotenv.parse(this.project.composeENV);
+                this.envsubstJSONConfig = envsubstYAML(this.project.composeYAML, env);
             } catch {
                 // Keep the last good preview state while the document is incomplete.
             }
@@ -1973,12 +2156,12 @@ export default {
         },
 
         selectAgentPath(endpoint) {
-            this.stack.endpoint = endpoint;
+            this.project.endpoint = endpoint;
         },
 
         startService(serviceName) {
-            this.runWithProgress("startStack", () => {
-                this.$root.emitAgent(this.endpoint, "startService", this.stack.name, serviceName, (res) => {
+            this.runWithProgress("startProject", () => {
+                this.$root.emitAgent(this.endpoint, "startService", this.project.name, serviceName, (res) => {
                     this.finishProgress(res);
 
                     if (res.ok) {
@@ -1989,8 +2172,8 @@ export default {
         },
 
         stopService(serviceName) {
-            this.runWithProgress("stopStack", () => {
-                this.$root.emitAgent(this.endpoint, "stopService", this.stack.name, serviceName, (res) => {
+            this.runWithProgress("stopProject", () => {
+                this.$root.emitAgent(this.endpoint, "stopService", this.project.name, serviceName, (res) => {
                     this.finishProgress(res);
 
                     if (res.ok) {
@@ -2001,8 +2184,8 @@ export default {
         },
 
         restartService(serviceName) {
-            this.runWithProgress("restartStack", () => {
-                this.$root.emitAgent(this.endpoint, "restartService", this.stack.name, serviceName, (res) => {
+            this.runWithProgress("restartProject", () => {
+                this.$root.emitAgent(this.endpoint, "restartService", this.project.name, serviceName, (res) => {
                     this.finishProgress(res);
 
                     if (res.ok) {
@@ -2025,12 +2208,12 @@ export default {
     height: 288px;
 }
 
-.stack-folder-picker {
+.project-folder-picker {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
 
-    .stack-path-full {
+    .project-path-full {
         display: flex;
         width: 100%;
         align-items: center;
@@ -2053,11 +2236,11 @@ export default {
         }
     }
 
-    .stack-path-dir {
+    .project-path-dir {
         color: var(--muted-foreground);
     }
 
-    .stack-path-text {
+    .project-path-text {
         flex: 1 1 auto;
         min-width: 0;
         overflow-wrap: anywhere;
@@ -2065,7 +2248,7 @@ export default {
         text-align: start;
     }
 
-    .stack-path-name {
+    .project-path-name {
         color: var(--foreground);
 
         &.is-placeholder {
@@ -2074,13 +2257,13 @@ export default {
         }
     }
 
-    .stack-path-caret {
+    .project-path-caret {
         flex: 0 0 auto;
         font-size: 0.7rem;
         opacity: 0.75;
     }
 
-    .stack-name-input {
+    .project-name-input {
         position: relative;
     }
 
@@ -2092,7 +2275,7 @@ export default {
         }
     }
 
-    .stack-name-placeholder {
+    .project-name-placeholder {
         position: absolute;
         top: 50%;
         left: 0.75rem;
@@ -2101,12 +2284,12 @@ export default {
         font-family: var(--font-mono);
     }
 
-    .stack-name-placeholder-text {
+    .project-name-placeholder-text {
         color: var(--muted-foreground);
         opacity: 0.5;
     }
 
-    .stack-name-required {
+    .project-name-required {
         color: var(--destructive);
         opacity: 0.5;
     }
@@ -2519,7 +2702,7 @@ export default {
     }
 }
 
-.stack-label {
+.project-label {
     margin-inline-start: 0.35rem;
     font-size: 1.25rem;
     font-weight: var(--fontWeight-normal);
@@ -2569,7 +2752,7 @@ export default {
     }
 }
 
-.stack-actions {
+.project-actions {
     flex: 1 0 38px;
     min-width: 38px;
     align-items: center;
@@ -2577,13 +2760,13 @@ export default {
 }
 
 @media (max-width: 991.98px) {
-    .stack-actions {
+    .project-actions {
         flex-basis: 44px;
         min-width: 44px;
     }
 
-    .compose-page.stack-view-mode,
-    .compose-page.full-page-editor {
+    .project-page.project-view-mode,
+    .project-page.full-page-editor {
         display: flex;
         overflow: hidden;
         flex-direction: column;
@@ -2591,14 +2774,14 @@ export default {
         min-height: 0;
     }
 
-    .stack-view-mode > .stack-content,
-    .full-page-editor > .stack-content {
+    .project-view-mode > .project-content,
+    .full-page-editor > .project-content {
         overflow: hidden;
         flex: 1 1 0;
         min-height: 0;
     }
 
-    .stack-view-mode .compose-column,
+    .project-view-mode .compose-column,
     .full-page-editor .compose-column {
         display: flex;
         overflow: hidden;
@@ -2606,7 +2789,7 @@ export default {
         min-height: 0;
     }
 
-    .stack-view-mode .compose-column > .editor-box,
+    .project-view-mode .compose-column > .editor-box,
     .full-page-editor .compose-column > .editor-box {
         overflow: hidden;
         flex: 1 1 auto;
@@ -2614,7 +2797,7 @@ export default {
         margin-bottom: 0 !important;
     }
 
-    .stack-view-mode .containers-column {
+    .project-view-mode .containers-column {
         display: flex;
         overflow-y: auto;
         flex-direction: column;
@@ -2623,7 +2806,7 @@ export default {
 }
 
 @media (min-width: 992px) {
-    .compose-page.stack-view-mode {
+    .project-page.project-view-mode {
         display: flex;
         overflow: hidden;
         flex-direction: column;
@@ -2631,47 +2814,47 @@ export default {
         min-height: 0;
     }
 
-    .stack-view-mode > .stack-content {
+    .project-view-mode > .project-content {
         margin-inline: -0.5rem;
         overflow: hidden;
         flex: 1 1 0;
         min-height: 0;
     }
 
-    .stack-view-mode .containers-column,
-    .stack-view-mode .compose-column {
+    .project-view-mode .containers-column,
+    .project-view-mode .compose-column {
         padding-inline: 0.5rem;
         height: 100%;
         min-height: 0;
     }
 
-    .stack-view-mode .containers-column {
+    .project-view-mode .containers-column {
         display: flex;
         flex-direction: column;
     }
 
-    .stack-view-mode .container-list {
+    .project-view-mode .container-list {
         overflow-y: auto;
         flex: 1 1 auto;
         min-height: 0;
         overscroll-behavior: contain;
     }
 
-    .stack-view-mode .compose-column {
+    .project-view-mode .compose-column {
         display: flex;
         overflow: hidden;
         flex-direction: column;
         overscroll-behavior: contain;
     }
 
-    .stack-view-mode .compose-column > .editor-box {
+    .project-view-mode .compose-column > .editor-box {
         overflow: hidden;
         flex: 1 1 auto;
         min-height: 0;
         margin-bottom: 0 !important;
     }
 
-    .compose-page.full-page-editor {
+    .project-page.full-page-editor {
         display: flex;
         overflow: hidden;
         flex-direction: column;
@@ -2679,7 +2862,7 @@ export default {
         min-height: 0;
     }
 
-    .full-page-editor > .stack-content {
+    .full-page-editor > .project-content {
         margin-inline: 0;
         overflow: hidden;
         flex: 1 1 auto;
@@ -2842,13 +3025,13 @@ export default {
     }
 }
 
-.stack-path-menu.floating-menu-panel {
+.project-path-menu.floating-menu-panel {
     padding: 0.35rem;
     border: 1px solid var(--border);
     border-radius: 10px;
     background: var(--popover);
     color: var(--secondary-foreground);
-    .stack-path-option {
+    .project-path-option {
         display: flex;
         flex-direction: column;
         align-items: flex-start;
@@ -2864,11 +3047,11 @@ export default {
         word-break: break-all;
     }
 
-    .stack-path-option-dir {
+    .project-path-option-dir {
         color: var(--muted-foreground);
     }
 
-    .stack-path-option-name {
+    .project-path-option-name {
         color: var(--foreground);
 
         &.is-placeholder {
@@ -2877,23 +3060,23 @@ export default {
         }
     }
 
-    .stack-path-option-agent {
+    .project-path-option-agent {
         color: var(--muted-foreground);
         font-family: inherit;
         font-size: var(--text-xs-fontSize);
     }
 
-    .stack-path-option.active {
+    .project-path-option.active {
         background: var(--selected);
     }
 
-    .stack-path-option:hover:not(:disabled),
-    .stack-path-option:focus-visible {
+    .project-path-option:hover:not(:disabled),
+    .project-path-option:focus-visible {
         background: var(--hover);
         outline: none;
     }
 
-    .stack-path-option:disabled {
+    .project-path-option:disabled {
         color: var(--muted-foreground);
     }
 }

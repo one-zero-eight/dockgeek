@@ -44,12 +44,12 @@ async function initRandomBytes() {
     }
 }
 
-export const ALL_ENDPOINTS = "##ALL_DOCKGE_ENDPOINTS##";
+export const ALL_ENDPOINTS = "##ALL_DOCKGEEK_ENDPOINTS##";
 
-// Stack Status
+// Project Status
 export const UNKNOWN = 0;
 export const CREATED_FILE = 1;
-export const CREATED_STACK = 2;
+export const CREATED_PROJECT = 2;
 export const RUNNING = 3;
 export const EXITED = 4;
 export const RESTARTING = 5;
@@ -79,7 +79,7 @@ export function composeStatusToStatus(value : string) : number {
         return PAUSED;
     }
     if (states.has("created")) {
-        return CREATED_STACK;
+        return CREATED_PROJECT;
     }
     if (states.has("running")) {
         return RUNNING;
@@ -91,8 +91,8 @@ export function statusName(status : number) : string {
     switch (status) {
         case CREATED_FILE:
             return "draft";
-        case CREATED_STACK:
-            return "created_stack";
+        case CREATED_PROJECT:
+            return "created_project";
         case RUNNING:
             return "running";
         case EXITED:
@@ -116,7 +116,7 @@ export function statusNameShort(status : number) : string {
     switch (status) {
         case CREATED_FILE:
             return "inactive";
-        case CREATED_STACK:
+        case CREATED_PROJECT:
             return "created";
         case RUNNING:
             return "active";
@@ -262,11 +262,11 @@ export function containerExitTone(container : {
     return "danger";
 }
 
-export function stackStatusTitle(stack : { status?: number; composeStatus?: string } | null | undefined) : string {
-    switch (stack?.status ?? UNKNOWN) {
+export function projectStatusTitle(project : { status?: number; composeStatus?: string } | null | undefined) : string {
+    switch (project?.status ?? UNKNOWN) {
         case CREATED_FILE:
             return "projectStatusInactive";
-        case CREATED_STACK:
+        case CREATED_PROJECT:
             return "projectStatusCreated";
         case RUNNING:
             return "projectStatusActive";
@@ -287,25 +287,25 @@ export function stackStatusTitle(stack : { status?: number; composeStatus?: stri
 }
 
 /**
- * Detail line under {@link stackStatusTitle}.
+ * Detail line under {@link projectStatusTitle}.
  * Returns either a translation key, or a literal `docker compose ls` status
  * that the UI prefixes with "containers".
  */
-export function stackStatusDetail(stack : { status?: number; composeStatus?: string } | null | undefined) : string {
-    if (stack?.composeStatus) {
-        return stack.composeStatus;
+export function projectStatusDetail(project : { status?: number; composeStatus?: string } | null | undefined) : string {
+    if (project?.composeStatus) {
+        return project.composeStatus;
     }
-    if (stack?.status === CREATED_FILE) {
+    if (project?.status === CREATED_FILE) {
         return "projectStatusNotDeployed";
     }
-    return statusNameShort(stack?.status ?? UNKNOWN);
+    return statusNameShort(project?.status ?? UNKNOWN);
 }
 
 export function statusColor(status : number) : string {
     switch (status) {
         case CREATED_FILE:
             return "secondary";
-        case CREATED_STACK:
+        case CREATED_PROJECT:
         case PAUSED:
         case RESTARTING:
         case REMOVING:
@@ -375,11 +375,11 @@ export function preferredMatchingFile(filenames : string[], patterns : string) :
 }
 
 /**
- * Validate a stacks-directory folder basename (not a Compose project name).
+ * Validate a projects-directory folder basename (not a Compose project name).
  * Rejects empty values, `.` / `..`, and any path separator.
- * @param folderName Folder basename under DOCKGE_STACKS_DIR
+ * @param folderName Folder basename under DOCKGEEK_PROJECTS_DIR
  */
-export function validateStackFolderName(folderName : string) : void {
+export function validateProjectFolderName(folderName : string) : void {
     const name = folderName?.trim() ?? "";
     if (!name) {
         throw new Error("Folder name cannot be empty");
@@ -408,7 +408,7 @@ export function toComposeProjectName(folderName : string) : string {
         .replace(/^-+|-+$/g, "");
 
     if (!name) {
-        name = "stack";
+        name = "project";
     }
     if (!/^[a-z0-9]/.test(name)) {
         name = "p" + name;
@@ -499,28 +499,28 @@ export function getCryptoRandomInt(min: number, max: number):number {
     }
 }
 
-export function getComposeTerminalName(endpoint : string, stack : string) {
-    return "compose-" + endpoint + "-" + stack;
+export function getComposeTerminalName(endpoint : string, project : string) {
+    return "compose-" + endpoint + "-" + project;
 }
 
-export function getCombinedTerminalName(endpoint : string, stack : string) {
-    return "combined-" + endpoint + "-" + stack;
+export function getCombinedTerminalName(endpoint : string, project : string) {
+    return "combined-" + endpoint + "-" + project;
 }
 
 export function getContainerTerminalName(endpoint : string, container : string) {
     return "container-" + endpoint + "-" + container;
 }
 
-export function getContainerExecTerminalName(endpoint : string, stackName : string, container : string, index : number, shell : string = "") {
-    return "container-exec-" + endpoint + "-" + stackName + "-" + container + "-" + index + (shell ? "-" + shell : "");
+export function getContainerExecTerminalName(endpoint : string, projectName : string, container : string, index : number, shell : string = "") {
+    return "container-exec-" + endpoint + "-" + projectName + "-" + container + "-" + index + (shell ? "-" + shell : "");
 }
 
-export function getContainerLogTerminalName(endpoint : string, stackName : string, container : string) {
-    return "container-log-" + endpoint + "-" + stackName + "-" + container;
+export function getContainerLogTerminalName(endpoint : string, projectName : string, container : string) {
+    return "container-log-" + endpoint + "-" + projectName + "-" + container;
 }
 
-export function getContainerInstanceExecTerminalName(endpoint : string, stackName : string, container : string, shell : string) {
-    return "container-instance-exec-" + endpoint + "-" + stackName + "-" + container + "-" + shell;
+export function getContainerInstanceExecTerminalName(endpoint : string, projectName : string, container : string, shell : string) {
+    return "container-instance-exec-" + endpoint + "-" + projectName + "-" + container + "-" + shell;
 }
 
 /**

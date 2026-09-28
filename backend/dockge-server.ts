@@ -18,12 +18,12 @@ import { Settings } from "./settings";
 import checkVersion from "./check-version";
 import dayjs from "dayjs";
 import { DEFAULT_COMPOSE_FILE_PATTERNS, DEFAULT_EDITABLE_FILE_PATTERNS, isDev, LooseObject } from "../common/util-common";
-import { Arguments, Config, DockgeSocket, SocketPrincipal } from "./util-server";
+import { Arguments, Config, DockgeekSocket, SocketPrincipal } from "./util-server";
 import { DockerSocketHandler } from "./agent-socket-handlers/docker-socket-handler";
 import expressStaticGzip from "express-static-gzip";
 import path from "path";
 import { TerminalSocketHandler } from "./agent-socket-handlers/terminal-socket-handler";
-import { Stack } from "./stack";
+import { Project } from "./project";
 import { Cron } from "croner";
 import gracefulShutdown from "http-graceful-shutdown";
 import * as childProcessAsync from "promisify-child-process";
@@ -36,9 +36,9 @@ import { Terminal } from "./terminal";
 import { FileManager } from "./file-manager";
 import { FileManagerSocketHandler } from "./agent-socket-handlers/file-manager-socket-handler";
 import { toNodeHandler } from "better-auth/node";
-import { claimAdmin, getAuth, initAuth, isAdmin, secretHash, sessionUser, verifyAgentKey } from "./auth";
+import { claimAdmin, getAuth, getLoginOptions, initAuth, isAdmin, isSuperAdmin, secretHash, sessionUser, verifyAgentKey } from "./auth";
 
-export class DockgeServer {
+export class DockgeekServer {
     app : Express;
     httpServer : http.Server;
     packageJSON : PackageJson;
@@ -72,7 +72,7 @@ export class DockgeServer {
         new FileManagerSocketHandler(),
     ];
 
-    stacksDir : string = "";
+    projectsDir : string = "";
     composeFilePatterns = DEFAULT_COMPOSE_FILE_PATTERNS;
     editableFilePatterns = DEFAULT_EDITABLE_FILE_PATTERNS;
 
@@ -85,7 +85,7 @@ export class DockgeServer {
         // Catch unexpected errors here
         let unexpectedErrorHandler = (error : unknown) => {
             console.trace(error);
-            console.error("If you keep encountering errors, please report to https://github.com/louislam/dockge");
+            console.error("If you keep encountering errors, please report to https://github.com/one-zero-eight/dockgeek");
         };
         process.addListener("unhandledRejection", unexpectedErrorHandler);
         process.addListener("uncaughtException", unexpectedErrorHandler);
@@ -97,12 +97,12 @@ export class DockgeServer {
         // Log NODE ENV
         log.info("server", "NODE_ENV: " + process.env.NODE_ENV);
 
-        // Default stacks directory
-        let defaultStacksDir;
+        // Default projects directory
+        let defaultProjectsDir;
         if (process.platform === "win32") {
-            defaultStacksDir = "./stacks";
+            defaultProjectsDir = "./projects";
         } else {
-            defaultStacksDir = "/opt/stacks";
+            defaultProjectsDir = "/opt/projects";
         }
 
         // Define all possible arguments
@@ -131,7 +131,7 @@ export class DockgeServer {
                 type: String,
                 optional: true,
             },
-            stacksDir: {
+            projectsDir: {
                 type: String,
                 optional: true,
             },
@@ -153,24 +153,24 @@ export class DockgeServer {
         this.config = args as Config;
 
         // Load from environment variables or default values if args are not set
-        this.config.sslKey = args.sslKey || process.env.DOCKGE_SSL_KEY || undefined;
-        this.config.sslCert = args.sslCert || process.env.DOCKGE_SSL_CERT || undefined;
-        this.config.sslKeyPassphrase = args.sslKeyPassphrase || process.env.DOCKGE_SSL_KEY_PASSPHRASE || undefined;
-        this.config.port = args.port || Number(process.env.DOCKGE_PORT) || 5001;
-        this.config.hostname = args.hostname || process.env.DOCKGE_HOSTNAME || undefined;
-        this.config.dataDir = args.dataDir || process.env.DOCKGE_DATA_DIR || "./data/";
-        process.env.DOCKGE_DATA_DIR = this.config.dataDir;
-        this.config.stacksDir = args.stacksDir || process.env.DOCKGE_STACKS_DIR || defaultStacksDir;
-        this.config.enableConsole = args.enableConsole || process.env.DOCKGE_ENABLE_CONSOLE === "true" || false;
-        this.config.fileManagerRoot = args.fileManagerRoot || process.env.DOCKGE_FILE_MANAGER_ROOT || undefined;
+        this.config.sslKey = args.sslKey || process.env.DOCKGEEK_SSL_KEY || undefined;
+        this.config.sslCert = args.sslCert || process.env.DOCKGEEK_SSL_CERT || undefined;
+        this.config.sslKeyPassphrase = args.sslKeyPassphrase || process.env.DOCKGEEK_SSL_KEY_PASSPHRASE || undefined;
+        this.config.port = args.port || Number(process.env.DOCKGEEK_PORT) || 5001;
+        this.config.hostname = args.hostname || process.env.DOCKGEEK_HOSTNAME || undefined;
+        this.config.dataDir = args.dataDir || process.env.DOCKGEEK_DATA_DIR || "/app/dockgeek-data";
+        process.env.DOCKGEEK_DATA_DIR = this.config.dataDir;
+        this.config.projectsDir = args.projectsDir || process.env.DOCKGEEK_PROJECTS_DIR || defaultProjectsDir;
+        this.config.enableConsole = args.enableConsole || process.env.DOCKGEEK_ENABLE_CONSOLE === "true" || false;
+        this.config.fileManagerRoot = args.fileManagerRoot || process.env.DOCKGEEK_FILE_MANAGER_ROOT || undefined;
         this.config.fileManagerMaxFileSize = args.fileManagerMaxFileSize
-            ?? (process.env.DOCKGE_FILE_MANAGER_MAX_FILE_SIZE !== undefined
-                ? Number(process.env.DOCKGE_FILE_MANAGER_MAX_FILE_SIZE)
+            ?? (process.env.DOCKGEEK_FILE_MANAGER_MAX_FILE_SIZE !== undefined
+                ? Number(process.env.DOCKGEEK_FILE_MANAGER_MAX_FILE_SIZE)
                 : 100 * 1024 * 1024);
         if (!Number.isFinite(this.config.fileManagerMaxFileSize) || this.config.fileManagerMaxFileSize <= 0) {
-            throw new Error("DOCKGE_FILE_MANAGER_MAX_FILE_SIZE must be a positive number of bytes.");
+            throw new Error("DOCKGEEK_FILE_MANAGER_MAX_FILE_SIZE must be a positive number of bytes.");
         }
-        this.stacksDir = this.config.stacksDir;
+        this.projectsDir = this.config.projectsDir;
 
         log.debug("server", this.config);
 
@@ -203,11 +203,12 @@ export class DockgeServer {
 
         // Better Auth and claim endpoints are registered before the SPA fallback.
         this.app.all("/api/auth/*splat", (req, res) => toNodeHandler(getAuth())(req, res));
-        this.app.get("/api/dockge/session", async (req, res) => {
+        this.app.get("/api/dockgeek/login-options", (_req, res) => res.json(getLoginOptions()));
+        this.app.get("/api/dockgeek/session", async (req, res) => {
             const userId = await sessionUser(req.headers);
-            res.json({ admin: !!userId && await isAdmin(userId), userId });
+            res.json({ admin: !!userId && await isAdmin(userId), superadmin: !!userId && await isSuperAdmin(userId), userId });
         });
-        this.app.post("/api/dockge/claim", express.json(), async (req, res) => {
+        this.app.post("/api/dockgeek/claim", express.json(), async (req, res) => {
             const userId = await sessionUser(req.headers);
             if (!userId || !await claimAdmin(userId, req.body?.token)) {
                 res.status(403).json({ ok: false });
@@ -294,28 +295,28 @@ export class DockgeServer {
         });
 
         this.io.on("connection", async (socket: Socket) => {
-            let dockgeSocket = socket as DockgeSocket;
-            dockgeSocket.instanceManager = new AgentManager(dockgeSocket);
-            dockgeSocket.emitAgent = (event : string, ...args : unknown[]) => {
+            let dockgeekSocket = socket as DockgeekSocket;
+            dockgeekSocket.instanceManager = new AgentManager(dockgeekSocket);
+            dockgeekSocket.emitAgent = (event : string, ...args : unknown[]) => {
                 let obj = args[0];
                 if (typeof(obj) === "object") {
                     let obj2 = obj as LooseObject;
-                    obj2.endpoint = dockgeSocket.endpoint;
+                    obj2.endpoint = dockgeekSocket.endpoint;
                 }
-                dockgeSocket.emit("agent", event, ...args);
+                dockgeekSocket.emit("agent", event, ...args);
             };
 
-            dockgeSocket.endpoint = typeof socket.handshake.auth.endpoint === "string" ? socket.handshake.auth.endpoint : "";
+            dockgeekSocket.endpoint = typeof socket.handshake.auth.endpoint === "string" ? socket.handshake.auth.endpoint : "";
             const agentKey = typeof socket.handshake.auth.agentKey === "string" ? socket.handshake.auth.agentKey : "";
-            if (agentKey && !dockgeSocket.endpoint) {
-                dockgeSocket.disconnect();
+            if (agentKey && !dockgeekSocket.endpoint) {
+                dockgeekSocket.disconnect();
                 return;
             }
             const authorize = async () => {
                 let principal : SocketPrincipal | undefined;
-                if (agentKey && await verifyAgentKey(agentKey, dockgeSocket.endpoint)) {
-                    principal = { kind: "agent", keyHash: secretHash(agentKey), endpoint: dockgeSocket.endpoint };
-                } else if (!agentKey && !dockgeSocket.endpoint) {
+                if (agentKey && await verifyAgentKey(agentKey, dockgeekSocket.endpoint)) {
+                    principal = { kind: "agent", keyHash: secretHash(agentKey), endpoint: dockgeekSocket.endpoint };
+                } else if (!agentKey && !dockgeekSocket.endpoint) {
                     const userId = await sessionUser(socket.request.headers);
                     if (userId && await isAdmin(userId)) {
                         principal = { kind: "admin", userId };
@@ -323,27 +324,27 @@ export class DockgeServer {
                 }
 
                 if (!principal) {
-                    if (dockgeSocket.principal) {
-                        dockgeSocket.principal = undefined;
-                        dockgeSocket.disconnect();
+                    if (dockgeekSocket.principal) {
+                        dockgeekSocket.principal = undefined;
+                        dockgeekSocket.disconnect();
                     }
                     return false;
                 }
 
-                const current = dockgeSocket.principal;
+                const current = dockgeekSocket.principal;
                 const changed = !current || (principal.kind === "admin"
                     ? current.kind !== "admin" || current.userId !== principal.userId
                     : current.kind !== "agent" || current.keyHash !== principal.keyHash);
                 if (changed) {
-                    if (dockgeSocket.principal) {
-                        dockgeSocket.instanceManager.disconnectAll();
-                        dockgeSocket.instanceManager = new AgentManager(dockgeSocket);
+                    if (dockgeekSocket.principal) {
+                        dockgeekSocket.instanceManager.disconnectAll();
+                        dockgeekSocket.instanceManager = new AgentManager(dockgeekSocket);
                     }
-                    await this.afterLogin(dockgeSocket, principal);
+                    await this.afterLogin(dockgeekSocket, principal);
                 }
                 return true;
             };
-            dockgeSocket.use(async (packet, next) => {
+            dockgeekSocket.use(async (packet, next) => {
                 try {
                     if (agentKey && packet[0] !== "agent") {
                         next(new Error("Agent keys may only use agent events"));
@@ -359,17 +360,17 @@ export class DockgeServer {
                 }
             });
 
-            if (dockgeSocket.endpoint) {
-                log.info("server", "Socket connected (agent), as endpoint " + dockgeSocket.endpoint);
+            if (dockgeekSocket.endpoint) {
+                log.info("server", "Socket connected (agent), as endpoint " + dockgeekSocket.endpoint);
             } else {
                 log.info("server", "Socket connected (direct)");
             }
 
-            this.sendInfo(dockgeSocket, true);
+            this.sendInfo(dockgeekSocket, true);
 
             // Create socket handlers (original, no agent support)
             for (const socketHandler of this.socketHandlerList) {
-                socketHandler.create(dockgeSocket, this);
+                socketHandler.create(dockgeekSocket, this);
             }
 
             // Create Agent Socket
@@ -377,11 +378,11 @@ export class DockgeServer {
 
             // Create agent socket handlers
             for (const socketHandler of this.agentSocketHandlerList) {
-                socketHandler.create(dockgeSocket, this, agentSocket);
+                socketHandler.create(dockgeekSocket, this, agentSocket);
             }
 
             // Create agent proxy socket handlers
-            this.agentProxySocketHandler.create2(dockgeSocket, this, agentSocket);
+            this.agentProxySocketHandler.create2(dockgeekSocket, this, agentSocket);
 
             // ***************************
             // Better do anything after added all socket handlers here
@@ -389,19 +390,19 @@ export class DockgeServer {
 
             try {
                 if (await authorize()) {
-                    dockgeSocket.emit("authenticated");
+                    dockgeekSocket.emit("authenticated");
                 } else {
-                    dockgeSocket.emit("unauthenticated");
+                    dockgeekSocket.emit("unauthenticated");
                 }
             } catch (error) {
                 log.error("auth", error);
-                dockgeSocket.disconnect();
+                dockgeekSocket.disconnect();
             }
 
             // Socket disconnect
-            dockgeSocket.on("disconnect", () => {
+            dockgeekSocket.on("disconnect", () => {
                 log.info("server", "Socket disconnected!");
-                dockgeSocket.instanceManager.disconnectAll();
+                dockgeekSocket.instanceManager.disconnectAll();
             });
 
         });
@@ -417,14 +418,14 @@ export class DockgeServer {
         }
     }
 
-    async afterLogin(socket : DockgeSocket, principal : SocketPrincipal) {
+    async afterLogin(socket : DockgeekSocket, principal : SocketPrincipal) {
         socket.principal = principal;
         socket.join(principal.kind === "admin" ? `user:${principal.userId}` : `agent:${principal.keyHash}`);
 
         this.sendInfo(socket);
 
         try {
-            this.sendStackList();
+            this.sendProjectList();
         } catch (e) {
             log.error("server", e);
         }
@@ -470,7 +471,7 @@ export class DockgeServer {
                 protect: true,  // Enabled over-run protection.
             }, () => {
                 //log.debug("server", "Cron job running");
-                this.sendStackList();
+                this.sendProjectList();
             });
 
             checkVersion.startInterval();
@@ -501,7 +502,7 @@ export class DockgeServer {
         if (!hideVersion) {
             versionProperty = packageJSON.version;
             latestVersionProperty = checkVersion.latestVersion;
-            isContainer = (process.env.DOCKGE_IS_CONTAINER === "1");
+            isContainer = (process.env.DOCKGEEK_IS_CONTAINER === "1");
         }
 
         socket.emit("info", {
@@ -624,9 +625,9 @@ export class DockgeServer {
             throw new Error(`Fatal error: ${this.config.dataDir} is not a directory`);
         }
 
-        // Create data/stacks directory
-        if (!fs.existsSync(this.stacksDir)) {
-            fs.mkdirSync(this.stacksDir, { recursive: true });
+        // Create data/projects directory
+        if (!fs.existsSync(this.projectsDir)) {
+            fs.mkdirSync(this.projectsDir, { recursive: true });
         }
 
         if (this.config.fileManagerRoot) {
@@ -643,34 +644,34 @@ export class DockgeServer {
     }
 
     /**
-     * Send stack list to all connected sockets.
+     * Send project list to all connected sockets.
      */
-    async sendStackList() {
+    async sendProjectList() {
         let socketList = this.io.sockets.sockets.values();
 
-        let stackList;
+        let projectList;
 
         for (let socket of socketList) {
-            let dockgeSocket = socket as DockgeSocket;
+            let dockgeekSocket = socket as DockgeekSocket;
 
-            if (dockgeSocket.principal) {
+            if (dockgeekSocket.principal) {
 
                 // Get the list only if there is a logged in principal
-                if (!stackList) {
-                    stackList = await Stack.getStackList(this);
+                if (!projectList) {
+                    projectList = await Project.getProjectList(this);
                 }
 
                 let map : Map<string, object> = new Map();
 
-                for (let [ stackName, stack ] of stackList) {
-                    map.set(stackName, stack.toSimpleJSON(dockgeSocket.endpoint));
+                for (let [ projectName, project ] of projectList) {
+                    map.set(projectName, project.toSimpleJSON(dockgeekSocket.endpoint));
                 }
 
-                log.debug("server", "Send stack list to user: " + dockgeSocket.id + " (" + dockgeSocket.endpoint + ")");
-                dockgeSocket.emitAgent("stackList", {
+                log.debug("server", "Send project list to user: " + dockgeekSocket.id + " (" + dockgeekSocket.endpoint + ")");
+                dockgeekSocket.emitAgent("projectList", {
                     ok: true,
-                    stackList: Object.fromEntries(map),
-                    stacksDirectoryPath: this.stackDirFullPath,
+                    projectList: Object.fromEntries(map),
+                    projectsDirectoryPath: this.projectDirFullPath,
                 });
             }
         }
@@ -726,8 +727,8 @@ export class DockgeServer {
         }
     }
 
-    get stackDirFullPath() {
-        return path.resolve(this.stacksDir);
+    get projectDirFullPath() {
+        return path.resolve(this.projectsDir);
     }
 
     /**
@@ -755,7 +756,7 @@ export class DockgeServer {
     /** Refresh other sockets, optionally restricted to one authenticated principal. */
     disconnectAllSocketClients(principal? : SocketPrincipal, currentSocketID? : string) {
         for (const rawSocket of this.io.sockets.sockets.values()) {
-            const socket = rawSocket as DockgeSocket;
+            const socket = rawSocket as DockgeekSocket;
             const current = socket.principal;
             const samePrincipal = !principal || (principal.kind === "admin"
                 ? current?.kind === "admin" && current.userId === principal.userId

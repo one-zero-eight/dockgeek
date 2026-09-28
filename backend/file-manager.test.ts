@@ -12,10 +12,10 @@ import {
 } from "./file-manager";
 import { FileManagerSocketHandler } from "./agent-socket-handlers/file-manager-socket-handler";
 import { AgentSocket } from "../common/agent-socket";
-import type { DockgeSocket } from "./util-server";
-import type { DockgeServer } from "./dockge-server";
+import type { DockgeekSocket } from "./util-server";
+import type { DockgeekServer } from "./dockge-server";
 
-const allowedTestRoot = path.resolve("stacks-data");
+const allowedTestRoot = path.resolve("projects-data");
 const testRoot = path.join(allowedTestRoot, `.file-manager-test-${process.pid}`);
 let manager : FileManager;
 
@@ -185,11 +185,11 @@ test("validates sequential upload and download chunks through the agent API", as
                 disconnect = callback;
             }
         },
-    } as unknown as DockgeSocket;
+    } as unknown as DockgeekSocket;
     const server = {
         fileManager: manager,
         config: { fileManagerMaxFileSize: 1024 },
-    } as unknown as DockgeServer;
+    } as unknown as DockgeekServer;
     new FileManagerSocketHandler().create(socket, server, agentSocket);
 
     const uploadStart = await callAgent(agentSocket, "fileUploadStart", { path: "chunked.txt",
@@ -229,7 +229,7 @@ test("validates sequential upload and download chunks through the agent API", as
         offset: 0,
         data: Buffer.from("a") });
     await disconnect?.();
-    assert.equal((await fs.readdir(testRoot)).some(name => name.startsWith(".dockge-upload-")), false);
+    assert.equal((await fs.readdir(testRoot)).some(name => name.startsWith(".dockgeek-upload-")), false);
 });
 
 test("does not traverse symbolic links", async (context) => {

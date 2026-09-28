@@ -2,9 +2,9 @@ import { promises as fsAsync } from "node:fs";
 import type { FileHandle } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { AgentSocketHandler } from "../agent-socket-handler";
-import { DockgeServer } from "../dockge-server";
+import { DockgeekServer } from "../dockge-server";
 import { AgentSocket } from "../../common/agent-socket";
-import { checkLogin, DockgeSocket } from "../util-server";
+import { checkLogin, DockgeekSocket } from "../util-server";
 import { FILE_MANAGER_CHUNK_SIZE, FILE_MANAGER_TEXT_LIMIT, FileManagerError } from "../file-manager";
 import { log } from "../log";
 import { EditorSchemaError, EditorSchemaRequest, readEditorSchema } from "../editor-schema";
@@ -43,7 +43,7 @@ interface FileManagerRequest {
 }
 
 export class FileManagerSocketHandler extends AgentSocketHandler {
-    create(socket : DockgeSocket, server : DockgeServer, agentSocket : AgentSocket) {
+    create(socket : DockgeekSocket, server : DockgeekServer, agentSocket : AgentSocket) {
         const downloads = new Map<string, DownloadSession>();
         const uploads = new Map<string, UploadSession>();
 

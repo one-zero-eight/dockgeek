@@ -5,12 +5,14 @@ import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { FileManager } from "./file-manager";
-import { DockgeServer } from "./dockge-server";
+import { DockgeekServer } from "./dockge-server";
 import { EditorSchemaError, parseEditorSchemaAllowedPrefixes, pinnedSchemaLookup, publicAddress, readEditorSchema } from "./editor-schema";
 import { AgentSocket } from "../common/agent-socket";
 import { FileManagerSocketHandler } from "./agent-socket-handlers/file-manager-socket-handler";
-import { DockgeSocket } from "./util-server";
+import { DockgeekSocket } from "./util-server";
 import { Settings } from "./settings";
+import { Project } from "./project";
+import { DEFAULT_COMPOSE_FILE_PATTERNS, DEFAULT_EDITABLE_FILE_PATTERNS } from "../common/util-common";
 
 function hasCode(code: string) {
     return (error: unknown) => error instanceof EditorSchemaError && error.code === code;
@@ -54,8 +56,8 @@ test("HTTPS connections keep the validated address with or without all-address l
 
 test("readEditorSchema socket requires authentication", async () => {
     const agentSocket = new AgentSocket();
-    const socket = { endpoint: "", on: () => {} } as unknown as DockgeSocket;
-    const server = { config: { fileManagerMaxFileSize: 1024 } } as DockgeServer;
+    const socket = { endpoint: "", on: () => {} } as unknown as DockgeekSocket;
+    const server = { config: { fileManagerMaxFileSize: 1024 } } as DockgeekServer;
     new FileManagerSocketHandler().create(socket, server, agentSocket);
     const result = await new Promise<{ ok: boolean; code: string }>(resolve => {
         agentSocket.call("readEditorSchema", { source: "files", path: "test.yaml", schemaUrl: "https://raw.githubusercontent.com/example/test/schema.json" }, resolve);
@@ -65,13 +67,13 @@ test("readEditorSchema socket requires authentication", async () => {
 });
 
 test("GitHub blob URLs are denied rather than rewritten to raw URLs", async () => {
-    const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-schema-"));
-    const stacksDir = path.join(temporary, "stacks");
+    const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "dockgeek-schema-"));
+    const projectsDir = path.join(temporary, "projects");
     const filesDir = path.join(temporary, "files");
-    await fs.mkdir(stacksDir);
+    await fs.mkdir(projectsDir);
     await fs.mkdir(filesDir);
     await fs.writeFile(path.join(filesDir, "document.yaml"), "schema: test");
-    const server = { stacksDir, fileManager: new FileManager(filesDir, 1024) } as DockgeServer;
+    const server = { projectsDir, fileManager: new FileManager(filesDir, 1024) } as DockgeekServer;
     const originalGet = Settings.get;
     Settings.get = async () => "";
     try {
@@ -85,13 +87,13 @@ test("GitHub blob URLs are denied rather than rewritten to raw URLs", async () =
 });
 
 test("HTTPS schema URLs with IP-literal hosts are denied before DNS lookup", async () => {
-    const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-schema-"));
-    const stacksDir = path.join(temporary, "stacks");
+    const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "dockgeek-schema-"));
+    const projectsDir = path.join(temporary, "projects");
     const filesDir = path.join(temporary, "files");
-    await fs.mkdir(stacksDir);
+    await fs.mkdir(projectsDir);
     await fs.mkdir(filesDir);
     await fs.writeFile(path.join(filesDir, "document.yaml"), "schema: test");
-    const server = { stacksDir, fileManager: new FileManager(filesDir, 1024) } as DockgeServer;
+    const server = { projectsDir, fileManager: new FileManager(filesDir, 1024) } as DockgeekServer;
     const originalGet = Settings.get;
     Settings.get = async () => "";
     try {
@@ -110,13 +112,13 @@ test("HTTPS schema URLs with IP-literal hosts are denied before DNS lookup", asy
 });
 
 test("root-relative remote refs stay HTTPS and pass through the fetch allowlist", async () => {
-    const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-schema-"));
-    const stacksDir = path.join(temporary, "stacks");
+    const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "dockgeek-schema-"));
+    const projectsDir = path.join(temporary, "projects");
     const filesDir = path.join(temporary, "files");
-    await fs.mkdir(stacksDir);
+    await fs.mkdir(projectsDir);
     await fs.mkdir(filesDir);
     await fs.writeFile(path.join(filesDir, "document.yaml"), "schema: test");
-    const server = { stacksDir, fileManager: new FileManager(filesDir, 1024) } as DockgeServer;
+    const server = { projectsDir, fileManager: new FileManager(filesDir, 1024) } as DockgeekServer;
     const originalGet = Settings.get;
     Settings.get = async () => "";
     try {
@@ -129,33 +131,74 @@ test("root-relative remote refs stay HTTPS and pass through the fetch allowlist"
     }
 });
 
-test("local schema reads honor the stacks root even for Files documents elsewhere", async () => {
-    const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-schema-"));
-    const stacksDir = path.join(temporary, "stacks");
+test("project schema requests use projectName and restrict local schemas to the projects root", async () => {
+    const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "dockgeek-project-schema-"));
+    const projectsDir = path.join(temporary, "projects");
+    const projectDir = path.join(projectsDir, "demo");
+    await fs.mkdir(projectDir, { recursive: true });
+    await fs.writeFile(path.join(projectDir, "compose.yaml"), "services: {}\n");
+    await fs.writeFile(path.join(projectDir, "settings.yaml"), "schema: test\n");
+    await fs.writeFile(path.join(projectDir, "settings.schema.yaml"), "type: string\n");
+    await fs.writeFile(path.join(projectsDir, "outside.schema.yaml"), "type: boolean\n");
+    const server = {
+        projectsDir,
+        composeFilePatterns: DEFAULT_COMPOSE_FILE_PATTERNS,
+        editableFilePatterns: DEFAULT_EDITABLE_FILE_PATTERNS,
+    } as DockgeekServer;
+    const originalGetProject = Project.getProject;
+    Project.getProject = async (_server, name) => {
+        Project.validateName(name);
+        return new Project(server, name);
+    };
+    try {
+        const request = { source: "project" as const, projectName: "demo", filename: "settings.yaml", schemaUrl: "settings.schema.yaml" };
+        const result = await readEditorSchema(server, request);
+        assert.equal(result.content, "type: string\n");
+        assert.equal(result.uri, pathToFileURL(path.join(projectDir, "settings.schema.yaml")).href);
+        // A new project file must resolve its schema before the first save.
+        await fs.rm(path.join(projectDir, "settings.yaml"));
+        assert.equal((await readEditorSchema(server, request)).content, "type: string\n");
+        await fs.symlink(path.join(projectsDir, "outside.schema.yaml"), path.join(projectDir, "settings.yaml"));
+        await assert.rejects(readEditorSchema(server, request), hasCode("SCHEMA_PATH_DENIED"));
+        await fs.rm(path.join(projectDir, "settings.yaml"));
+        assert.equal((await readEditorSchema(server, { ...request, schemaUrl: "../outside.schema.yaml" })).content, "type: boolean\n");
+        await assert.rejects(readEditorSchema(server, { ...request, schemaUrl: "../../outside.schema.yaml" }), hasCode("SCHEMA_PATH_DENIED"));
+        await assert.rejects(readEditorSchema(server, { ...request, source: "invalid" as "project" }), hasCode("VALIDATION"));
+        await assert.rejects(readEditorSchema(server, { ...request, projectName: "../demo" }), error =>
+            error instanceof Error && /Invalid managed project document|Project name/.test(error.message));
+    } finally {
+        Project.getProject = originalGetProject;
+        await fs.rm(temporary, { recursive: true, force: true });
+    }
+});
+
+test("local schema reads honor the projects root even for Files documents elsewhere", async () => {
+    const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "dockgeek-schema-"));
+    const projectsDir = path.join(temporary, "projects");
     const filesDir = path.join(temporary, "files");
-    await fs.mkdir(path.join(stacksDir, "shared"), { recursive: true });
+    await fs.mkdir(path.join(projectsDir, "shared"), { recursive: true });
     await fs.mkdir(filesDir);
     await fs.writeFile(path.join(filesDir, "document.yaml"), "schema: test");
     await fs.writeFile(path.join(filesDir, "secret.json"), "secret");
-    await fs.writeFile(path.join(stacksDir, "shared", "schema.json"), "{\"type\":\"string\"}");
-    const server = { stacksDir, fileManager: new FileManager(filesDir, 2 * 1024 * 1024) } as DockgeServer;
-    const request = { source: "files" as const, path: "document.yaml", schemaUrl: path.join(stacksDir, "shared", "schema.json") };
+    await fs.writeFile(path.join(projectsDir, "shared", "schema.json"), "{\"type\":\"string\"}");
+    const server = { projectsDir, fileManager: new FileManager(filesDir, 2 * 1024 * 1024) } as DockgeekServer;
+    const request = { source: "files" as const, path: "document.yaml", schemaUrl: path.join(projectsDir, "shared", "schema.json") };
     try {
         const first = await readEditorSchema(server, request);
         assert.equal(first.content, "{\"type\":\"string\"}");
         assert.equal(first.uri, pathToFileURL(request.schemaUrl).href);
-        await fs.writeFile(path.join(stacksDir, "root.json"), "root");
-        assert.equal((await readEditorSchema(server, { ...request, schemaUrl: "../root.json", baseUri: pathToFileURL(path.join(stacksDir, "shared", "schema.json")).href })).content, "root");
+        await fs.writeFile(path.join(projectsDir, "root.json"), "root");
+        assert.equal((await readEditorSchema(server, { ...request, schemaUrl: "../root.json", baseUri: pathToFileURL(path.join(projectsDir, "shared", "schema.json")).href })).content, "root");
         await assert.rejects(readEditorSchema(server, { ...request, schemaUrl: "secret.json" }), hasCode("SCHEMA_PATH_DENIED"));
         await assert.rejects(readEditorSchema(server, { ...request, schemaUrl: path.join(filesDir, "secret.json") }), hasCode("SCHEMA_PATH_DENIED"));
-        await assert.rejects(readEditorSchema(server, { ...request, path: "../stacks/shared/schema.json" }), error =>
+        await assert.rejects(readEditorSchema(server, { ...request, path: "../projects/shared/schema.json" }), error =>
             (error as { code?: string }).code === "PATH_OUTSIDE_ROOT");
-        await fs.symlink(path.join(filesDir, "secret.json"), path.join(stacksDir, "shared", "escape.json"));
-        await assert.rejects(readEditorSchema(server, { ...request, schemaUrl: path.join(stacksDir, "shared", "escape.json") }), hasCode("SCHEMA_PATH_DENIED"));
-        await fs.writeFile(path.join(stacksDir, "shared", "binary.json"), Buffer.from([ 0xff ]));
-        await assert.rejects(readEditorSchema(server, { ...request, schemaUrl: path.join(stacksDir, "shared", "binary.json") }), hasCode("SCHEMA_ENCODING"));
-        await fs.writeFile(path.join(stacksDir, "shared", "large.json"), Buffer.alloc(1024 * 1024 + 1));
-        await assert.rejects(readEditorSchema(server, { ...request, schemaUrl: path.join(stacksDir, "shared", "large.json") }), hasCode("SCHEMA_SIZE"));
+        await fs.symlink(path.join(filesDir, "secret.json"), path.join(projectsDir, "shared", "escape.json"));
+        await assert.rejects(readEditorSchema(server, { ...request, schemaUrl: path.join(projectsDir, "shared", "escape.json") }), hasCode("SCHEMA_PATH_DENIED"));
+        await fs.writeFile(path.join(projectsDir, "shared", "binary.json"), Buffer.from([ 0xff ]));
+        await assert.rejects(readEditorSchema(server, { ...request, schemaUrl: path.join(projectsDir, "shared", "binary.json") }), hasCode("SCHEMA_ENCODING"));
+        await fs.writeFile(path.join(projectsDir, "shared", "large.json"), Buffer.alloc(1024 * 1024 + 1));
+        await assert.rejects(readEditorSchema(server, { ...request, schemaUrl: path.join(projectsDir, "shared", "large.json") }), hasCode("SCHEMA_SIZE"));
     } finally {
         await fs.rm(temporary, { recursive: true, force: true });
     }

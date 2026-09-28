@@ -7,13 +7,13 @@
         <template v-if="showProjectsSidebar">
             <aside v-show="!sidebarCollapsed" id="projects-sidebar" class="dashboard-sidebar sticky top-0 flex flex-col h-full min-h-0 max-w-[360px] min-w-[260px] self-start pt-3 pb-4">
                 <div class="sidebar-heading mb-[1rem] flex flex-none items-center gap-4">
-                    <h1 class="mb-0">{{ $t("stacks") }}</h1>
-                    <router-link to="/compose" class="ui-add-stack" :aria-label="$t('newProject')" :title="$t('newProject')">
+                    <h1 class="mb-0">{{ $t("projects") }}</h1>
+                    <router-link to="/compose" class="ui-add-project" :aria-label="$t('newProject')" :title="$t('newProject')">
                         <font-awesome-icon icon="plus" />
                     </router-link>
                 </div>
                 <div class="sidebar-list-wrap relative flex flex-1 flex-col min-h-0">
-                    <StackList :scrollbar="true" />
+                    <ProjectList :scrollbar="true" />
                 </div>
                 <button
                     type="button"
@@ -49,11 +49,11 @@
 </template>
 
 <script>
-import StackList from "../components/StackList.vue";
+import ProjectList from "../components/ProjectList.vue";
 
 export default {
     components: {
-        StackList,
+        ProjectList,
     },
     data() {
         return {
@@ -126,7 +126,7 @@ export default {
     }
 }
 
-.dashboard-sidebar > .sidebar-list-wrap > :deep(.stack-list-box) {
+.dashboard-sidebar > .sidebar-list-wrap > :deep(.project-list-box) {
     flex: 1 1 0;
     min-height: 0;
     height: auto;

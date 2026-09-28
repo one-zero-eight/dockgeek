@@ -1,8 +1,8 @@
 import type { LoadedSchema } from "./schema-client";
 
 export interface SchemaOrigin {
-    source: "stack" | "files";
-    stackName?: string;
+    source: "project" | "files";
+    projectName?: string;
     filename?: string;
     path?: string;
 }

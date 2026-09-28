@@ -6,7 +6,7 @@ required:
 properties:
   app:
     type: object
-    description: Application settings for this dev stack.
+    description: Application settings for this dev project.
     additionalProperties: false
     required:
       - greeting

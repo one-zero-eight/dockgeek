@@ -1,16 +1,24 @@
-# Dockge-specific files
+# Dockgeek-specific files
 .env
-!/dev-stacks/**/.env
+/pocket-id-auth.ts
+/.playwright-cli/
+!/dev-projects/**/.env
 .idea/
 /data/
 /managed-files/
-/stacks/
+/projects/
 /tmp/
 /private/
-/stacks-data/
+/projects-data/
 /frontend-dist/
+/frontend/public/screencast.webm
+/extra/screencast.js
+/dev-projects/screencast-demo/
+/dev-projects/screencast-*/
+/dev-projects/demo/
+/dev-projects/screencast-demo-project/
 /.npmrc
-/dev-stacks/volume-data/data/
+/dev-projects/volume-data/data/
 
 # Created by https://www.toptal.com/developers/gitignore/api/node,linux,visualstudiocode
 # Edit at https://www.toptal.com/developers/gitignore?templates=node,linux,visualstudiocode
@@ -106,7 +114,7 @@ web_modules/
 .yarn-integrity
 
 # dotenv environment variable files
-# .env is handled by Dockge-specific rules above.
+# .env is handled by Dockgeek-specific rules above.
 .env.development.local
 .env.test.local
 .env.production.local

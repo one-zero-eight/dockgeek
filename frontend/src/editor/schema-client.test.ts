@@ -1,7 +1,23 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { SchemaLanguageClient, documentSchemaReference } from "./schema-client";
+import { schemaLoader } from "./schema-transport";
 import { TextDocument } from "vscode-languageserver-textdocument";
+
+test("project schema transport sends the renamed origin and schema request", async () => {
+    const requests: unknown[] = [];
+    const load = schemaLoader((event, request, callback) => {
+        assert.equal(event, "readEditorSchema");
+        requests.push(request);
+        callback({ ok: true, uri: "file:///projects/demo/config.schema.yaml", content: "type: object" });
+    }, { source: "project", projectName: "demo", filename: "config.yaml" });
+    assert.deepEqual(await load("./config.schema.yaml"), {
+        uri: "file:///projects/demo/config.schema.yaml", content: "type: object",
+    });
+    assert.deepEqual(requests, [{
+        source: "project", projectName: "demo", filename: "config.yaml", schemaUrl: "./config.schema.yaml",
+    }]);
+});
 
 const schema = JSON.stringify({
     type: "object",
@@ -68,17 +84,17 @@ test("explicit schema replaces bundled Compose schema and keeps its $schema key 
 test("YAML schemas and relative refs resolve through the schema request service", async () => {
     const requested: string[] = [];
     const client = new SchemaLanguageClient({
-        language: "yaml", documentUri: "file:///stacks/test/config.yaml",
+        language: "yaml", documentUri: "file:///projects/test/config.yaml",
         loadSchema: async uri => {
             requested.push(uri);
             return uri === "./main.yaml"
-                ? { uri: "file:///stacks/test/main.yaml", content: "type: object\nproperties:\n  name:\n    $ref: ./name.yaml\n" }
-                : { uri: "file:///stacks/test/name.yaml", content: "type: string\n" };
+                ? { uri: "file:///projects/test/main.yaml", content: "type: object\nproperties:\n  name:\n    $ref: ./name.yaml\n" }
+                : { uri: "file:///projects/test/name.yaml", content: "type: string\n" };
         },
     });
     const diagnostics = await client.validate("$schema: \"./main.yaml\"\nname: 4\n", 1);
     assert.ok(diagnostics.some(item => /string/.test(item.message)), JSON.stringify(diagnostics));
-    assert.ok(requested.some(uri => uri.endsWith("/stacks/test/name.yaml")), JSON.stringify(requested));
+    assert.ok(requested.some(uri => uri.endsWith("/projects/test/name.yaml")), JSON.stringify(requested));
     client.dispose();
 });
 
@@ -163,7 +179,7 @@ test("declaration extraction tolerates partial JSON", () => {
 
 test("failed YAML comment schema reports the error on the declaration", async () => {
     const client = new SchemaLanguageClient({
-        language: "yaml", documentUri: "file:///stacks/demo/remote-schema.yaml",
+        language: "yaml", documentUri: "file:///projects/demo/remote-schema.yaml",
         loadSchema: async () => {
             throw new Error("No content");
         },

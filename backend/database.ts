@@ -1,9 +1,11 @@
 import { log } from "./log";
 import { R } from "redbean-node";
-import { DockgeServer } from "./dockge-server";
+import { DockgeekServer } from "./dockge-server";
 import fs from "fs";
 import path from "path";
 import knex from "knex";
+import BetterSqlite3 from "better-sqlite3";
+import { randomBytes } from "node:crypto";
 
 // @ts-ignore
 import Dialect from "knex/lib/dialects/sqlite3/index.js";
@@ -22,7 +24,7 @@ interface DBConfig {
 
 export class Database {
     /**
-     * SQLite file path (Default: ./data/dockge.db)
+     * SQLite file path (Default: /app/dockgeek-data/dockgeek.db)
      * @type {string}
      */
     static sqlitePath : string;
@@ -33,14 +35,14 @@ export class Database {
 
     static knexMigrationsPath = "./backend/migrations";
 
-    private static server : DockgeServer;
+    private static server : DockgeekServer;
 
     /**
      * Use for decode the auth object
      */
     jwtSecret? : string;
 
-    static async init(server : DockgeServer) {
+    static async init(server : DockgeekServer) {
         this.server = server;
 
         log.debug("server", "Connecting to the database");
@@ -93,10 +95,9 @@ export class Database {
             dbConfig = this.readDBConfig();
             Database.dbConfig = dbConfig;
         } catch (err) {
-            if (err instanceof Error) {
-                log.warn("db", err.message);
+            if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
+                throw err;
             }
-
             dbConfig = {
                 type: "sqlite",
             };
@@ -108,7 +109,8 @@ export class Database {
         log.info("db", `Database Type: ${dbConfig.type}`);
 
         if (dbConfig.type === "sqlite") {
-            this.sqlitePath = path.join(this.server.config.dataDir, "dockge.db");
+            this.sqlitePath = path.join(this.server.config.dataDir, "dockgeek.db");
+            await this.migrateSQLiteFile(this.server.config.dataDir);
             Dialect.prototype._driver = () => sqlite;
 
             config = {
@@ -151,6 +153,58 @@ export class Database {
         }
     }
 
+    /** Move a legacy database before Knex opens it; never create a fresh DB over existing data. */
+    static async migrateSQLiteFile(dataDir : string) {
+        const oldPath = path.join(dataDir, "dockge.db");
+        const newPath = path.join(dataDir, "dockgeek.db");
+        const oldFiles = [ oldPath, `${oldPath}-wal`, `${oldPath}-shm` ];
+        const newFiles = [ newPath, `${newPath}-wal`, `${newPath}-shm` ];
+        const oldExists = oldFiles.map(file => fs.existsSync(file));
+        const newExists = newFiles.map(file => fs.existsSync(file));
+        if (!oldExists.some(Boolean)) {
+            return;
+        }
+        if (newExists.some(Boolean)) {
+            if (oldExists[0] && newExists[0]) {
+                throw new Error(`Both legacy and new SQLite databases exist: ${oldPath} and ${newPath}. Resolve them manually before startup.`);
+            }
+            if (oldExists[0]) {
+                throw new Error(`Cannot migrate ${oldPath}: destination SQLite sidecar exists. Resolve it manually before startup.`);
+            }
+            throw new Error(`Legacy SQLite sidecar exists alongside ${newPath}; resolve it manually before startup.`);
+        }
+        if (!oldExists[0]) {
+            throw new Error(`Legacy SQLite sidecar exists without ${oldPath}; resolve it manually before startup.`);
+        }
+
+        // Backup captures committed pages including WAL without moving a live WAL/SHM pair.
+        if (oldFiles.some(file => fs.existsSync(`${file}.legacy`))) {
+            throw new Error(`Legacy SQLite backup already exists for ${oldPath}; resolve it manually before startup.`);
+        }
+        const source = new BetterSqlite3(oldPath, { readonly: true, fileMustExist: true });
+        const temporary = path.join(dataDir, `.dockgeek-db-${randomBytes(8).toString("hex")}.db`);
+        try {
+            await source.backup(temporary);
+            if (newFiles.some(file => fs.existsSync(file))) {
+                throw new Error(`Destination SQLite database appeared while migrating ${oldPath}`);
+            }
+            fs.linkSync(temporary, newPath); // Exclusive: never replace another database.
+            // Retain the original database under a separate name for inspection/rollback.
+            // Sidecars may disappear when the read-only backup connection closes.
+            for (const file of oldFiles) {
+                if (fs.existsSync(file)) {
+                    fs.renameSync(file, `${file}.legacy`);
+                }
+            }
+            log.info("db", `Migrated legacy SQLite database to ${newPath}; retained ${oldPath}.legacy as a backup`);
+        } finally {
+            source.close();
+            if (fs.existsSync(temporary)) {
+                fs.unlinkSync(temporary);
+            }
+        }
+    }
+
     /**
      @returns {Promise<void>}
      */
@@ -189,7 +243,7 @@ export class Database {
                 // Allow missing patch files for downgrade or testing pr.
                 if (e.message.includes("the following files are missing:")) {
                     log.warn("db", e.message);
-                    log.warn("db", "Database migration failed, you may be downgrading Dockge.");
+                    log.warn("db", "Database migration failed, you may be downgrading Dockgeek.");
                 } else {
                     log.error("db", "Database migration failed");
                     throw e;

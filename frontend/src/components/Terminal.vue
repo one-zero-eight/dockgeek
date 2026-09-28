@@ -47,7 +47,7 @@ export default {
         },
 
         // Require if mode is interactive
-        stackName: {
+        projectName: {
             type: String,
             default: "",
         },
@@ -97,7 +97,7 @@ export default {
 
         // Mode
         // displayOnly: Only display terminal output
-        // mainTerminal: Free input and output for the Dockge console
+        // mainTerminal: Free input and output for the Dockgeek console
         // interactive: Free input and output through Docker Compose
         // interactiveContainer: Free input and output for one container instance
         mode: {
@@ -208,7 +208,7 @@ export default {
                 });
             } else if (this.mode === "interactive") {
                 console.debug("Create Interactive terminal:", this.name);
-                this.$root.emitAgent(this.endpoint, "interactiveTerminal", this.stackName, this.serviceName, this.shell, (res) => {
+                this.$root.emitAgent(this.endpoint, "interactiveTerminal", this.projectName, this.serviceName, this.shell, (res) => {
                     if (!res.ok) {
                         this.$root.toastRes(res);
                     } else {
@@ -216,7 +216,7 @@ export default {
                     }
                 });
             } else if (this.mode === "interactiveContainer") {
-                this.$root.emitAgent(this.endpoint, "interactiveContainerTerminal", this.stackName, this.containerName, this.shell, (res) => {
+                this.$root.emitAgent(this.endpoint, "interactiveContainerTerminal", this.projectName, this.containerName, this.shell, (res) => {
                     if (!res.ok) {
                         this.$root.toastRes(res);
                     } else {
@@ -234,9 +234,9 @@ export default {
     unmounted() {
         window.removeEventListener("resize", this.onResizeEvent); // Remove the resize event listener from the window object.
         if (this.mode === "interactive") {
-            this.$root.emitAgent(this.endpoint, "leaveInteractiveTerminal", this.stackName, this.serviceName, this.shell, () => {});
+            this.$root.emitAgent(this.endpoint, "leaveInteractiveTerminal", this.projectName, this.serviceName, this.shell, () => {});
         } else if (this.mode === "interactiveContainer") {
-            this.$root.emitAgent(this.endpoint, "leaveInteractiveContainerTerminal", this.stackName, this.containerName, this.shell, () => {});
+            this.$root.emitAgent(this.endpoint, "leaveInteractiveContainerTerminal", this.projectName, this.containerName, this.shell, () => {});
         }
         this.$root.unbindTerminal(this.name);
         this.terminal.dispose();

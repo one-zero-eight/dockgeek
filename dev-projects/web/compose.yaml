@@ -1,12 +1,12 @@
 services:
   web:
     image: busybox:1.36
-    command: ["sh", "-c", "mkdir -p /www; printf 'Dockge dev stack\\n' > /www/index.html; exec httpd -f -p 80 -h /www"]
+    command: ["sh", "-c", "mkdir -p /www; printf 'Dockgeek dev project\\n' > /www/index.html; exec httpd -f -p 80 -h /www"]
     ports:
       - "80"
     labels:
-      dockge.fixture: web
-      dockge.message: ${MESSAGE:-hello}
+      dockgeek.fixture: web
+      dockgeek.message: ${MESSAGE:-hello}
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
       interval: 10s
