@@ -1,7 +1,11 @@
 name: Prevent File Change
 
 on:
-  pull_request:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  pull-requests: read
 
 jobs:
   check-file-changes:
