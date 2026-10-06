@@ -3,9 +3,6 @@
         <div v-if="! $root.socketIO.connected && ! $root.socketIO.firstConnect" class="lost-connection fixed w-full p-[5px] z-[99999] bg-[crimson] text-white">
             <div class="w-full px-3">
                 {{ $root.socketIO.connectionErrorMsg }}
-                <div v-if="$root.socketIO.showReverseProxyGuide">
-                    {{ $t("reverseProxyMsg1") }} <a href="https://github.com/louislam/uptime-kuma/wiki/Reverse-Proxy" target="_blank">{{ $t("reverseProxyMsg2") }}</a>
-                </div>
             </div>
         </div>
 
@@ -15,10 +12,6 @@
                 <img class="me-2 ms-4" width="32" height="32" src="/icon.svg" alt="" />
                 <span class="title text-2xl font-bold">Dockgeek</span>
             </router-link>
-
-            <a v-if="hasNewVersion" target="_blank" href="https://github.com/one-zero-eight/dockgeek/releases" class="update-button me-3">
-                <font-awesome-icon icon="arrow-alt-circle-up" /> {{ $t("newUpdate") }}
-            </a>
 
             <ul class="header-nav flex items-center gap-[0.15rem] me-[25px] m-0 p-0 list-none">
                 <li v-if="$root.loggedIn" class="nav-item">
@@ -103,7 +96,6 @@
 <script>
 import Login from "../components/Login.vue";
 import { FloatingMenu } from "../components/floating";
-import { compareVersions } from "compare-versions";
 import { ALL_ENDPOINTS } from "../../../common/util-common";
 
 export default {
@@ -131,14 +123,6 @@ export default {
 
         isProjectsRoute() {
             return this.$route.path === "/projects" || this.$route.path === "/compose" || this.$route.path.startsWith("/projects/") || this.$route.path.startsWith("/terminal/");
-        },
-
-        hasNewVersion() {
-            if (this.$root.info.latestVersion && this.$root.info.version) {
-                return compareVersions(this.$root.info.latestVersion, this.$root.info.version) >= 1;
-            } else {
-                return false;
-            }
         },
 
     },
@@ -232,21 +216,6 @@ export default {
             color: var(--primary);
             background: var(--selected);
         }
-    }
-}
-
-.update-button {
-    padding: 0.375rem 1.25rem;
-    border: 0;
-    border-radius: 0.375rem;
-    background: var(--gradient-warning);
-    color: var(--primary-foreground);
-    font-weight: var(--fontWeight-medium);
-    text-decoration: none;
-
-    &:hover, &:focus-visible {
-        color: var(--primary-foreground);
-        background: var(--gradient-warning-active);
     }
 }
 

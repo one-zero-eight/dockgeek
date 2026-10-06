@@ -21,7 +21,6 @@ export class Agent extends BeanModel {
     toJSON() : LooseObject {
         return {
             url: this.url,
-            username: this.username === "agent-key" ? "" : this.username,
             endpoint: this.endpoint,
             name: this.name,
         };

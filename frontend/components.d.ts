@@ -33,6 +33,5 @@ declare module 'vue' {
     RouterView: typeof import('vue-router')['RouterView']
     Security: typeof import('./src/components/settings/Security.vue')['default']
     Terminal: typeof import('./src/components/Terminal.vue')['default']
-    TwoFADialog: typeof import('./src/components/TwoFADialog.vue')['default']
   }
 }

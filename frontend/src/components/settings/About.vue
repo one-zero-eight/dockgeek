@@ -21,42 +21,5 @@
         >
             {{ $t("Check Update On GitHub") }}
         </a>
-
-        <div class="flex flex-col items-start gap-[0.35rem] text-left">
-            <div class="[&_label]:inline-flex [&_label]:cursor-pointer [&_label]:items-center [&_label]:gap-2 [&_input]:accent-primary">
-                <label>
-                    <input v-model="settings.checkUpdate" type="checkbox" @change="saveSettings()" />
-                    {{ $t("Show update if available") }}
-                </label>
-            </div>
-
-            <div class="[&_label]:inline-flex [&_label]:cursor-pointer [&_label]:items-center [&_label]:gap-2 [&_input]:accent-primary">
-                <label>
-                    <input
-                        v-model="settings.checkBeta"
-                        type="checkbox"
-                        :disabled="!settings.checkUpdate"
-                        @change="saveSettings()"
-                    />
-                    {{ $t("Also check beta release") }}
-                </label>
-            </div>
-        </div>
     </div>
 </template>
-
-<script>
-export default {
-    computed: {
-        settings() {
-            return this.$parent.$parent.$parent.settings;
-        },
-        saveSettings() {
-            return this.$parent.$parent.$parent.saveSettings;
-        },
-        settingsLoaded() {
-            return this.$parent.$parent.$parent.settingsLoaded;
-        },
-    },
-};
-</script>

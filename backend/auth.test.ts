@@ -10,13 +10,8 @@ import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, statSync, wri
 import { tmpdir } from "node:os";
 import path from "node:path";
 import knex from "knex";
-import sqlite from "@louislam/sqlite3";
-// @ts-ignore
-import Dialect from "knex/lib/dialects/sqlite3/index.js";
-// @ts-ignore
-Dialect.prototype._driver = () => sqlite;
 import { R } from "redbean-node";
-import { appDatabase, claimAdmin, ensureAuthSecret, ensureClaim, ensureSuperadminTable, isAdmin, isSuperAdmin, listAuthUsers, migrateAuthTables, parseLoginProviders, secretHash, signGitOpsDelegation, verifyAgentKey, verifyGitOpsDelegation } from "./auth";
+import { appDatabase, claimAdmin, ensureAuthSecret, ensureClaim, isAdmin, isSuperAdmin, listAuthUsers, parseLoginProviders, secretHash, signGitOpsDelegation, verifyAgentKey, verifyGitOpsDelegation } from "./auth";
 import { Database as DockgeekDatabase } from "./database";
 import { checkAdmin, checkGitOpsAdmin, checkLogin, DockgeekSocket } from "./util-server";
 import { AgentManager } from "./agent-manager";
@@ -25,7 +20,7 @@ import { AgentSocket } from "../common/agent-socket";
 import { DockgeekServer } from "./dockge-server";
 
 const dir = mkdtempSync(path.join(tmpdir(), "dockgeek-auth-test-"));
-const db = knex({ client: Dialect, connection: { filename: path.join(dir, "test.db") }, useNullAsDefault: true });
+const db = knex({ client: "better-sqlite3", connection: { filename: path.join(dir, "test.db") }, useNullAsDefault: true });
 R.setup(db);
 
 after(async () => {
@@ -34,64 +29,7 @@ after(async () => {
 });
 
 try {
-    await db.schema.createTable("dockgeek_admin", table => table.string("user_id").primary());
-    await db.schema.createTable("dockgeek_superadmin", table => table.string("user_id").primary());
-    await db.schema.createTable("dockgeek_bootstrap", table => {
-        table.integer("id").primary();
-        table.string("hash");
-        table.bigInteger("expires");
-    });
-    await db.schema.createTable("dockgeek_agent_key", table => {
-        table.string("hash").primary();
-        table.string("endpoint");
-        table.boolean("revoked");
-    });
-
-    test("legacy auth tables migrate with admin, claim, and agent data intact", async () => {
-        const names = [ "admin", "bootstrap", "agent_key" ];
-        for (const name of names) {
-            await db.schema.renameTable(`dockgeek_${name}`, `dockge_${name}`);
-        }
-        await db("dockge_admin").insert({ user_id: "migrated-user" });
-        await db("dockge_bootstrap").insert({ id: 1, hash: secretHash("existing-claim"), expires: Date.now() + 60_000 });
-        await db("dockge_agent_key").insert({ hash: secretHash("existing-key"), endpoint: "legacy.test:5001", revoked: false });
-        await migrateAuthTables(db);
-        await migrateAuthTables(db); // Repeated startups must be safe.
-        assert.equal(await isAdmin("migrated-user"), true);
-        assert.equal(await verifyAgentKey("existing-key", "legacy.test:5001"), true);
-        assert.equal((await db("dockgeek_bootstrap").first()).hash, secretHash("existing-claim"));
-        assert.equal(await db.schema.hasTable("dockge_admin"), false);
-        await db("dockgeek_admin").delete();
-        await db("dockgeek_bootstrap").delete();
-        await db("dockgeek_agent_key").delete();
-    });
-
-    test("mixed auth tables fail closed without losing legacy rows", async () => {
-        for (const name of [ "admin", "bootstrap", "agent_key" ]) {
-            await db.schema.createTable(`dockge_${name}`, table => table.string("user_id"));
-        }
-        await db("dockge_admin").insert({ user_id: "preserved-user" });
-        await assert.rejects(migrateAuthTables(db), /Both dockge_admin and dockgeek_admin exist/);
-        assert.equal((await db("dockge_admin").first()).user_id, "preserved-user");
-        for (const name of [ "admin", "bootstrap", "agent_key" ]) {
-            await db.schema.dropTable(`dockge_${name}`);
-        }
-    });
-
-    test("single-admin upgrades assign superadmin without guessing among multiple admins", async () => {
-        await db.schema.dropTable("dockgeek_superadmin");
-        await db("dockgeek_admin").insert({ user_id: "original-owner" });
-        await ensureSuperadminTable(db);
-        await ensureSuperadminTable(db);
-        assert.equal(await isSuperAdmin("original-owner"), true);
-        await db.schema.dropTable("dockgeek_superadmin");
-        await db("dockgeek_admin").insert({ user_id: "second-admin" });
-        await ensureSuperadminTable(db);
-        assert.equal(await isSuperAdmin("original-owner"), false);
-        assert.equal(await isSuperAdmin("second-admin"), false);
-        await db("dockgeek_admin").delete();
-        await db("dockgeek_superadmin").delete();
-    });
+    await db.migrate.latest({ directory: DockgeekDatabase.knexMigrationsPath, loadExtensions: [ ".ts" ] });
 
     test("generated Better Auth secret persists and never overrides an explicit value", () => {
         const dataDir = path.join(dir, "auth-secret-test");
@@ -344,7 +282,7 @@ try {
     });
 
     test("agent credentials bind an endpoint and can be revoked", async () => {
-        await db("dockgeek_agent_key").insert({ hash: secretHash("secret"), endpoint: "server.test:5001", revoked: false });
+        await db("dockgeek_agent_key").insert({ hash: secretHash("secret"), label: "Test agent", endpoint: "server.test:5001", revoked: false });
         assert.equal(await verifyAgentKey("secret", "server.test:5001"), true);
         assert.equal(await verifyAgentKey("secret", "other.test:5001"), false);
         assert.equal(await verifyAgentKey("invalid", "server.test:5001"), false);

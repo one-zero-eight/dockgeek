@@ -149,9 +149,6 @@ export default {
         loadSettings() {
             this.$root.getSocket().emit("getSettings", (res) => {
                 this.settings = res.data;
-                if (this.settings.checkUpdate === undefined) {
-                    this.settings.checkUpdate = true;
-                }
                 this.settingsLoaded = true;
             });
         },
@@ -165,13 +162,12 @@ export default {
         /**
          * Save Settings
          * @param {saveSettingsCB} [callback]
-         * @param {string} [currentPassword] Only need for disableAuth to true
          * @param {boolean} [silentSuccess] Skip the success toast for inline save feedback
          */
-        saveSettings(callback, currentPassword, silentSuccess = false) {
+        saveSettings(callback, silentSuccess = false) {
             let valid = this.validateSettings();
             if (valid.success) {
-                this.$root.getSocket().emit("setSettings", this.settings, currentPassword, (res) => {
+                this.$root.getSocket().emit("setSettings", this.settings, (res) => {
                     if (!res.ok || !silentSuccess) {
                         this.$root.toastRes(res);
                     }

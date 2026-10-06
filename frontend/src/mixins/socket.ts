@@ -21,7 +21,6 @@ export default defineComponent({
                 connectCount: 0,
                 initedSocketIO: false,
                 connectionErrorMsg: `${this.$t("Cannot connect to the socket server.")} ${this.$t("Reconnecting...")}`,
-                showReverseProxyGuide: true,
                 connecting: false,
             },
             info: {
@@ -173,7 +172,6 @@ export default defineComponent({
 
                 this.socketIO.connectCount++;
                 this.socketIO.connected = true;
-                this.socketIO.showReverseProxyGuide = false;
                 this.refreshSession();
 
                 this.socketIO.firstConnect = false;
@@ -189,7 +187,6 @@ export default defineComponent({
             socket.on("connect_error", (err) => {
                 console.error(`Failed to connect to the backend. Socket.io connect_error: ${err.message}`);
                 this.socketIO.connectionErrorMsg = `${this.$t("Cannot connect to the socket server.")} [${err}] ${this.$t("reconnecting...")}`;
-                this.socketIO.showReverseProxyGuide = true;
                 this.socketIO.connected = false;
                 this.socketIO.firstConnect = false;
                 this.socketIO.connecting = false;

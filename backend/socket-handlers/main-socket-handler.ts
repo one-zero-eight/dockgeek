@@ -91,7 +91,7 @@ export class MainSocketHandler extends SocketHandler {
             }
         });
 
-        socket.on("setSettings", async (data, _currentPassword, callback) => {
+        socket.on("setSettings", async (data, callback) => {
             try {
                 checkAdmin(socket);
                 if (!data || typeof data !== "object") {

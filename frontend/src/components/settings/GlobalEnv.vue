@@ -114,7 +114,7 @@ export default {
                         this.savedTimer = null;
                     }, 3000);
                 }
-            }, undefined, true);
+            }, true);
         },
 
         onChange() {

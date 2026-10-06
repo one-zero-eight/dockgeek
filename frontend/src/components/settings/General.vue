@@ -158,7 +158,7 @@ export default {
                         this.savedTimer = null;
                     }, 3000);
                 }
-            }, undefined, true);
+            }, true);
         },
         /** Get the base URL of the application */
         autoGetPrimaryHostname() {

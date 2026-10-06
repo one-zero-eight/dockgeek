@@ -41,8 +41,7 @@ export class AgentManager {
     async add(url: string, key: string, name: string): Promise<Agent> {
         const bean = R.dispense("agent") as Agent;
         bean.url = url;
-        bean.username = "agent-key";
-        bean.password = key;
+        bean.key = key;
         bean.name = name;
         await R.store(bean);
         return bean;
@@ -91,7 +90,7 @@ export class AgentManager {
         });
         client.on("agent", (...args : unknown[]) => this.socket.emit("agent", ...args));
         client.on("info", (res) => {
-            if (!isDev && res.version && semver.satisfies(res.version, "< 1.4.0")) {
+            if (!isDev && res.version && semver.satisfies(res.version, "< 2.0.0")) {
                 this.socket.emit("agentStatus", { endpoint, status: "offline", msg: `Unsupported version: ${res.version}` });
                 client.disconnect();
             }
@@ -111,9 +110,7 @@ export class AgentManager {
         const list = await Agent.getAgentList();
         for (const endpoint in list) {
             const agent = list[endpoint];
-            if (agent.username === "agent-key") {
-                this.connect(agent.url, agent.password);
-            }
+            this.connect(agent.url, agent.key);
         }
     }
 
@@ -159,7 +156,7 @@ export class AgentManager {
 
     async sendAgentList() {
         const list = await Agent.getAgentList();
-        const result : Record<string, LooseObject> = { "": { url: "", username: "", endpoint: "", name: "", updatedName: "" } };
+        const result : Record<string, LooseObject> = { "": { url: "", endpoint: "", name: "", updatedName: "" } };
         for (const endpoint in list) {
             result[endpoint] = list[endpoint].toJSON();
         }

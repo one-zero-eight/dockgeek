@@ -69,6 +69,8 @@ Open <http://localhost:5001>.
 
 ## Updating
 
+The reset migration baseline requires a fresh Dockgeek data directory. Legacy databases and previous migration histories are not supported; Compose project files are unaffected.
+
 Back up `/opt/dockgeek/data` and your projects directory, update the image tag in `compose.yaml`, then run:
 
 ```bash

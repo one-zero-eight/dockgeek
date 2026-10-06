@@ -15,7 +15,6 @@ import { Socket } from "socket.io";
 import { MainSocketHandler } from "./socket-handlers/main-socket-handler";
 import { SocketHandler } from "./socket-handler";
 import { Settings } from "./settings";
-import checkVersion from "./check-version";
 import dayjs from "dayjs";
 import { DEFAULT_COMPOSE_FILE_PATTERNS, DEFAULT_EDITABLE_FILE_PATTERNS, isDev, LooseObject } from "../common/util-common";
 import { Arguments, Config, DockgeekSocket, SocketPrincipal } from "./util-server";
@@ -247,7 +246,7 @@ export class DockgeekServer {
             cors,
             allowRequest: (req, callback) => {
                 let isOriginValid = true;
-                const bypass = isDev || process.env.UPTIME_KUMA_WS_ORIGIN_CHECK === "bypass";
+                const bypass = isDev || process.env.DOCKGEEK_WS_ORIGIN_CHECK === "bypass";
 
                 if (!bypass) {
                     let host = req.headers.host;
@@ -473,8 +472,6 @@ export class DockgeekServer {
                 //log.debug("server", "Cron job running");
                 this.sendProjectList();
             });
-
-            checkVersion.startInterval();
         });
 
         gracefulShutdown(this.httpServer, {
@@ -496,18 +493,15 @@ export class DockgeekServer {
      */
     async sendInfo(socket : Socket, hideVersion = false) {
         let versionProperty;
-        let latestVersionProperty;
         let isContainer;
 
         if (!hideVersion) {
             versionProperty = packageJSON.version;
-            latestVersionProperty = checkVersion.latestVersion;
             isContainer = (process.env.DOCKGEEK_IS_CONTAINER === "1");
         }
 
         socket.emit("info", {
             version: versionProperty,
-            latestVersion: latestVersionProperty,
             isContainer,
             primaryHostname: await Settings.get("primaryHostname"),
             //serverTimezone: await this.getTimezone(),

@@ -427,7 +427,7 @@ export class Project {
             }
             const file = path.resolve(configFile);
             // The Dockgeek Compose project is not a managed project; keep other
-            // Compose names (including legacy user-owned "dockge") unchanged.
+            // User-owned Compose names unchanged.
             if (composeProject.Name === "dockgeek" && !Project.isPathInside(server.projectsDir, file)) {
                 continue;
             }

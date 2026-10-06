@@ -53,9 +53,3 @@ EXPOSE 5001
 HEALTHCHECK --interval=60s --timeout=30s --start-period=60s --retries=5 CMD extra/healthcheck
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 CMD ["./node_modules/.bin/tsx", "./backend/index.ts"]
-
-############################################
-# Mark as Nightly
-############################################
-FROM release AS nightly
-RUN npm run mark-as-nightly

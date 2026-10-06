@@ -141,43 +141,6 @@ export function getAuth() : Auth {
     return auth;
 }
 
-const AUTH_TABLES = [ "admin", "bootstrap", "agent_key" ];
-
-/** Rename legacy auth tables atomically; refuse ambiguous mixed schemas. */
-export async function migrateAuthTables(db : Knex = R.knex) {
-    await db.transaction(async trx => {
-        for (const suffix of AUTH_TABLES) {
-            const legacy = `dockge_${suffix}`;
-            const current = `dockgeek_${suffix}`;
-            const [ hasLegacy, hasCurrent ] = await Promise.all([
-                trx.schema.hasTable(legacy), trx.schema.hasTable(current)
-            ]);
-            if (hasLegacy && hasCurrent) {
-                throw new Error(`Both ${legacy} and ${current} exist; resolve conflicting auth tables manually`);
-            }
-            if (hasLegacy) {
-                await trx.schema.renameTable(legacy, current);
-            }
-        }
-    });
-}
-
-export async function ensureSuperadminTable(db : Knex = R.knex) {
-    await db.transaction(async trx => {
-        if (await trx.schema.hasTable("dockgeek_superadmin")) {
-            return;
-        }
-        await trx.schema.createTable("dockgeek_superadmin", (table : Knex.CreateTableBuilder) => {
-            table.string("user_id").primary();
-        });
-        // Existing single-admin installs have an unambiguous owner. Never guess among multiple admins.
-        const admins = await trx("dockgeek_admin").select("user_id").limit(2);
-        if (admins.length === 1) {
-            await trx("dockgeek_superadmin").insert({ user_id: admins[0].user_id });
-        }
-    });
-}
-
 export async function initAuth(baseURL? : string) {
     ensureAuthSecret(path.dirname(DockgeekDatabase.sqlitePath));
     const configPath = path.resolve(process.env.BETTER_AUTH_CONFIG || "./backend/default-auth.ts");
@@ -195,28 +158,6 @@ export async function initAuth(baseURL? : string) {
     }
     const { runMigrations } = await getMigrations(auth.options);
     await runMigrations();
-    await migrateAuthTables();
-    if (!await R.knex.schema.hasTable("dockgeek_admin")) {
-        await R.knex.schema.createTable("dockgeek_admin", (table : Knex.CreateTableBuilder) => {
-            table.string("user_id").primary();
-        });
-    }
-    await ensureSuperadminTable();
-    if (!await R.knex.schema.hasTable("dockgeek_bootstrap")) {
-        await R.knex.schema.createTable("dockgeek_bootstrap", (table : Knex.CreateTableBuilder) => {
-            table.integer("id").primary();
-            table.string("hash").notNullable();
-            table.bigInteger("expires").notNullable();
-        });
-    }
-    if (!await R.knex.schema.hasTable("dockgeek_agent_key")) {
-        await R.knex.schema.createTable("dockgeek_agent_key", (table : Knex.CreateTableBuilder) => {
-            table.string("hash").primary();
-            table.string("label").notNullable();
-            table.string("endpoint").notNullable();
-            table.boolean("revoked").notNullable().defaultTo(false);
-        });
-    }
     await ensureClaim(baseURL);
 }
 

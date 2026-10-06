@@ -35,6 +35,12 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: npm
 
+      - name: Validate JSON and YAML
+        if: matrix.os == 'ubuntu-latest'
+        uses: GrantBirki/json-yaml-validate@v5.0.1
+        with:
+          comment: "false"
+
       - name: Install dependencies
         run: npm ci --no-fund
 
