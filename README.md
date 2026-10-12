@@ -79,19 +79,11 @@ sudo -u dockgeek -H bash -lc '
 '
 ```
 
-Open <http://localhost:5001>.
+Open <http://localhost:5001>. On first start, the logs contain an administrator claim URL valid for 15 minutes. If it expires before anyone claims the instance, restart the service and check the logs again. Startup also logs whether Docker is rootless or rootful.
 
 ## Updating
 
-The reset migration baseline requires a fresh Dockgeek data directory. Legacy databases and previous migration histories are not supported; Compose project files are unaffected.
-
-Back up `/opt/dockgeek/data` and your projects directory, update the image tag in `compose.yaml`, then run:
-
-```bash
-cd /opt/dockgeek
-docker compose pull
-docker compose up -d
-```
+See the [GitHub wiki](https://github.com/one-zero-eight/dockgeek/wiki).
 
 ## FAQ
 
