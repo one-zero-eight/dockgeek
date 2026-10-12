@@ -36,6 +36,7 @@ import { FileManager } from "./file-manager";
 import { FileManagerSocketHandler } from "./agent-socket-handlers/file-manager-socket-handler";
 import { toNodeHandler } from "better-auth/node";
 import { claimAdmin, getAuth, getLoginOptions, initAuth, isAdmin, isSuperAdmin, secretHash, sessionUser, verifyAgentKey } from "./auth";
+import { logDockerRootlessStatus } from "./docker-rootless";
 
 export class DockgeekServer {
     app : Express;
@@ -456,6 +457,8 @@ export class DockgeekServer {
         const patterns = await Settings.filePatterns();
         this.composeFilePatterns = patterns.compose;
         this.editableFilePatterns = patterns.editable;
+
+        await logDockerRootlessStatus();
 
         // Listen
         this.httpServer.listen(this.config.port, this.config.hostname, () => {

@@ -32,14 +32,19 @@ See the [GitHub wiki](https://github.com/one-zero-eight/dockgeek/wiki) for proje
 
 Requirements: Docker Engine with Compose V2 and access to a Docker socket.
 
-### Basic setup
+**Recommended: [rootless Docker](https://github.com/one-zero-eight/dockgeek/wiki/Rootless-Docker) with a dedicated user.** Mounting the rootful socket (`/var/run/docker.sock`) gives Dockgeek root-equivalent control of the host. Rootless mode limits Dockgeek to that user’s privileges. On startup, Dockgeek logs whether the connected daemon is rootless or rootful.
 
-Create `/opt/dockgeek/compose.yaml`:
+### Rootless setup (recommended)
+
+Create a dedicated user, install rootless Docker, then point Dockgeek at that user’s socket. Full steps: [Rootless Docker wiki](https://github.com/one-zero-eight/dockgeek/wiki/Rootless-Docker).
 
 ```bash
+# After rootless Docker is running as user `dockgeek` (uid typically 1000):
 mkdir -p /opt/dockgeek /opt/projects
-cd /opt/dockgeek
+chown -R dockgeek:dockgeek /opt/dockgeek /opt/projects
 ```
+
+Create `/opt/dockgeek/compose.yaml` (replace `1000` with `id -u dockgeek` if needed):
 
 ```yaml
 services:
@@ -49,7 +54,8 @@ services:
     ports:
       - "5001:5001"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      # Rootless socket — NOT /var/run/docker.sock
+      - /run/user/1000/docker.sock:/var/run/docker.sock
       - ./data:/app/dockgeek-data
       # Projects Directory
       # ⚠️ READ IT CAREFULLY. If you did it wrong, your data could end up writing into a WRONG PATH.
@@ -62,7 +68,11 @@ services:
 ```
 
 ```bash
-docker compose up -d
+sudo -u dockgeek -H bash -lc '
+  export XDG_RUNTIME_DIR=/run/user/$(id -u)
+  export DOCKER_HOST=unix:///run/user/$(id -u)/docker.sock
+  cd /opt/dockgeek && docker compose up -d
+'
 ```
 
 Open <http://localhost:5001>.
