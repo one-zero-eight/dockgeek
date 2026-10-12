@@ -32,11 +32,13 @@ See the [GitHub wiki](https://github.com/one-zero-eight/dockgeek/wiki) for proje
 
 Requirements: Docker Engine with Compose V2 and access to a Docker socket.
 
-**Recommended: [rootless Docker](https://github.com/one-zero-eight/dockgeek/wiki/Rootless-Docker) with a dedicated user.** Mounting the rootful socket (`/var/run/docker.sock`) gives Dockgeek root-equivalent control of the host. Rootless mode limits Dockgeek to that user’s privileges. On startup, Dockgeek logs whether the connected daemon is rootless or rootful.
-
 ### Rootless setup (recommended)
 
-Create a dedicated user, install rootless Docker, then point Dockgeek at that user’s socket. Full steps: [Rootless Docker wiki](https://github.com/one-zero-eight/dockgeek/wiki/Rootless-Docker).
+**[Rootless Docker](https://github.com/one-zero-eight/dockgeek/wiki/Rootless-Docker) with a dedicated user are needed.** Mounting the rootful socket (`/var/run/docker.sock`) gives Dockgeek root-equivalent control of the host. Rootless mode limits Dockgeek to that user’s privileges. On startup, Dockgeek logs whether the connected daemon is rootless or rootful.
+
+> **Note:** Rootful Docker is supported but not recommended. See [Rootful install](https://github.com/one-zero-eight/dockgeek/wiki/How-to-Install#rootful-install-not-recommended).
+
+Create a dedicated user, install rootless Docker, then point Dockgeek at that user’s socket.
 
 ```bash
 # After rootless Docker is running as user `dockgeek` (uid typically 1000):
@@ -44,7 +46,7 @@ mkdir -p /opt/dockgeek /opt/projects
 chown -R dockgeek:dockgeek /opt/dockgeek /opt/projects
 ```
 
-Create `/opt/dockgeek/compose.yaml` (replace `1000` with `id -u dockgeek` if needed):
+Create `/opt/dockgeek/compose.yaml`:
 
 ```yaml
 services:
@@ -54,8 +56,9 @@ services:
     ports:
       - "5001:5001"
     volumes:
-      # Rootless socket — NOT /var/run/docker.sock
-      - /run/user/1000/docker.sock:/var/run/docker.sock
+      # Rootless daemon socket for the dedicated user (not /var/run/docker.sock).
+      # DOCKER_UID defaults to 1000; override with that user's id (`id -u`).
+      - /run/user/${DOCKER_UID:-1000}/docker.sock:/var/run/docker.sock
       - ./data:/app/dockgeek-data
       # Projects Directory
       # ⚠️ READ IT CAREFULLY. If you did it wrong, your data could end up writing into a WRONG PATH.
@@ -71,6 +74,7 @@ services:
 sudo -u dockgeek -H bash -lc '
   export XDG_RUNTIME_DIR=/run/user/$(id -u)
   export DOCKER_HOST=unix:///run/user/$(id -u)/docker.sock
+  export DOCKER_UID=$(id -u)
   cd /opt/dockgeek && docker compose up -d
 '
 ```

@@ -6,8 +6,9 @@ services:
       # Host Port : Container Port
       - 5001:5001
     volumes:
-      # Recommended: rootless Docker socket from a dedicated user (replace 1000 with id -u):
-      # - /run/user/1000/docker.sock:/var/run/docker.sock
+      # Recommended (rootless): daemon socket for the dedicated user.
+      # DOCKER_UID defaults to 1000; override with that user's id (`id -u`).
+      # - /run/user/${DOCKER_UID:-1000}/docker.sock:/var/run/docker.sock
       # Rootful socket (not recommended — grants Dockgeek root-equivalent host access):
       - /var/run/docker.sock:/var/run/docker.sock
       - ./data:/app/dockgeek-data
