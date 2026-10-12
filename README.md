@@ -81,9 +81,9 @@ sudo -u dockgeek -H bash -lc '
 
 Open <http://localhost:5001>. On first start, the logs contain an administrator claim URL valid for 15 minutes. If it expires before anyone claims the instance, restart the service and check the logs again. Startup also logs whether Docker is rootless or rootful.
 
-## Updating
+## What's next?
 
-See the [GitHub wiki](https://github.com/one-zero-eight/dockgeek/wiki).
+See the [GitHub wiki](https://github.com/one-zero-eight/dockgeek/wiki) for updates, configuration, and more.
 
 ## FAQ
 
