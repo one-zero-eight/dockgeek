@@ -1,6 +1,6 @@
 services:
   dockgeek:
-    image: ghcr.io/one-zero-eight/dockgeek:2.0.0
+    image: ghcr.io/one-zero-eight/dockgeek:nightly
     restart: unless-stopped
     ports:
       # Host Port : Container Port
